@@ -1,0 +1,289 @@
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+
+function authHeaders() {
+  const token = localStorage.getItem("reloop_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function fetchItems({ query, category, size } = {}) {
+  const params = new URLSearchParams();
+  if (query) params.set("query", query);
+  if (category && category !== "Todo") params.set("category", category);
+  if (size) params.set("size", size);
+
+  const res = await fetch(`${API_URL}/items?${params}`);
+  if (!res.ok) throw new Error("No se pudieron cargar los artículos");
+  return res.json();
+}
+
+export async function fetchItem(id) {
+  const res = await fetch(`${API_URL}/items/${id}`);
+  if (!res.ok) throw new Error("Artículo no encontrado");
+  return res.json();
+}
+
+export async function createItem(data) {
+  const res = await fetch(`${API_URL}/items`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "Error al publicar");
+  return res.json();
+}
+
+export async function login(email, password) {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "Error al iniciar sesión");
+  const data = await res.json();
+  localStorage.setItem("reloop_token", data.token);
+  localStorage.setItem("reloop_username", data.user.username);
+  return data.user;
+}
+
+export async function register(email, password, username) {
+  const res = await fetch(`${API_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, username }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "Error al registrarse");
+  const data = await res.json();
+  localStorage.setItem("reloop_token", data.token);
+  localStorage.setItem("reloop_username", data.user.username);
+  return data.user;
+}
+
+export async function updateItem(id, data) {
+  const res = await fetch(`${API_URL}/items/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "Error al actualizar");
+  return res.json();
+}
+
+export async function deleteItem(id) {
+  const res = await fetch(`${API_URL}/items/${id}`, {
+    method: "DELETE",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok && res.status !== 204) throw new Error("Error al eliminar");
+  return true;
+}
+
+export async function fetchFavorites() {
+  const res = await fetch(`${API_URL}/favorites`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error("No se pudieron cargar los favoritos");
+  return res.json();
+}
+
+export async function addFavorite(itemId) {
+  const res = await fetch(`${API_URL}/favorites/${itemId}`, {
+    method: "POST",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok && res.status !== 409) throw new Error("Error al guardar favorito");
+  return true;
+}
+
+export async function removeFavorite(itemId) {
+  const res = await fetch(`${API_URL}/favorites/${itemId}`, {
+    method: "DELETE",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok && res.status !== 204) throw new Error("Error al quitar favorito");
+  return true;
+}
+
+export async function uploadImage(file) {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const res = await fetch(`${API_URL}/uploads`, {
+    method: "POST",
+    headers: { ...authHeaders() }, // OJO: no poner Content-Type, el navegador lo define solo con el boundary correcto
+    body: formData,
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "Error al subir la imagen");
+  const data = await res.json();
+  return data.url;
+}
+
+export async function fetchProfile(username) {
+  const res = await fetch(`${API_URL}/users/${username}`);
+  if (!res.ok) throw new Error("Perfil no encontrado");
+  return res.json();
+}
+
+// --- Stripe Connect (cobros del vendedor) ---
+
+export async function connectStripe() {
+  const res = await fetch(`${API_URL}/stripe/connect`, {
+    method: "POST",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "Error al conectar con Stripe");
+  const data = await res.json();
+  return data.url; // redirige al usuario a este enlace para completar el onboarding
+}
+
+export async function fetchStripeStatus() {
+  const res = await fetch(`${API_URL}/stripe/connect/status`, {
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error("No se pudo comprobar el estado de Stripe");
+  return res.json(); // { connected, onboarded }
+}
+
+// --- Checkout de compra ---
+
+export async function startCheckout(itemId) {
+  const res = await fetch(`${API_URL}/stripe/checkout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ itemId }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo iniciar el pago");
+  const data = await res.json();
+  return data.url; // redirige al usuario a Stripe Checkout
+}
+
+// --- Pedidos (compras/ventas) ---
+
+export async function fetchTransactions() {
+  const res = await fetch(`${API_URL}/transactions`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error("No se pudieron cargar tus pedidos");
+  return res.json(); // { purchases, sales }
+}
+
+export async function createShipmentLabel(transactionId, carrier = "correos_express") {
+  const res = await fetch(`${API_URL}/shipments/${transactionId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ carrier }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo generar la etiqueta");
+  return res.json();
+}
+
+export async function confirmReceived(transactionId) {
+  const res = await fetch(`${API_URL}/shipments/${transactionId}/received`, {
+    method: "PATCH",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo confirmar la recepción");
+  return res.json();
+}
+
+export async function submitReview(targetUsername, rating, comment) {
+  const res = await fetch(`${API_URL}/reviews`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ targetUsername, rating, comment }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la valoración");
+  return res.json();
+}
+
+export function logout() {
+  localStorage.removeItem("reloop_token");
+  localStorage.removeItem("reloop_username");
+}
+
+export function isLoggedIn() {
+  return !!localStorage.getItem("reloop_token");
+}
+
+export function getUsername() {
+  return localStorage.getItem("reloop_username") || "";
+}
+
+// --- Recuperar / restablecer contraseña, verificación de email ---
+
+export async function forgotPassword(email) {
+  const res = await fetch(`${API_URL}/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "Error al solicitar recuperación");
+  return res.json();
+}
+
+export async function resetPassword(token, newPassword) {
+  const res = await fetch(`${API_URL}/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, newPassword }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "Error al restablecer la contraseña");
+  return res.json();
+}
+
+export async function verifyEmail(token) {
+  const res = await fetch(`${API_URL}/auth/verify-email?token=${token}`);
+  if (!res.ok) throw new Error((await res.json()).error || "Enlace no válido");
+  return res.json();
+}
+
+export async function resendVerification() {
+  const res = await fetch(`${API_URL}/auth/resend-verification`, {
+    method: "POST",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo reenviar el email");
+  return res.json();
+}
+
+// --- Chat real ---
+
+export async function fetchChatMessages(itemId) {
+  const res = await fetch(`${API_URL}/messages/${itemId}`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error("No se pudo cargar la conversación");
+  return res.json();
+}
+
+export async function sendChatMessage(itemId, content) {
+  const res = await fetch(`${API_URL}/messages/${itemId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar el mensaje");
+  return res.json();
+}
+
+// --- Notificaciones reales ---
+
+export async function fetchNotifications() {
+  const res = await fetch(`${API_URL}/notifications`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error("No se pudieron cargar las notificaciones");
+  return res.json();
+}
+
+export async function markAllNotificationsRead() {
+  const res = await fetch(`${API_URL}/notifications/read-all`, {
+    method: "PATCH",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error("No se pudo actualizar");
+  return res.json();
+}
+
+// --- Disputas / reembolsos ---
+
+export async function disputeTransaction(transactionId, reason) {
+  const res = await fetch(`${API_URL}/transactions/${transactionId}/dispute`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo abrir la disputa");
+  return res.json();
+}
