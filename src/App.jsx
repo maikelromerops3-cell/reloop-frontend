@@ -1468,17 +1468,14 @@ export default function JolvoApp() {
         </div>
       </header>
 
-      {(!openItem || numCols < 3) && (
-      <>
-      <div className="hero">
-        <h2>Lo que ya no usas, <span className="accent">alguien lo está buscando</span>.</h2>
-        <p>Compra y vende de todo, de segunda mano. Busca, publica, negocia.</p>
-      </div>
-
       <div className="search-row">
         <div className="search-box">
           <Search size={15} color="#9A9AA3" />
-          <input placeholder="Buscar prendas..." value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input
+            placeholder="Buscar prendas..."
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); if (openItem) closeItemView(); }}
+          />
         </div>
         <button className={"filter-toggle-btn" + (showFilters ? " active" : "")} onClick={() => setShowFilters(!showFilters)}>
           <SlidersHorizontal size={15} />
@@ -1490,21 +1487,21 @@ export default function JolvoApp() {
           <div className="filter-panel-row">
             <label>Precio</label>
             <div className="filter-price-inputs">
-              <input type="number" placeholder="Mín." value={priceFilter.min} onChange={(e) => setPriceFilter((p) => ({ ...p, min: e.target.value }))} />
+              <input type="number" placeholder="Mín." value={priceFilter.min} onChange={(e) => { setPriceFilter((p) => ({ ...p, min: e.target.value })); if (openItem) closeItemView(); }} />
               <span>-</span>
-              <input type="number" placeholder="Máx." value={priceFilter.max} onChange={(e) => setPriceFilter((p) => ({ ...p, max: e.target.value }))} />
+              <input type="number" placeholder="Máx." value={priceFilter.max} onChange={(e) => { setPriceFilter((p) => ({ ...p, max: e.target.value })); if (openItem) closeItemView(); }} />
             </div>
           </div>
           <div className="filter-panel-row">
             <label>Talla</label>
-            <select value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value)}>
+            <select value={sizeFilter} onChange={(e) => { setSizeFilter(e.target.value); if (openItem) closeItemView(); }}>
               <option value="">Todas</option>
               {SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="filter-panel-row">
             <label>Ordenar por</label>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); if (openItem) closeItemView(); }}>
               <option value="recent">Más recientes</option>
               <option value="price_asc">Precio: menor a mayor</option>
               <option value="price_desc">Precio: mayor a menor</option>
@@ -1519,7 +1516,7 @@ export default function JolvoApp() {
       )}
 
       <div className="cat-scroll">
-        <button className={"cat-circle" + (category === "Para ti" ? " active" : "")} onClick={() => setCategory("Para ti")}>
+        <button className={"cat-circle" + (category === "Para ti" ? " active" : "")} onClick={() => { setCategory("Para ti"); if (openItem) closeItemView(); }}>
           <span className="cat-icon-wrap forYou">✨</span>
           <span>Para ti</span>
         </button>
@@ -1527,7 +1524,7 @@ export default function JolvoApp() {
           const Icon = CATEGORY_ICONS[c] || Tag;
           const accent = CATEGORY_COLORS[c] || "#9A9AA3";
           return (
-            <button key={c} className={"cat-circle" + (category === c ? " active" : "")} onClick={() => setCategory(c)}>
+            <button key={c} className={"cat-circle" + (category === c ? " active" : "")} onClick={() => { setCategory(c); if (openItem) closeItemView(); }}>
               <span
                 className="cat-icon-wrap"
                 style={category === c ? {} : { borderColor: accent + "33", background: accent + "14", color: accent }}
@@ -1538,6 +1535,13 @@ export default function JolvoApp() {
             </button>
           );
         })}
+      </div>
+
+      {(!openItem || numCols < 3) && (
+      <>
+      <div className="hero">
+        <h2>Lo que ya no usas, <span className="accent">alguien lo está buscando</span>.</h2>
+        <p>Compra y vende de todo, de segunda mano. Busca, publica, negocia.</p>
       </div>
 
       {loadError && !loading && (
