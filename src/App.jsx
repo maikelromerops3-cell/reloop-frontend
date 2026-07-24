@@ -1468,6 +1468,13 @@ export default function JolvoApp() {
         </div>
       </header>
 
+      {(!openItem || numCols < 3) && (
+        <div className="hero">
+          <h2>Lo que ya no usas, <span className="accent">alguien lo está buscando</span>.</h2>
+          <p>Compra y vende de todo, de segunda mano. Busca, publica, negocia.</p>
+        </div>
+      )}
+
       <div className="search-row">
         <div className="search-box">
           <Search size={15} color="#9A9AA3" />
@@ -1539,11 +1546,6 @@ export default function JolvoApp() {
 
       {(!openItem || numCols < 3) && (
       <>
-      <div className="hero">
-        <h2>Lo que ya no usas, <span className="accent">alguien lo está buscando</span>.</h2>
-        <p>Compra y vende de todo, de segunda mano. Busca, publica, negocia.</p>
-      </div>
-
       {loadError && !loading && (
         <div className="empty-state">
           <RefreshCw size={32} color="#FF4D6D" />
