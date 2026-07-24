@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
-import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning } from "lucide-react";
+import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal } from "lucide-react";
 import {
   fetchItems, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
-  fetchTransactions, createShipmentLabel, confirmReceived, submitReview,
+  fetchTransactions, createShipmentLabel, confirmReceived, submitReview, fetchReviews,
   fetchProfile,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
@@ -140,6 +140,10 @@ export default function JolvoApp() {
   const [loadError, setLoadError] = useState(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Para ti");
+  const [priceFilter, setPriceFilter] = useState({ min: "", max: "" });
+  const [sizeFilter, setSizeFilter] = useState("");
+  const [sortBy, setSortBy] = useState("recent");
+  const [showFilters, setShowFilters] = useState(false);
   const [following, setFollowing] = useState(new Set());
   const [showOffer, setShowOffer] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -312,6 +316,10 @@ export default function JolvoApp() {
   const [otherProfileLoading, setOtherProfileLoading] = useState(false);
 
   function openProfile(uname) {
+    const targetUsername = uname || username;
+    setProfileReviews(null);
+    fetchReviews(targetUsername).then(setProfileReviews).catch(() => {});
+
     if (!uname || uname === username) {
       setViewingProfile(null);
       setOtherProfileData(null);
@@ -329,6 +337,7 @@ export default function JolvoApp() {
       .catch(() => toast.error("No se pudo cargar ese perfil"))
       .finally(() => setOtherProfileLoading(false));
   }
+  const [profileReviews, setProfileReviews] = useState(null);
   const [showProfileDetails, setShowProfileDetails] = useState(false);
   const [userRole, setUserRole] = useState(getRole());
   const isAdmin = userRole === "admin";
@@ -415,15 +424,25 @@ export default function JolvoApp() {
       .catch(() => {});
   }, [loggedIn]);
 
-  // Filtra en el cliente sobre la lista ya cargada del backend (búsqueda y categoría)
+  // Filtra en el cliente sobre la lista ya cargada del backend (búsqueda, categoría, precio, talla y orden)
   useEffect(() => {
-    const filtered = allItems.filter((it) => {
+    let filtered = allItems.filter((it) => {
       const matchQuery = it.title.toLowerCase().includes(query.toLowerCase());
       const matchCat = category === "Todo" || category === "Para ti" || it.category === category;
-      return matchQuery && matchCat;
+      const matchMin = !priceFilter.min || Number(it.price) >= Number(priceFilter.min);
+      const matchMax = !priceFilter.max || Number(it.price) <= Number(priceFilter.max);
+      const matchSize = !sizeFilter || it.size === sizeFilter;
+      return matchQuery && matchCat && matchMin && matchMax && matchSize;
     });
+
+    if (sortBy === "price_asc") {
+      filtered = [...filtered].sort((a, b) => (b.isFeatured - a.isFeatured) || (Number(a.price) - Number(b.price)));
+    } else if (sortBy === "price_desc") {
+      filtered = [...filtered].sort((a, b) => (b.isFeatured - a.isFeatured) || (Number(b.price) - Number(a.price)));
+    }
+
     setItems(filtered);
-  }, [allItems, query, category]);
+  }, [allItems, query, category, priceFilter, sizeFilter, sortBy]);
 
   // Al entrar a la web, si no has iniciado sesión, se muestra el login/registro automáticamente
   useEffect(() => {
@@ -604,6 +623,12 @@ export default function JolvoApp() {
   function openAdminPanel() {
     setShowAdminPanel(true);
     setAdminSection(null); // al abrir, mostramos siempre el menú principal
+    if (isAdmin) {
+      fetchAdminStats().then(setAdminStats).catch(() => {});
+    }
+    fetchAdminDisputes().then(setAdminDisputes).catch(() => {});
+    fetchAdminReports().then(setAdminReports).catch(() => {});
+    fetchAdminSupport().then(setAdminSupport).catch(() => {});
   }
 
   async function loadAdminTab(tab, page = 1) {
@@ -954,6 +979,8 @@ export default function JolvoApp() {
         .mini-featured-badge { position: absolute; top: 4px; left: 4px; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: #121214; font-size: 8px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 6px; }
         .mini-title { font-size: 12px; font-weight: 600; margin: 8px 10px 2px; }
         .mini-price { font-size: 12px; font-weight: 700; color: #4DE1C1; margin: 0 10px 10px; }
+        button { transition: transform .1s ease, opacity .1s ease; }
+        button:active { transform: scale(0.96); }
         .btn { display: flex; align-items: center; gap: 6px; border: none; border-radius: 20px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .btn.primary { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: #121214; }
         .btn.ghost { background: #1F1F24; color: #F2F2F0; border: 1px solid #333; }
@@ -967,7 +994,17 @@ export default function JolvoApp() {
         .hero span.accent { background: linear-gradient(135deg, #FF4D6D, #8C7CFF); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .hero p { color: #9A9AA3; font-size: 14px; }
 
-        .search-row { padding: 20px 26px 4px; }
+        .search-row { padding: 20px 26px 4px; display: flex; gap: 10px; align-items: center; }
+        .filter-toggle-btn { flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; background: #1F1F24; border: 1px solid #333; color: #9A9AA3; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color .15s ease, color .15s ease; }
+        .filter-toggle-btn.active { border-color: #FF4D6D; color: #FF4D6D; background: #FF4D6D14; }
+        .filter-panel { margin: 10px 26px 0; background: #1F1F24; border: 1px solid #29292f; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+        .filter-panel-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .filter-panel-row label { font-size: 12.5px; font-weight: 600; color: #C8C8CE; flex-shrink: 0; }
+        .filter-panel-row select { background: #121214; border: 1px solid #333; color: #F2F2F0; border-radius: 10px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
+        .filter-price-inputs { display: flex; align-items: center; gap: 6px; }
+        .filter-price-inputs input { width: 68px; background: #121214; border: 1px solid #333; color: #F2F2F0; border-radius: 10px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
+        .filter-price-inputs span { color: #6A6A73; }
+        .filter-clear-btn { background: none; border: none; color: #FF4D6D; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; align-self: flex-start; }
         .cat-scroll { display: flex; gap: 18px; padding: 14px 26px 6px; overflow-x: auto; scrollbar-width: none; }
         .cat-scroll::-webkit-scrollbar { display: none; }
         .cat-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; font-family: inherit; flex-shrink: 0; color: #9A9AA3; }
@@ -1022,6 +1059,10 @@ export default function JolvoApp() {
         .league-modal { max-width: 400px; }
         .admin-modal { max-width: 560px; max-height: 84vh; overflow-y: auto; padding: 30px; }
         .admin-panel-btn { color: #8C7CFF; border-color: #8C7CFF55; }
+        .admin-summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; margin-top: 14px; }
+        .admin-summary-box { background: #121214; border: 1px solid #29292f; border-radius: 12px; padding: 10px 8px; text-align: center; }
+        .admin-summary-box strong { display: block; font-size: 16px; font-weight: 800; color: #F2F2F0; }
+        .admin-summary-box span { font-size: 10px; color: #9A9AA3; }
         .admin-menu-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
         .admin-menu-item { display: flex; align-items: center; gap: 14px; background: #121214; border: 1px solid #29292f; border-radius: 16px; padding: 16px 18px; cursor: pointer; font-family: inherit; text-align: left; transition: border-color .15s ease, background .15s ease; }
         .admin-menu-item:hover { border-color: #8C7CFF55; background: #17171c; }
@@ -1216,6 +1257,13 @@ export default function JolvoApp() {
         .ig-link { display: block; font-size: 11px; color: #9A9AA3; text-decoration: none; margin-bottom: 16px; }
         .ig-link:hover { color: #FF4D6D; }
         .rating-breakdown { background: #121214; border: 1px solid #29292f; border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; text-align: left; }
+        .reviews-list { display: flex; flex-direction: column; gap: 10px; text-align: left; margin-bottom: 16px; }
+        .review-row { background: #121214; border: 1px solid #29292f; border-radius: 14px; padding: 12px 14px; }
+        .review-row-top { display: flex; align-items: center; justify-content: space-between; }
+        .review-author { font-size: 12.5px; font-weight: 700; }
+        .review-stars { display: flex; gap: 1px; }
+        .review-comment { font-size: 12.5px; color: #C8C8CE; margin: 6px 0 4px; line-height: 1.4; }
+        .review-date { font-size: 10.5px; color: #6A6A73; }
         .rb-row { font-size: 11px; margin-bottom: 8px; }
         .rb-row:last-child { margin-bottom: 0; }
         .rb-row span { display: block; margin-bottom: 4px; color: #C8C8CE; }
@@ -1397,7 +1445,43 @@ export default function JolvoApp() {
           <Search size={15} color="#9A9AA3" />
           <input placeholder="Buscar prendas..." value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
+        <button className={"filter-toggle-btn" + (showFilters ? " active" : "")} onClick={() => setShowFilters(!showFilters)}>
+          <SlidersHorizontal size={15} />
+        </button>
       </div>
+
+      {showFilters && (
+        <div className="filter-panel">
+          <div className="filter-panel-row">
+            <label>Precio</label>
+            <div className="filter-price-inputs">
+              <input type="number" placeholder="Mín." value={priceFilter.min} onChange={(e) => setPriceFilter((p) => ({ ...p, min: e.target.value }))} />
+              <span>-</span>
+              <input type="number" placeholder="Máx." value={priceFilter.max} onChange={(e) => setPriceFilter((p) => ({ ...p, max: e.target.value }))} />
+            </div>
+          </div>
+          <div className="filter-panel-row">
+            <label>Talla</label>
+            <select value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value)}>
+              <option value="">Todas</option>
+              {SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div className="filter-panel-row">
+            <label>Ordenar por</label>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="recent">Más recientes</option>
+              <option value="price_asc">Precio: menor a mayor</option>
+              <option value="price_desc">Precio: mayor a menor</option>
+            </select>
+          </div>
+          {(priceFilter.min || priceFilter.max || sizeFilter || sortBy !== "recent") && (
+            <button className="filter-clear-btn" onClick={() => { setPriceFilter({ min: "", max: "" }); setSizeFilter(""); setSortBy("recent"); }}>
+              Quitar filtros
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="cat-scroll">
         <button className={"cat-circle" + (category === "Para ti" ? " active" : "")} onClick={() => setCategory("Para ti")}>
@@ -1713,7 +1797,7 @@ export default function JolvoApp() {
         const isOwnProfile = !viewingProfile;
         const profileItems = isOwnProfile ? allItems.filter((i) => i.seller === username) : (otherProfileData?.items || []);
         const profileSold = isOwnProfile ? soldItems : (otherProfileData?.soldItems || []);
-        const profileRating = isOwnProfile ? 4.8 : (otherProfileData?.avgRating || 4.8);
+        const profileRating = profileReviews?.average ? profileReviews.average.toFixed(1) : null;
         return (
         <div className="overlay" onClick={closeProfileView}>
           <div className="modal profile-modal" onClick={(e) => e.stopPropagation()}>
@@ -1736,7 +1820,9 @@ export default function JolvoApp() {
                   <span className="mstone" title="10 ventas"><Trophy size={11} /></span>
                 </span>
               </p>
-              <p className="profile-sub"><Star size={12} fill="#FFC24D" color="#FFC24D" /> {profileRating} · miembro desde 2026</p>
+              <p className="profile-sub">
+                {profileRating ? <><Star size={12} fill="#FFC24D" color="#FFC24D" /> {profileRating} ({profileReviews.total})</> : "Sin valoraciones todavía"} · miembro desde 2026
+              </p>
 
               <div className="profile-quick-actions">
                 {isOwnProfile ? (
@@ -1771,6 +1857,31 @@ export default function JolvoApp() {
                     <div className="rb-row"><span>Fiel a la descripción</span><div className="rb-track"><div className="rb-fill" style={{ width: "90%" }} /></div></div>
                     <div className="rb-row"><span>Rapidez de envío</span><div className="rb-track"><div className="rb-fill" style={{ width: "84%" }} /></div></div>
                   </div>
+
+                  {profileReviews && profileReviews.reviews.length > 0 && (
+                    <>
+                      <p className="profile-section-title">Reseñas ({profileReviews.total})</p>
+                      <div className="reviews-list">
+                        {profileReviews.reviews.map((r) => (
+                          <div key={r.id} className="review-row">
+                            <div className="review-row-top">
+                              <span className="review-author">@{r.authorUsername}</span>
+                              <span className="review-stars">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star key={i} size={11} fill={i < r.rating ? "#FFC24D" : "none"} color="#FFC24D" />
+                                ))}
+                              </span>
+                            </div>
+                            {r.comment && <p className="review-comment">{r.comment}</p>}
+                            <span className="review-date">{new Date(r.createdAt).toLocaleDateString("es-ES")}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {profileReviews && profileReviews.reviews.length === 0 && (
+                    <p className="empty-tab">Aún no tiene ninguna reseña.</p>
+                  )}
                 </div>
               )}
 
@@ -2182,6 +2293,15 @@ export default function JolvoApp() {
                 <div className="league-header">
                   <ShieldCheck size={20} color="#8C7CFF" />
                   <p className="auth-title" style={{ margin: 0 }}>Panel de administración</p>
+                </div>
+
+                <div className="admin-summary-row">
+                  {isAdmin && adminStats && (
+                    <div className="admin-summary-box"><strong>{adminStats.totalCommission.toFixed(2)}€</strong><span>Ganado</span></div>
+                  )}
+                  <div className="admin-summary-box"><strong>{adminDisputes.length}</strong><span>Disputas</span></div>
+                  <div className="admin-summary-box"><strong>{adminReports.filter((r) => r.status === "pending").length}</strong><span>Denuncias</span></div>
+                  <div className="admin-summary-box"><strong>{adminSupport.filter((m) => m.status === "open").length}</strong><span>Soporte</span></div>
                 </div>
 
                 <div className="admin-menu-list">

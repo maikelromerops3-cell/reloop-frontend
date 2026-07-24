@@ -5,11 +5,14 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function fetchItems({ query, category, size } = {}) {
+export async function fetchItems({ query, category, size, minPrice, maxPrice, sortBy } = {}) {
   const params = new URLSearchParams();
   if (query) params.set("query", query);
   if (category && category !== "Todo") params.set("category", category);
   if (size) params.set("size", size);
+  if (minPrice) params.set("minPrice", minPrice);
+  if (maxPrice) params.set("maxPrice", maxPrice);
+  if (sortBy) params.set("sortBy", sortBy);
 
   const res = await fetch(`${API_URL}/items?${params}`);
   if (!res.ok) throw new Error("No se pudieron cargar los artículos");
@@ -200,6 +203,12 @@ export async function submitReview(targetUsername, rating, comment) {
     body: JSON.stringify({ targetUsername, rating, comment }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la valoración");
+  return res.json();
+}
+
+export async function fetchReviews(username) {
+  const res = await fetch(`${API_URL}/reviews/${username}`);
+  if (!res.ok) throw new Error("No se pudieron cargar las valoraciones");
   return res.json();
 }
 
