@@ -2966,7 +2966,7 @@ export default function JolvoApp() {
               <>
                 <p className="profile-section-title related-heading">Más de @{openItem.seller}</p>
                 <div className="mini-row">
-                  {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).map((i, idx) => (
+                  {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).slice(0, 5).map((i, idx) => (
                     <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
                       <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
                       <p className="mini-title">{i.title}</p>
@@ -2981,7 +2981,7 @@ export default function JolvoApp() {
               <>
                 <p className="profile-section-title related-heading">Artículos parecidos</p>
                 <div className="mini-row">
-                  {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).slice(0, 10).map((i, idx) => (
+                  {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).slice(0, 5).map((i, idx) => (
                     <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
                       <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
                       <p className="mini-title">{i.title}</p>
