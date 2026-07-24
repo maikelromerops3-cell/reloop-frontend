@@ -985,6 +985,9 @@ export default function JolvoApp() {
         .profile-tabs { margin-bottom: 16px; }
         .empty-tab { font-size: 12px; color: #6A6A73; padding: 20px 0; }
         .mini-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; text-align: left; }
+        .mini-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+        .mini-row .mini-card { flex: 0 0 160px; }
+        .related-heading { margin-top: 20px; }
         .mini-card { background: #121214; border: 1px solid #29292f; border-radius: 14px; overflow: hidden; cursor: pointer; transition: transform .12s ease, border-color .12s ease; }
         .mini-card:hover { transform: translateY(-2px); border-color: #4DE1C155; }
         .profile-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #9A9AA3; margin: 4px 0 10px; }
@@ -1334,7 +1337,7 @@ export default function JolvoApp() {
         .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: #C8C8CE; font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 0; margin-bottom: 16px; font-family: inherit; }
         .back-btn:hover { color: #F2F2F0; }
         .item-page-grid { display: flex; gap: 40px; align-items: flex-start; }
-        .item-page-gallery { flex: 1.1; min-width: 0; position: sticky; top: 90px; }
+        .item-page-gallery { flex: 1.1; min-width: 0; }
         .item-page-info { flex: 1; min-width: 0; max-width: 440px; }
         @media (min-width: 781px) {
           .item-page-info { background: #17171b; border: 1px solid #24242a; border-radius: 22px; padding: 26px 28px; }
@@ -1346,7 +1349,7 @@ export default function JolvoApp() {
           .item-page-gallery { position: static; width: 100%; }
           .item-page-info { max-width: 100%; }
         }
-        .item-page .detail-media { height: 480px; border-radius: 20px; }
+        .item-page .detail-media { height: 480px; border-radius: 20px; position: sticky; top: 90px; }
         @media (max-width: 780px) {
           .item-page .detail-media { height: 340px; border-radius: 16px; }
         }
@@ -2955,6 +2958,40 @@ export default function JolvoApp() {
           </div>
         );
 
+        const relatedEl = (
+          <>
+            {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).length > 0 && (
+              <>
+                <p className="profile-section-title related-heading">Más de @{openItem.seller}</p>
+                <div className="mini-row">
+                  {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).map((i, idx) => (
+                    <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
+                      <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
+                      <p className="mini-title">{i.title}</p>
+                      <p className="mini-price">{i.price}€</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).length > 0 && (
+              <>
+                <p className="profile-section-title related-heading">Artículos parecidos</p>
+                <div className="mini-row">
+                  {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).slice(0, 10).map((i, idx) => (
+                    <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
+                      <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
+                      <p className="mini-title">{i.title}</p>
+                      <p className="mini-price">{i.price}€</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        );
+
         const infoEl = (
           <>
             <div className="detail-top">
@@ -3033,41 +3070,6 @@ export default function JolvoApp() {
               )}
             </div>
 
-            {(allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).length > 0 ||
-              allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).length > 0) && (
-              <div className="related-box">
-                {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).length > 0 && (
-                  <>
-                    <p className="profile-section-title">Más de @{openItem.seller}</p>
-                    <div className="mini-grid">
-                      {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).map((i, idx) => (
-                        <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
-                          <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
-                          <p className="mini-title">{i.title}</p>
-                          <p className="mini-price">{i.price}€</p>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).length > 0 && (
-                  <>
-                    <p className="profile-section-title">Artículos parecidos</p>
-                    <div className="mini-grid">
-                      {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).slice(0, 6).map((i, idx) => (
-                        <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
-                          <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
-                          <p className="mini-title">{i.title}</p>
-                          <p className="mini-price">{i.price}€</p>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
             {isAdmin && (
               <div className="admin-toolbar">
                 <span className="admin-toolbar-label">Admin</span>
@@ -3086,7 +3088,10 @@ export default function JolvoApp() {
           <div className="item-page">
             <button className="back-btn" onClick={closeItemView}><ArrowLeft size={16} /> Volver</button>
             <div className="item-page-grid">
-              <div className="item-page-gallery">{galleryEl}</div>
+              <div className="item-page-gallery">
+                {galleryEl}
+                {relatedEl}
+              </div>
               <div className="item-page-info">{infoEl}</div>
             </div>
           </div>
@@ -3095,7 +3100,7 @@ export default function JolvoApp() {
             <div className="modal detail-modal" onClick={(e) => e.stopPropagation()}>
               <button className="close-btn dark-close" onClick={closeItemView}><X size={14} /></button>
               {galleryEl}
-              <div className="detail-body">{infoEl}</div>
+              <div className="detail-body">{infoEl}{relatedEl}</div>
             </div>
           </div>
         );
