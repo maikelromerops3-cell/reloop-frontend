@@ -20,6 +20,7 @@ import {
 } from "./api";
 
 const CATEGORY_ICONS = { "Todo": LayoutGrid, "Moda": Shirt, "Electrónica": Zap, "Hogar": PackageOpen, "Deporte": Footprints, "Juguetes y ocio": Watch, "Otros": Tag };
+const CATEGORY_COLORS = { "Todo": "#C8C8CE", "Moda": "#FF4D6D", "Electrónica": "#4DA8FF", "Hogar": "#FFC24D", "Deporte": "#4DE1C1", "Juguetes y ocio": "#8C7CFF", "Otros": "#FF8A4D" };
 const CATEGORIES = ["Todo", "Moda", "Electrónica", "Hogar", "Deporte", "Juguetes y ocio", "Otros"];
 function buildFaqItems(s) {
   return [
@@ -469,6 +470,13 @@ export default function JolvoApp() {
   }
   function closeItemView() {
     setOpenItem(null);
+    navigate("/");
+  }
+  function goHome() {
+    setOpenItem(null);
+    setShowProfile(false);
+    setCategory("Para ti");
+    setQuery("");
     navigate("/");
   }
   function viewProfile() {
@@ -1035,13 +1043,13 @@ export default function JolvoApp() {
         }
 
         .col { flex: 1; min-width: 0; max-width: 300px; display: flex; flex-direction: column; gap: 14px; }
-        .card { background: #1A1A1E; border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform .15s ease; border: 1px solid #29292f; }
-        .card:hover { transform: translateY(-4px); }
+        .card { background: #1A1A1E; border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; border: 1px solid #29292f; }
+        .card:hover { transform: translateY(-4px); border-color: #FF4D6D55; box-shadow: 0 12px 30px -14px #FF4D6D33; }
         .card-media { height: 150px; position: relative; background-size: cover; background-position: center; flex-shrink: 0; }
         .heart { border: none; background: #00000055; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; position: absolute; top: 10px; right: 10px; }
         .new-ribbon { position: absolute; top: 10px; left: 10px; background: #4DE1C1; color: #121214; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 10px; z-index: 2; }
         .featured-ribbon { position: absolute; left: 10px; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: #121214; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 10px; z-index: 2; }
-        .price-pill { position: absolute; bottom: 10px; left: 10px; background: #121214cc; border: 1px solid #333; border-radius: 14px; padding: 4px 10px; font-size: 13px; font-weight: 700; z-index: 2; }
+        .price-pill { position: absolute; bottom: 10px; left: 10px; background: #121214cc; border: 1px solid #333; border-radius: 14px; padding: 4px 10px; font-size: 13px; font-weight: 700; z-index: 2; color: #4DE1C1; }
         .card-info { padding: 12px 14px 14px; height: 96px; display: flex; flex-direction: column; justify-content: flex-start; overflow: hidden; }
         .card-info h3 { font-size: 14px; margin: 0 0 4px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 35px; }
         .card-info p { font-size: 12px; color: #9A9AA3; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1320,6 +1328,11 @@ export default function JolvoApp() {
         .item-page-grid { display: flex; gap: 40px; align-items: flex-start; }
         .item-page-gallery { flex: 1.1; min-width: 0; position: sticky; top: 90px; }
         .item-page-info { flex: 1; min-width: 0; max-width: 440px; }
+        @media (min-width: 781px) {
+          .item-page-info { background: #17171b; border: 1px solid #24242a; border-radius: 22px; padding: 26px 28px; }
+          .item-page-gallery .detail-media { box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6); }
+          .item-page .detail-price { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        }
         @media (max-width: 780px) {
           .item-page-grid { flex-direction: column; }
           .item-page-gallery { position: static; width: 100%; }
@@ -1383,7 +1396,7 @@ export default function JolvoApp() {
       `}</style>
 
       <header className="top">
-        <div className="brand">
+        <div className="brand" onClick={goHome} style={{ cursor: "pointer" }}>
           <div className="brand-mark">
             <svg width="18" height="18" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
               <path d="M 54 30 L 54 62 A 13 13 0 1 1 39 56" fill="none" stroke="#121214" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" />
@@ -1490,9 +1503,15 @@ export default function JolvoApp() {
         </button>
         {["Todo", ...platformSettings.categories].map((c) => {
           const Icon = CATEGORY_ICONS[c] || Tag;
+          const accent = CATEGORY_COLORS[c] || "#9A9AA3";
           return (
             <button key={c} className={"cat-circle" + (category === c ? " active" : "")} onClick={() => setCategory(c)}>
-              <span className="cat-icon-wrap"><Icon size={18} /></span>
+              <span
+                className="cat-icon-wrap"
+                style={category === c ? {} : { borderColor: accent + "33", background: accent + "14", color: accent }}
+              >
+                <Icon size={18} />
+              </span>
               <span>{c}</span>
             </button>
           );
