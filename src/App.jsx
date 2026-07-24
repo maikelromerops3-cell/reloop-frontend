@@ -184,7 +184,7 @@ export default function JolvoApp() {
   const [reviewComment, setReviewComment] = useState("");
 
   const [editingItem, setEditingItem] = useState(null);
-  const [showLegal, setShowLegal] = useState(null); // "terms" | "privacy" | "cookies" | null
+  const [showLegal, setShowLegal] = useState(null); // "about" | "terms" | "privacy" | "cookies" | null
   const [showCookieBanner, setShowCookieBanner] = useState(!localStorage.getItem("reloop_cookies_accepted"));
   const [notifications, setNotifications] = useState([]);
   const LEADERBOARD = [
@@ -1582,6 +1582,8 @@ export default function JolvoApp() {
       )}
 
       <footer className="site-footer">
+        <button onClick={() => setShowLegal("about")}>Quiénes somos</button>
+        <span>·</span>
         <button onClick={openHelpCenter}>Ayuda</button>
         <span>·</span>
         <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
@@ -1609,6 +1611,18 @@ export default function JolvoApp() {
         <div className="overlay" onClick={() => setShowLegal(null)}>
           <div className="modal legal-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={() => setShowLegal(null)}><X size={14} /></button>
+            {showLegal === "about" && (
+              <>
+                <p className="auth-title">Quiénes somos</p>
+                <div className="legal-text">
+                  <p>Jolvo nació con una idea sencilla: lo que para ti ya no tiene uso, para otra persona puede ser justo lo que estaba buscando.</p>
+                  <p>Somos un mercado de segunda mano donde puedes comprar y vender de todo — ropa, electrónica, artículos para el hogar y mucho más — de forma fácil, segura y a un clic de distancia.</p>
+                  <p><strong>Nuestra misión</strong> es alargar la vida de las cosas y hacer que reutilizar sea la opción más cómoda, no la más difícil. Cada compra en Jolvo es una prenda o un objeto que no termina en la basura.</p>
+                  <p><strong>Cómo funciona:</strong> publica lo que ya no uses en un par de minutos, negocia el precio si quieres, y cuando se cierre la venta nosotros nos encargamos de que el pago y el envío sean seguros para las dos partes.</p>
+                  <p style={{ color: "#6A6A73", fontSize: 11, marginTop: 16 }}>Este es un texto de ejemplo — ajústalo con la historia real de tu proyecto cuando quieras.</p>
+                </div>
+              </>
+            )}
             {showLegal === "terms" && (
               <>
                 <p className="auth-title">Términos y condiciones</p>
