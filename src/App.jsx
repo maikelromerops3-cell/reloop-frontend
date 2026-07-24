@@ -1334,6 +1334,12 @@ export default function JolvoApp() {
         .seller-row { font-size: 13px; color: #9A9AA3; margin-bottom: 18px; }
         .detail-modal { max-width: 400px; padding: 0; }
         .item-page { padding: 20px 26px 100px; max-width: 1100px; margin: 0 auto; }
+        @media (min-width: 1500px) {
+          .item-page { max-width: 1400px; }
+        }
+        @media (min-width: 1900px) {
+          .item-page { max-width: 1600px; }
+        }
         .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: #C8C8CE; font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 0; margin-bottom: 16px; font-family: inherit; }
         .back-btn:hover { color: #F2F2F0; }
         .item-page-grid { display: flex; gap: 40px; align-items: flex-start; }
@@ -1341,6 +1347,9 @@ export default function JolvoApp() {
         .related-full { margin-top: 30px; }
         .related-full .mini-row .mini-card { flex: 0 0 180px; }
         .item-page-info { flex: 1; min-width: 0; max-width: 440px; }
+        @media (min-width: 1500px) {
+          .item-page-info { max-width: 500px; }
+        }
         @media (min-width: 781px) {
           .item-page-info { background: #17171b; border: 1px solid #24242a; border-radius: 22px; padding: 26px 28px; }
           .item-page-gallery .detail-media { box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6); }
