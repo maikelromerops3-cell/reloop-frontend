@@ -1338,6 +1338,8 @@ export default function JolvoApp() {
         .back-btn:hover { color: #F2F2F0; }
         .item-page-grid { display: flex; gap: 40px; align-items: flex-start; }
         .item-page-gallery { flex: 1.1; min-width: 0; }
+        .related-full { margin-top: 30px; }
+        .related-full .mini-row .mini-card { flex: 0 0 180px; }
         .item-page-info { flex: 1; min-width: 0; max-width: 440px; }
         @media (min-width: 781px) {
           .item-page-info { background: #17171b; border: 1px solid #24242a; border-radius: 22px; padding: 26px 28px; }
@@ -3090,10 +3092,10 @@ export default function JolvoApp() {
             <div className="item-page-grid">
               <div className="item-page-gallery">
                 {galleryEl}
-                {relatedEl}
               </div>
               <div className="item-page-info">{infoEl}</div>
             </div>
+            <div className="related-full">{relatedEl}</div>
           </div>
         ) : (
           <div className="overlay" onClick={closeItemView}>
