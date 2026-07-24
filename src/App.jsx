@@ -35,6 +35,12 @@ function buildFaqItems(s) {
 const SIZES = ["XS", "S", "M", "L", "XL"];
 const SHOE_SIZES = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"];
 const PALETTE = ["#FF4D6D", "#4DE1C1", "#FFC24D", "#8C7CFF", "#4DA8FF", "#FF8A4D"];
+function miniSwatchStyle(item, idx) {
+  const photo = (item.images && item.images[0]) || item.photo;
+  return photo
+    ? { backgroundImage: `url(${photo})`, backgroundSize: "cover", backgroundPosition: "center" }
+    : { background: PALETTE[idx % PALETTE.length] };
+}
 
 const AUTH_PAGE_STYLES = `
   * { box-sizing: border-box; }
@@ -1185,6 +1191,8 @@ export default function JolvoApp() {
         .stripe-connect-btn { width: 100%; border: none; border-radius: 12px; background: linear-gradient(135deg, #635BFF, #4A42E8); color: #fff; padding: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
         .orders-modal { max-width: 400px; }
         .profile-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #9A9AA3; margin: 16px 0 10px; }
+        .related-box { background: #17171b; border: 1px solid #24242a; border-radius: 20px; padding: 20px 22px; margin-top: 16px; }
+        .related-box .profile-section-title:first-child { margin-top: 0; }
         .order-card { background: #121214; border: 1px solid #29292f; border-radius: 16px; padding: 14px; margin-bottom: 10px; }
         .order-top { display: flex; justify-content: space-between; gap: 8px; }
         .order-title { font-size: 13px; font-weight: 700; margin: 0; }
@@ -1938,7 +1946,7 @@ export default function JolvoApp() {
                   : <div className="mini-grid">
                       {profileItems.map((i, idx) => (
                         <div key={i.id} className="mini-card own-card" onClick={() => { setShowProfile(false); viewItem(i); }}>
-                          <div className="mini-swatch" style={{ background: PALETTE[idx % PALETTE.length] }}>
+                          <div className="mini-swatch" style={miniSwatchStyle(i, idx)}>
                             {i.featured && <span className="mini-featured-badge">Destacado</span>}
                           </div>
                           <p className="mini-title">{i.title}</p>
@@ -1963,7 +1971,7 @@ export default function JolvoApp() {
                   : <div className="mini-grid">
                       {profileSold.map((s, idx) => (
                         <div key={s.id} className="mini-card sold">
-                          <div className="mini-swatch" style={{ background: PALETTE[idx % PALETTE.length] }} />
+                          <div className="mini-swatch" style={miniSwatchStyle(s, idx)} />
                           <p className="mini-title">{s.title}</p>
                           <p className="mini-price">{s.price}€</p>
                         </div>
@@ -1977,7 +1985,7 @@ export default function JolvoApp() {
                   : <div className="mini-grid">
                       {allItems.filter((i) => saved.has(i.id)).map((i, idx) => (
                         <div key={i.id} className="mini-card">
-                          <div className="mini-swatch" style={{ background: PALETTE[idx % PALETTE.length] }} />
+                          <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
                           <p className="mini-title">{i.title}</p>
                           <p className="mini-price">{i.price}€</p>
                         </div>
@@ -3025,34 +3033,39 @@ export default function JolvoApp() {
               )}
             </div>
 
-            {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).length > 0 && (
-              <>
-                <p className="profile-section-title">Más de @{openItem.seller}</p>
-                <div className="mini-grid">
-                  {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).map((i, idx) => (
-                    <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
-                      <div className="mini-swatch" style={{ background: PALETTE[idx % PALETTE.length] }} />
-                      <p className="mini-title">{i.title}</p>
-                      <p className="mini-price">{i.price}€</p>
+            {(allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).length > 0 ||
+              allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).length > 0) && (
+              <div className="related-box">
+                {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).length > 0 && (
+                  <>
+                    <p className="profile-section-title">Más de @{openItem.seller}</p>
+                    <div className="mini-grid">
+                      {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).map((i, idx) => (
+                        <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
+                          <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
+                          <p className="mini-title">{i.title}</p>
+                          <p className="mini-price">{i.price}€</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
+                  </>
+                )}
 
-            {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).length > 0 && (
-              <>
-                <p className="profile-section-title">Artículos parecidos</p>
-                <div className="mini-grid">
-                  {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).slice(0, 6).map((i, idx) => (
-                    <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
-                      <div className="mini-swatch" style={{ background: PALETTE[idx % PALETTE.length] }} />
-                      <p className="mini-title">{i.title}</p>
-                      <p className="mini-price">{i.price}€</p>
+                {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).length > 0 && (
+                  <>
+                    <p className="profile-section-title">Artículos parecidos</p>
+                    <div className="mini-grid">
+                      {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).slice(0, 6).map((i, idx) => (
+                        <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
+                          <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
+                          <p className="mini-title">{i.title}</p>
+                          <p className="mini-price">{i.price}€</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </>
+                  </>
+                )}
+              </div>
             )}
 
             {isAdmin && (
