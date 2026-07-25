@@ -52,6 +52,20 @@ export async function login(email, password) {
   return data.user;
 }
 
+export async function loginWithGoogle(credential) {
+  const res = await fetch(`${API_URL}/auth/google`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ credential }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "Error al iniciar sesión con Google");
+  const data = await res.json();
+  localStorage.setItem("reloop_token", data.token);
+  localStorage.setItem("reloop_username", data.user.username);
+  localStorage.setItem("reloop_role", data.user.role || "user");
+  return data;
+}
+
 export async function register(email, password, username, city) {
   const res = await fetch(`${API_URL}/auth/register`, {
     method: "POST",

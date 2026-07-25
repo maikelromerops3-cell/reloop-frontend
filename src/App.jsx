@@ -8,7 +8,7 @@ import {
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, submitReview, fetchReviews,
-  fetchProfile, updateMyLocation,
+  fetchProfile, updateMyLocation, loginWithGoogle,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
@@ -1016,6 +1016,34 @@ export default function JolvoApp() {
     }
   }
 
+  async function handleGoogleCredential(response) {
+    try {
+      const data = await loginWithGoogle(response.credential);
+      setUsername(data.user.username);
+      setLoggedIn(true);
+      setUserRole(data.user.role || "user");
+      setShowAuth(false);
+      toast.success(`¡Bienvenido, @${data.user.username}!`);
+      if (data.needsCity) {
+        toast("Añade tu ciudad desde tu perfil para ver la distancia a otros artículos", { icon: "📍", duration: 6000 });
+      }
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  useEffect(() => {
+    if (!showAuth) return;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId || !window.google) return;
+    window.google.accounts.id.initialize({ client_id: clientId, callback: handleGoogleCredential });
+    const el = document.getElementById("google-signin-btn");
+    if (el) {
+      el.innerHTML = "";
+      window.google.accounts.id.renderButton(el, { theme: "filled_black", size: "large", width: 320, text: "continue_with" });
+    }
+  }, [showAuth]);
+
   async function handleAuth(e) {
     e.preventDefault();
     setAuthError(null);
@@ -1111,6 +1139,7 @@ export default function JolvoApp() {
         .banner-texture { position: absolute; inset: 0; background-image: radial-gradient(#ffffff22 1px, transparent 1px); background-size: 10px 10px; }
         .profile-content { padding: 0 22px 24px; text-align: center; margin-top: -44px; }
         .profile-avatar-lg { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: #121214; margin: 0 auto 10px; border: 4px solid #1A1A1E; box-shadow: 0 0 0 2px #29292f; }
+        .edit-avatar-row { display: flex; align-items: center; gap: 14px; margin: 14px 0 6px; }
         .profile-name { font-size: 18px; font-weight: 700; margin: 0; }
         .profile-sub { font-size: 12px; color: #9A9AA3; margin: 4px 0 14px; display: flex; align-items: center; justify-content: center; gap: 4px; }
         .profile-quick-actions { display: flex; justify-content: center; gap: 8px; margin: 4px 0 16px; }
@@ -1482,6 +1511,7 @@ export default function JolvoApp() {
         @media (max-width: 780px) {
           .detail-overlay { padding: 0; align-items: stretch; }
           .detail-overlay .detail-modal { max-width: 100%; width: 100%; height: 100vh; height: 100dvh; border-radius: 0; margin: 0; max-height: none; }
+          .detail-overlay .detail-modal.auth-modal { display: flex; flex-direction: column; justify-content: center; padding: 30px 32px; background: radial-gradient(circle at 50% 0%, #FF4D6D22, transparent 60%), #1A1A1E; }
         }
         .item-page { padding: 20px 26px 100px; max-width: 1100px; margin: 0 auto; }
         @media (min-width: 1500px) {
@@ -1542,7 +1572,16 @@ export default function JolvoApp() {
         .toggle-link { font-size: 12px; margin-top: 14px; text-align: center; cursor: pointer; color: #4DE1C1; }
         .auth-modal { max-width: 380px; }
         .auth-brand { text-align: center; margin-bottom: 20px; }
+        .social-auth-col { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 14px; }
+        .google-signin-slot { display: flex; justify-content: center; width: 100%; min-height: 40px; }
+        .apple-signin-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 320px; padding: 10px; border-radius: 10px; border: 1px solid #333; background: #000; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .auth-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; color: #6A6A73; font-size: 11px; }
+        .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: #29292f; }
         .auth-mark { margin: 0 auto 12px; }
+        @media (max-width: 780px) {
+          .detail-overlay .auth-mark { width: 46px; height: 46px; }
+          .detail-overlay .auth-mark svg, .detail-overlay .auth-mark img { width: 22px; height: 22px; }
+        }
         .auth-title { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
         .auth-subtitle { font-size: 12px; color: #9A9AA3; margin: 0; }
         .tabs { display: flex; background: #121214; border: 1px solid #29292f; border-radius: 14px; padding: 4px; margin-bottom: 6px; }
@@ -1994,6 +2033,19 @@ export default function JolvoApp() {
               <button className={"tab" + (authMode === "login" ? " active" : "")} onClick={() => setAuthMode("login")}>Entrar</button>
               <button className={"tab" + (authMode === "register" ? " active" : "")} onClick={() => setAuthMode("register")}>Crear cuenta</button>
             </div>
+
+            <div className="social-auth-col">
+              <div id="google-signin-btn" className="google-signin-slot" />
+              <button
+                type="button"
+                className="apple-signin-btn"
+                onClick={() => toast("El inicio de sesión con Apple todavía no está disponible", { icon: "🍎" })}
+              >
+                <User size={15} /> Continuar con Apple
+              </button>
+            </div>
+
+            <div className="auth-divider"><span>o con tu email</span></div>
 
             <form onSubmit={handleAuth}>
               {authMode === "register" && (
@@ -2978,6 +3030,26 @@ export default function JolvoApp() {
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 380 }}>
             <button className="close-btn" onClick={() => setShowEditProfile(false)}><X size={14} /></button>
             <p className="auth-title">Editar perfil</p>
+
+            <div className="edit-avatar-row">
+              <div
+                className="profile-avatar-lg"
+                style={
+                  myAvatarUrl
+                    ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover", backgroundPosition: "center", margin: 0 }
+                    : { background: PALETTE[username.length % PALETTE.length], margin: 0 }
+                }
+              >
+                {!myAvatarUrl && username[0]?.toUpperCase()}
+              </div>
+              <div>
+                <input type="file" accept="image/*" id="avatar-upload-input-modal" style={{ display: "none" }} onChange={(e) => uploadAvatarPhoto(e.target.files[0])} />
+                <button type="button" className="btn ghost" onClick={() => document.getElementById("avatar-upload-input-modal").click()}>
+                  <ImagePlus size={13} /> Cambiar foto
+                </button>
+              </div>
+            </div>
+
             <label>Sobre ti</label>
             <textarea
               className="report-textarea"
@@ -3366,10 +3438,12 @@ export default function JolvoApp() {
               <div className="item-page-gallery">
                 {galleryEl}
               </div>
-              <div className="item-page-info">{infoEl}</div>
+              <div className="item-page-info">
+                {infoEl}
+                {mapEl}
+              </div>
             </div>
             <div className="related-full">
-              {mapEl}
               {relatedEl}
             </div>
           </div>
