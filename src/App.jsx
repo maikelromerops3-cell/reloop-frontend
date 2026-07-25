@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
-import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck } from "lucide-react";
+import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn } from "lucide-react";
 import {
   fetchItems, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, submitReview, fetchReviews,
-  fetchProfile,
+  fetchProfile, updateMyLocation,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
@@ -44,7 +44,7 @@ function miniSwatchStyle(item, idx) {
 
 const AUTH_PAGE_STYLES = `
   * { box-sizing: border-box; }
-  body { margin: 0; }
+  html, body { margin: 0; background: #121214; }
   .app { background: #121214; font-family: 'Helvetica Neue', Arial, sans-serif; color: #F2F2F0; }
   .modal { background: #1A1A1E; border: 1px solid #29292f; border-radius: 22px; max-width: 380px; width: 100%; padding: 30px 26px; margin: 20px; }
   .auth-title { font-family: Georgia, serif; font-size: 20px; font-weight: 700; margin: 0 0 18px; text-align: center; }
@@ -83,11 +83,36 @@ function normalizeItem(raw) {
     seller: raw.seller?.username || raw.seller || raw.sellerId,
     photo: raw.images && raw.images.length ? raw.images[0] : `https://picsum.photos/seed/${raw.id}/500/500`,
     minutesAgo,
-    city: raw.city || null,
+    city: raw.seller?.city || null,
+    sellerLat: raw.seller?.latitude ?? null,
+    sellerLng: raw.seller?.longitude ?? null,
+    distanceKm: raw.distanceKm ?? null,
     verified: raw.verified || false,
     featured: raw.isFeatured || (raw.featuredUntil ? new Date(raw.featuredUntil) > new Date() : false),
     featuredUntil: raw.featuredUntil || null,
   };
+}
+
+function MiniMap({ lat, lng, seed }) {
+  if (lat == null || lng == null) return null;
+  // Pequeño desplazamiento fijo (según el artículo) para no enseñar la ubicación exacta del vendedor
+  function jitter(salt) {
+    let h = 0;
+    const s = String(seed);
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return ((Math.abs(h + salt) % 200) - 100) / 10000; // aprox. ±1 km
+  }
+  const jLat = lat + jitter(1);
+  const jLng = lng + jitter(2);
+  const delta = 0.035;
+  const bbox = `${jLng - delta},${jLat - delta},${jLng + delta},${jLat + delta}`;
+  const src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${jLat},${jLng}`;
+  return (
+    <div className="mini-map">
+      <iframe src={src} title="Ubicación aproximada" loading="lazy" />
+      <p className="mini-map-note">Ubicación aproximada, no exacta</p>
+    </div>
+  );
 }
 
 function ItemCard({ item, onOpen, index, saved, toggleSave }) {
@@ -104,7 +129,7 @@ function ItemCard({ item, onOpen, index, saved, toggleSave }) {
       <div className="card-info">
         <h3>{item.title}</h3>
         <p>{item.size ? `${item.size} · ` : ""}{item.condition}</p>
-        <p className="card-city"><MapPin size={10} /> {item.city ? `${item.city} · ` : ""}{timeAgo(item.minutesAgo)}</p>
+        <p className="card-city"><MapPin size={10} /> {item.distanceKm !== null ? `a ${item.distanceKm < 1 ? "menos de 1" : Math.round(item.distanceKm)} km · ` : item.city ? `${item.city} · ` : ""}{timeAgo(item.minutesAgo)}</p>
       </div>
     </div>
   );
@@ -149,8 +174,18 @@ export default function JolvoApp() {
   const [category, setCategory] = useState("Para ti");
   const [priceFilter, setPriceFilter] = useState({ min: "", max: "" });
   const [sizeFilter, setSizeFilter] = useState("");
+  const [distanceFilter, setDistanceFilter] = useState("");
   const [sortBy, setSortBy] = useState("recent");
   const [showFilters, setShowFilters] = useState(false);
+  const [myLocation, setMyLocation] = useState(() => {
+    try {
+      const saved = localStorage.getItem("reloop_location");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [locatingMe, setLocatingMe] = useState(false);
   const [following, setFollowing] = useState(new Set());
   const [showOffer, setShowOffer] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -410,14 +445,14 @@ export default function JolvoApp() {
     setLoading(true);
     setLoadError(null);
     try {
-      const data = await fetchItems({});
+      const data = await fetchItems(myLocation ? { lat: myLocation.latitude, lng: myLocation.longitude } : {});
       setAllItems(data.map(normalizeItem));
     } catch (err) {
       setLoadError("No se pudo conectar con el servidor. Puede que esté reiniciándose o que no esté disponible ahora mismo.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [myLocation]);
 
   useEffect(() => {
     loadAllItems();
@@ -431,7 +466,7 @@ export default function JolvoApp() {
       .catch(() => {});
   }, [loggedIn]);
 
-  // Filtra en el cliente sobre la lista ya cargada del backend (búsqueda, categoría, precio, talla y orden)
+  // Filtra en el cliente sobre la lista ya cargada del backend (búsqueda, categoría, precio, talla, distancia y orden)
   useEffect(() => {
     let filtered = allItems.filter((it) => {
       const matchQuery = it.title.toLowerCase().includes(query.toLowerCase());
@@ -439,17 +474,20 @@ export default function JolvoApp() {
       const matchMin = !priceFilter.min || Number(it.price) >= Number(priceFilter.min);
       const matchMax = !priceFilter.max || Number(it.price) <= Number(priceFilter.max);
       const matchSize = !sizeFilter || it.size === sizeFilter;
-      return matchQuery && matchCat && matchMin && matchMax && matchSize;
+      const matchDistance = !distanceFilter || (it.distanceKm !== null && it.distanceKm <= Number(distanceFilter));
+      return matchQuery && matchCat && matchMin && matchMax && matchSize && matchDistance;
     });
 
     if (sortBy === "price_asc") {
       filtered = [...filtered].sort((a, b) => (b.isFeatured - a.isFeatured) || (Number(a.price) - Number(b.price)));
     } else if (sortBy === "price_desc") {
       filtered = [...filtered].sort((a, b) => (b.isFeatured - a.isFeatured) || (Number(b.price) - Number(a.price)));
+    } else if (sortBy === "distance") {
+      filtered = [...filtered].sort((a, b) => (b.isFeatured - a.isFeatured) || ((a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity)));
     }
 
     setItems(filtered);
-  }, [allItems, query, category, priceFilter, sizeFilter, sortBy]);
+  }, [allItems, query, category, priceFilter, sizeFilter, distanceFilter, sortBy]);
 
   // Al entrar a la web, si no has iniciado sesión, se muestra el login/registro automáticamente
   useEffect(() => {
@@ -485,6 +523,48 @@ export default function JolvoApp() {
     setQuery("");
     navigate("/");
   }
+
+  function detectMyLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Tu navegador no permite compartir la ubicación");
+      return;
+    }
+    setLocatingMe(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        let city = null;
+        try {
+          // Servicio gratuito, sin necesidad de clave, para convertir coordenadas en un nombre de ciudad
+          const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=es`);
+          const data = await res.json();
+          city = data.city || data.locality || null;
+        } catch {
+          // Si falla, seguimos igualmente solo con las coordenadas
+        }
+
+        const location = { latitude, longitude, city };
+        setMyLocation(location);
+        localStorage.setItem("reloop_location", JSON.stringify(location));
+
+        if (loggedIn) {
+          try {
+            await updateMyLocation(location);
+          } catch (err) {
+            toast.error(err.message);
+          }
+        }
+
+        toast.success(city ? `Ubicación guardada: ${city}` : "Ubicación guardada");
+        setLocatingMe(false);
+      },
+      () => {
+        toast.error("No hemos podido acceder a tu ubicación. Revisa los permisos del navegador.");
+        setLocatingMe(false);
+      }
+    );
+  }
+
   function viewProfile() {
     openProfile(username);
     navigate(`/perfil/${username}`);
@@ -955,13 +1035,17 @@ export default function JolvoApp() {
       />
       <style>{`
         * { box-sizing: border-box; }
-        html, body { overflow-x: hidden; margin: 0; }
+        html, body { overflow-x: hidden; margin: 0; background: #121214; }
         .app { min-height: 100vh; max-width: 100vw; overflow-x: hidden; background: #121214; color: #F2F2F0; font-family: 'Helvetica Neue', Arial, sans-serif; }
         header.top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; padding: 16px 20px; position: sticky; top: 0; background: #121214ee; backdrop-filter: blur(6px); z-index: 5; }
         .brand { display: flex; align-items: center; gap: 8px; }
         .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #FF4D6D, #8C7CFF); display: flex; align-items: center; justify-content: center; }
         .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
         .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        @media (max-width: 640px) {
+          .btn-label { display: none; }
+          .league-btn, .admin-panel-btn, .top-actions > .btn.ghost:not(.league-btn):not(.admin-panel-btn) { width: 36px; height: 36px; padding: 0; border-radius: 50%; justify-content: center; }
+        }
         .badge { font-size: 12px; background: #1F1F24; border: 1px solid #333; padding: 6px 12px; border-radius: 20px; color: #4DE1C1; }
         .profile-badge { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #F2F2F0; }
         .mini-avatar { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #121214; }
@@ -1022,6 +1106,7 @@ export default function JolvoApp() {
         .filter-price-inputs input { width: 68px; background: #121214; border: 1px solid #333; color: #F2F2F0; border-radius: 10px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
         .filter-price-inputs span { color: #6A6A73; }
         .filter-clear-btn { background: none; border: none; color: #FF4D6D; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; align-self: flex-start; }
+        .filter-location-prompt { display: flex; align-items: center; gap: 6px; background: #4DE1C114; border: 1px solid #4DE1C133; color: #4DE1C1; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: 10px; cursor: pointer; font-family: inherit; }
         .cat-scroll { display: flex; gap: 18px; padding: 14px 26px 6px; overflow-x: auto; scrollbar-width: none; }
         .cat-scroll::-webkit-scrollbar { display: none; }
         .cat-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; font-family: inherit; flex-shrink: 0; color: #9A9AA3; }
@@ -1187,6 +1272,9 @@ export default function JolvoApp() {
         .notif-text { font-size: 13px; margin: 0; }
         .notif-time { font-size: 11px; color: #6A6A73; margin: 2px 0 0; }
         .settings-modal { max-width: 380px; }
+        .location-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #121214; border: 1px solid #29292f; border-radius: 14px; padding: 14px; margin-bottom: 16px; }
+        .location-current { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin: 0; }
+        .location-hint { font-size: 11px; color: #9A9AA3; margin: 4px 0 0; }
         .stripe-box { background: #121214; border: 1px solid #29292f; border-radius: 14px; padding: 14px; margin: 16px 0; }
         .stripe-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; margin: 0 0 8px; }
         .stripe-status { font-size: 12px; color: #9A9AA3; margin: 0 0 10px; line-height: 1.4; }
@@ -1333,6 +1421,10 @@ export default function JolvoApp() {
         .detail-price { font-size: 30px; font-weight: 800; margin: 10px 0 14px; }
         .seller-row { font-size: 13px; color: #9A9AA3; margin-bottom: 18px; }
         .detail-modal { max-width: 400px; padding: 0; }
+        @media (max-width: 780px) {
+          .detail-overlay { padding: 0; align-items: stretch; }
+          .detail-overlay .detail-modal { max-width: 100%; width: 100%; height: 100vh; height: 100dvh; border-radius: 0; margin: 0; max-height: none; }
+        }
         .item-page { padding: 20px 26px 100px; max-width: 1100px; margin: 0 auto; }
         @media (min-width: 1500px) {
           .item-page { max-width: 1400px; }
@@ -1378,6 +1470,9 @@ export default function JolvoApp() {
         .seller-name { font-size: 13px; font-weight: 700; margin: 0; }
         .seller-rating { font-size: 11px; color: #9A9AA3; margin: 2px 0 0; display: flex; align-items: center; gap: 4px; }
         .impact-box { display: flex; gap: 10px; align-items: flex-start; background: #4DE1C114; border: 1px solid #4DE1C133; border-radius: 14px; padding: 12px 14px; margin-bottom: 18px; }
+        .mini-map { border-radius: 14px; overflow: hidden; border: 1px solid #29292f; margin-bottom: 18px; }
+        .mini-map iframe { width: 100%; height: 160px; border: none; display: block; filter: grayscale(0.3) brightness(0.85) contrast(1.1); }
+        .mini-map-note { font-size: 10.5px; color: #6A6A73; text-align: center; padding: 6px 0; margin: 0; background: #121214; }
         .impact-title { font-size: 12px; font-weight: 700; margin: 0 0 3px; color: #4DE1C1; }
         .impact-sub { font-size: 11px; color: #9A9AA3; margin: 0; line-height: 1.4; }
         .detail-actions { display: flex; gap: 10px; }
@@ -1455,15 +1550,15 @@ export default function JolvoApp() {
               @{username}
             </span>
           )}
-          <button className="btn ghost league-btn" onClick={() => setShowLeague(true)}><Trophy size={14} /> Liga</button>
+          <button className="btn ghost league-btn" onClick={() => setShowLeague(true)}><Trophy size={14} /> <span className="btn-label">Liga</span></button>
           {isModerator && (
-            <button className="btn ghost admin-panel-btn" onClick={openAdminPanel}><ShieldCheck size={14} /> Admin</button>
+            <button className="btn ghost admin-panel-btn" onClick={openAdminPanel}><ShieldCheck size={14} /> <span className="btn-label">Admin</span></button>
           )}
           <button className="btn primary" onClick={() => { setEditingItem(null); setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] }); setShowPost(true); }}><Plus size={14} /> Vender</button>
           {loggedIn ? (
-            <button className="btn ghost" onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); toast("Sesión cerrada"); }}>Salir</button>
+            <button className="btn ghost" onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); toast("Sesión cerrada"); }}><LogOut size={14} /> <span className="btn-label">Salir</span></button>
           ) : (
-            <button className="btn ghost" onClick={() => setShowAuth(true)}>Entrar</button>
+            <button className="btn ghost" onClick={() => setShowAuth(true)}><LogIn size={14} /> <span className="btn-label">Entrar</span></button>
           )}
         </div>
       </header>
@@ -1512,10 +1607,30 @@ export default function JolvoApp() {
               <option value="recent">Más recientes</option>
               <option value="price_asc">Precio: menor a mayor</option>
               <option value="price_desc">Precio: mayor a menor</option>
+              {myLocation && <option value="distance">Distancia: más cerca</option>}
             </select>
           </div>
-          {(priceFilter.min || priceFilter.max || sizeFilter || sortBy !== "recent") && (
-            <button className="filter-clear-btn" onClick={() => { setPriceFilter({ min: "", max: "" }); setSizeFilter(""); setSortBy("recent"); }}>
+
+          {myLocation ? (
+            <div className="filter-panel-row">
+              <label>Distancia máxima</label>
+              <select value={distanceFilter} onChange={(e) => { setDistanceFilter(e.target.value); if (openItem) closeItemView(); }}>
+                <option value="">Cualquier distancia</option>
+                <option value="5">Menos de 5 km</option>
+                <option value="10">Menos de 10 km</option>
+                <option value="25">Menos de 25 km</option>
+                <option value="50">Menos de 50 km</option>
+                <option value="100">Menos de 100 km</option>
+              </select>
+            </div>
+          ) : (
+            <button className="filter-location-prompt" onClick={detectMyLocation} disabled={locatingMe}>
+              <MapPin size={13} /> {locatingMe ? "Detectando..." : "Activar ubicación para ver la distancia"}
+            </button>
+          )}
+
+          {(priceFilter.min || priceFilter.max || sizeFilter || distanceFilter || sortBy !== "recent") && (
+            <button className="filter-clear-btn" onClick={() => { setPriceFilter({ min: "", max: "" }); setSizeFilter(""); setDistanceFilter(""); setSortBy("recent"); }}>
               Quitar filtros
             </button>
           )}
@@ -2265,6 +2380,20 @@ export default function JolvoApp() {
               <span>Bajadas de precio en favoritos</span>
               <input type="checkbox" defaultChecked />
             </p>
+
+            <label>Mi ubicación</label>
+            <div className="location-box">
+              <div>
+                <p className="location-current">
+                  <MapPin size={13} />
+                  {myLocation ? (myLocation.city || "Ubicación guardada") : "Sin ubicación guardada"}
+                </p>
+                <p className="location-hint">Se usa para mostrarte prendas cerca de ti y quedar en persona sin envío.</p>
+              </div>
+              <button className="btn ghost" onClick={detectMyLocation} disabled={locatingMe}>
+                {locatingMe ? "Detectando..." : myLocation ? "Actualizar" : "Detectar"}
+              </button>
+            </div>
 
             <div className="stripe-box">
               <p className="stripe-title"><HandCoins size={14} /> Cobros como vendedor</p>
@@ -3056,7 +3185,11 @@ export default function JolvoApp() {
                   @{openItem.seller}
                   {openItem.verified && <CheckCircle size={13} color="#4DE1C1" style={{ marginLeft: 5, verticalAlign: -2 }} />}
                 </p>
-                <p className="seller-rating"><Star size={11} fill="#FFC24D" color="#FFC24D" /> 4.8 · 32 ventas · <MapPin size={11} /> {openItem.city}</p>
+                <p className="seller-rating">
+                  <Star size={11} fill="#FFC24D" color="#FFC24D" /> 4.8 · 32 ventas
+                  {openItem.distanceKm !== null && <> · <MapPin size={11} /> a {openItem.distanceKm < 1 ? "menos de 1" : Math.round(openItem.distanceKm)} km</>}
+                  {openItem.distanceKm === null && openItem.city && <> · <MapPin size={11} /> {openItem.city}</>}
+                </p>
                 <div className="seller-mini-verify">
                   <span className="verify-chip done"><CheckCircle size={10} /> Email</span>
                   <span className="verify-chip done"><CheckCircle size={10} /> Teléfono</span>
@@ -3081,6 +3214,8 @@ export default function JolvoApp() {
                 <p className="impact-sub">Ahorras ~{(openItem.price * 2.1).toFixed(0)} kg de CO₂ y {(openItem.price * 90).toFixed(0)} L de agua frente a comprarlo nuevo</p>
               </div>
             </div>
+
+            <MiniMap lat={openItem.sellerLat} lng={openItem.sellerLng} seed={openItem.id} />
 
             <div className="detail-actions">
               {openItem.seller === username ? (
@@ -3127,7 +3262,7 @@ export default function JolvoApp() {
             <div className="related-full">{relatedEl}</div>
           </div>
         ) : (
-          <div className="overlay" onClick={closeItemView}>
+          <div className="overlay detail-overlay" onClick={closeItemView}>
             <div className="modal detail-modal" onClick={(e) => e.stopPropagation()}>
               <button className="close-btn dark-close" onClick={closeItemView}><X size={14} /></button>
               {galleryEl}

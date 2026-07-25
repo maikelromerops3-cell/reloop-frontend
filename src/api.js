@@ -5,7 +5,7 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function fetchItems({ query, category, size, minPrice, maxPrice, sortBy } = {}) {
+export async function fetchItems({ query, category, size, minPrice, maxPrice, sortBy, lat, lng, maxDistanceKm } = {}) {
   const params = new URLSearchParams();
   if (query) params.set("query", query);
   if (category && category !== "Todo") params.set("category", category);
@@ -13,6 +13,9 @@ export async function fetchItems({ query, category, size, minPrice, maxPrice, so
   if (minPrice) params.set("minPrice", minPrice);
   if (maxPrice) params.set("maxPrice", maxPrice);
   if (sortBy) params.set("sortBy", sortBy);
+  if (lat) params.set("lat", lat);
+  if (lng) params.set("lng", lng);
+  if (maxDistanceKm) params.set("maxDistanceKm", maxDistanceKm);
 
   const res = await fetch(`${API_URL}/items?${params}`);
   if (!res.ok) throw new Error("No se pudieron cargar los artículos");
@@ -123,6 +126,16 @@ export async function uploadImage(file) {
 export async function fetchProfile(username) {
   const res = await fetch(`${API_URL}/users/${username}`);
   if (!res.ok) throw new Error("Perfil no encontrado");
+  return res.json();
+}
+
+export async function updateMyLocation({ city, latitude, longitude }) {
+  const res = await fetch(`${API_URL}/users/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ city, latitude, longitude }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la ubicación");
   return res.json();
 }
 
