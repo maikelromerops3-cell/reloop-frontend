@@ -2005,8 +2005,8 @@ export default function JolvoApp() {
         const profileSold = isOwnProfile ? soldItems : (otherProfileData?.soldItems || []);
         const profileRating = profileReviews?.average ? profileReviews.average.toFixed(1) : null;
         return (
-        <div className="overlay" onClick={closeProfileView}>
-          <div className="modal profile-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="overlay detail-overlay" onClick={closeProfileView}>
+          <div className="modal profile-modal detail-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn dark-close" onClick={closeProfileView}><X size={14} /></button>
 
             <div className="profile-banner" style={{ background: `linear-gradient(135deg, ${PALETTE[profileUsername.length % PALETTE.length]}, #1A1A1E)` }}>
