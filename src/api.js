@@ -52,11 +52,11 @@ export async function login(email, password) {
   return data.user;
 }
 
-export async function register(email, password, username) {
+export async function register(email, password, username, city) {
   const res = await fetch(`${API_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, username }),
+    body: JSON.stringify({ email, password, username, city }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "Error al registrarse");
   const data = await res.json();
@@ -129,11 +129,11 @@ export async function fetchProfile(username) {
   return res.json();
 }
 
-export async function updateMyLocation({ city, latitude, longitude }) {
+export async function updateMyLocation({ city, latitude, longitude, bio } = {}) {
   const res = await fetch(`${API_URL}/users/me`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ city, latitude, longitude }),
+    body: JSON.stringify({ city, latitude, longitude, bio }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la ubicación");
   return res.json();

@@ -380,6 +380,9 @@ export default function JolvoApp() {
       .finally(() => setOtherProfileLoading(false));
   }
   const [profileReviews, setProfileReviews] = useState(null);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editProfileForm, setEditProfileForm] = useState({ bio: "", city: "" });
+  const [myBio, setMyBio] = useState("");
   const [showProfileDetails, setShowProfileDetails] = useState(false);
   const [userRole, setUserRole] = useState(getRole());
   const isAdmin = userRole === "admin";
@@ -420,7 +423,7 @@ export default function JolvoApp() {
   ]);
   const [form, setForm] = useState({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] });
   const [uploadingImages, setUploadingImages] = useState([]);
-  const [authForm, setAuthForm] = useState({ email: "", password: "", username: "" });
+  const [authForm, setAuthForm] = useState({ email: "", password: "", username: "", city: "" });
   const [authMode, setAuthMode] = useState("login");
   const [authError, setAuthError] = useState(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -522,6 +525,27 @@ export default function JolvoApp() {
     setCategory("Para ti");
     setQuery("");
     navigate("/");
+  }
+
+  function openEditProfile() {
+    setEditProfileForm({ bio: myBio || "", city: myLocation?.city || "" });
+    setShowEditProfile(true);
+  }
+
+  async function saveEditProfile() {
+    try {
+      await updateMyLocation({ bio: editProfileForm.bio, city: editProfileForm.city });
+      setMyBio(editProfileForm.bio);
+      if (editProfileForm.city) {
+        const updatedLocation = { ...(myLocation || {}), city: editProfileForm.city };
+        setMyLocation(updatedLocation);
+        localStorage.setItem("reloop_location", JSON.stringify(updatedLocation));
+      }
+      toast.success("Perfil actualizado");
+      setShowEditProfile(false);
+    } catch (err) {
+      toast.error(err.message);
+    }
   }
 
   function detectMyLocation() {
@@ -965,12 +989,12 @@ export default function JolvoApp() {
     try {
       const result = authMode === "login"
         ? await apiLogin(authForm.email, authForm.password)
-        : await apiRegister(authForm.email, authForm.password, authForm.username);
+        : await apiRegister(authForm.email, authForm.password, authForm.username, authForm.city);
       setUsername(result.username);
       setLoggedIn(true);
       setUserRole(result.role || "user");
       setShowAuth(false);
-      setAuthForm({ email: "", password: "", username: "" });
+      setAuthForm({ email: "", password: "", username: "", city: "" });
       toast.success(authMode === "login" ? `¡Bienvenido, @${result.username}!` : "¡Cuenta creada!");
     } catch (err) {
       setAuthError(err.message);
@@ -1357,6 +1381,7 @@ export default function JolvoApp() {
         .profile-meta-row { font-size: 11px; color: #9A9AA3; margin: 4px 0 0; }
         .streak-text { font-size: 11px; color: #FFC24D; margin: 4px 0 10px; font-weight: 600; }
         .verify-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+        .profile-city-line { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 12.5px; color: #9A9AA3; margin: 0 0 16px; }
         .verify-chip { display: flex; align-items: center; gap: 4px; font-size: 10px; background: #121214; border: 1px solid #29292f; color: #6A6A73; padding: 4px 9px; border-radius: 12px; }
         .seller-mini-verify { display: flex; gap: 6px; margin-top: 5px; }
         .seller-mini-verify .verify-chip { padding: 2px 7px; font-size: 9px; }
@@ -1943,7 +1968,12 @@ export default function JolvoApp() {
                   <label>Usuario</label>
                   <div className="input-icon">
                     <User size={14} />
-                    <input value={authForm.username} onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })} placeholder="tu_usuario" />
+                    <input value={authForm.username} onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })} placeholder="tu_usuario" required />
+                  </div>
+                  <label>Ciudad</label>
+                  <div className="input-icon">
+                    <MapPin size={14} />
+                    <input value={authForm.city} onChange={(e) => setAuthForm({ ...authForm, city: e.target.value })} placeholder="Ej. Madrid" required />
                   </div>
                 </>
               )}
@@ -2002,7 +2032,7 @@ export default function JolvoApp() {
 
               <div className="profile-quick-actions">
                 {isOwnProfile ? (
-                  <button className="edit-profile-btn">Editar perfil</button>
+                  <button className="edit-profile-btn" onClick={openEditProfile}>Editar perfil</button>
                 ) : (
                   <button className={"follow-btn" + (following.has(profileUsername) ? " on" : "")} onClick={() => toggleFollow(profileUsername)}>
                     {following.has(profileUsername) ? <UserCheck size={13} /> : <UserPlus size={13} />}
@@ -2028,11 +2058,9 @@ export default function JolvoApp() {
                     <span className="verify-chip"><CheckCircle size={11} /> DNI</span>
                   </div>
 
-                  <div className="rating-breakdown">
-                    <div className="rb-row"><span>Comunicación</span><div className="rb-track"><div className="rb-fill" style={{ width: "96%" }} /></div></div>
-                    <div className="rb-row"><span>Fiel a la descripción</span><div className="rb-track"><div className="rb-fill" style={{ width: "90%" }} /></div></div>
-                    <div className="rb-row"><span>Rapidez de envío</span><div className="rb-track"><div className="rb-fill" style={{ width: "84%" }} /></div></div>
-                  </div>
+                  {(isOwnProfile ? myLocation?.city : otherProfileData?.city) && (
+                    <p className="profile-city-line"><MapPin size={12} /> {isOwnProfile ? myLocation?.city : otherProfileData?.city}</p>
+                  )}
 
                   {profileReviews && profileReviews.reviews.length > 0 && (
                     <>
@@ -2892,6 +2920,34 @@ export default function JolvoApp() {
         </div>
       )}
 
+      {showEditProfile && (
+        <div className="overlay" onClick={() => setShowEditProfile(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 380 }}>
+            <button className="close-btn" onClick={() => setShowEditProfile(false)}><X size={14} /></button>
+            <p className="auth-title">Editar perfil</p>
+            <label>Sobre ti</label>
+            <textarea
+              className="report-textarea"
+              rows={3}
+              placeholder="Cuéntale algo a quien vea tu perfil..."
+              value={editProfileForm.bio}
+              onChange={(e) => setEditProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
+            />
+            <label>Ciudad</label>
+            <input
+              className="input-plain"
+              placeholder="Ej. Madrid"
+              value={editProfileForm.city}
+              onChange={(e) => setEditProfileForm((prev) => ({ ...prev, city: e.target.value }))}
+            />
+            <button className="btn ghost" style={{ width: "100%", marginBottom: 10 }} onClick={detectMyLocation} disabled={locatingMe}>
+              <MapPin size={13} /> {locatingMe ? "Detectando..." : "Detectar mi ubicación automáticamente"}
+            </button>
+            <button className="btn primary admin-refund-btn" onClick={saveEditProfile}>Guardar cambios</button>
+          </div>
+        </div>
+      )}
+
       {showReportForm && (
         <div className="overlay" onClick={() => setShowReportForm(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 340 }}>
@@ -3215,8 +3271,6 @@ export default function JolvoApp() {
               </div>
             </div>
 
-            <MiniMap lat={openItem.sellerLat} lng={openItem.sellerLng} seed={openItem.id} />
-
             <div className="detail-actions">
               {openItem.seller === username ? (
                 <>
@@ -3235,6 +3289,8 @@ export default function JolvoApp() {
                 </>
               )}
             </div>
+
+            <MiniMap lat={openItem.sellerLat} lng={openItem.sellerLng} seed={openItem.id} />
 
             {isAdmin && (
               <div className="admin-toolbar">
