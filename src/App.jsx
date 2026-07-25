@@ -367,6 +367,11 @@ export default function JolvoApp() {
       setOtherProfileData(null);
       setProfileTab("venta");
       setShowProfile(true);
+      fetchProfile(username).then((data) => {
+        if (data.avatarUrl) { setMyAvatarUrl(data.avatarUrl); localStorage.setItem("reloop_avatar", data.avatarUrl); }
+        if (data.coverUrl) { setMyCoverUrl(data.coverUrl); localStorage.setItem("reloop_cover", data.coverUrl); }
+        if (data.bio) setMyBio(data.bio);
+      }).catch(() => {});
       return;
     }
     setViewingProfile(uname);
@@ -383,6 +388,8 @@ export default function JolvoApp() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editProfileForm, setEditProfileForm] = useState({ bio: "", city: "" });
   const [myBio, setMyBio] = useState("");
+  const [myAvatarUrl, setMyAvatarUrl] = useState(() => localStorage.getItem("reloop_avatar") || "");
+  const [myCoverUrl, setMyCoverUrl] = useState(() => localStorage.getItem("reloop_cover") || "");
   const [showProfileDetails, setShowProfileDetails] = useState(false);
   const [userRole, setUserRole] = useState(getRole());
   const isAdmin = userRole === "admin";
@@ -525,6 +532,32 @@ export default function JolvoApp() {
     setCategory("Para ti");
     setQuery("");
     navigate("/");
+  }
+
+  async function uploadAvatarPhoto(file) {
+    if (!file) return;
+    try {
+      const { url } = await uploadImage(file);
+      await updateMyLocation({ avatarUrl: url });
+      setMyAvatarUrl(url);
+      localStorage.setItem("reloop_avatar", url);
+      toast.success("Foto de perfil actualizada");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function uploadCoverPhoto(file) {
+    if (!file) return;
+    try {
+      const { url } = await uploadImage(file);
+      await updateMyLocation({ coverUrl: url });
+      setMyCoverUrl(url);
+      localStorage.setItem("reloop_cover", url);
+      toast.success("Portada actualizada");
+    } catch (err) {
+      toast.error(err.message);
+    }
   }
 
   function openEditProfile() {
@@ -1947,8 +1980,8 @@ export default function JolvoApp() {
       )}
 
       {showAuth && (
-        <div className="overlay" onClick={() => setShowAuth(false)}>
-          <div className="modal auth-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="overlay detail-overlay" onClick={() => setShowAuth(false)}>
+          <div className="modal auth-modal detail-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={() => setShowAuth(false)}><X size={14} /></button>
 
             <div className="auth-brand">
@@ -2009,9 +2042,14 @@ export default function JolvoApp() {
           <div className="modal profile-modal detail-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn dark-close" onClick={closeProfileView}><X size={14} /></button>
 
-            <div className="profile-banner" style={{ background: `linear-gradient(135deg, ${PALETTE[profileUsername.length % PALETTE.length]}, #1A1A1E)` }}>
+            <div className="profile-banner" style={{ background: myCoverUrl && isOwnProfile ? undefined : `linear-gradient(135deg, ${PALETTE[profileUsername.length % PALETTE.length]}, #1A1A1E)`, backgroundImage: myCoverUrl && isOwnProfile ? `url(${myCoverUrl})` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
               <div className="banner-texture" />
-              {isOwnProfile && <button className="cover-btn"><ImagePlus size={13} /> Cambiar portada</button>}
+              {isOwnProfile && (
+                <>
+                  <input type="file" accept="image/*" id="cover-upload-input" style={{ display: "none" }} onChange={(e) => uploadCoverPhoto(e.target.files[0])} />
+                  <button className="cover-btn" onClick={() => document.getElementById("cover-upload-input").click()}><ImagePlus size={13} /> Cambiar portada</button>
+                </>
+              )}
               <button className="share-profile-btn"><Share2 size={14} /></button>
             </div>
 
@@ -2019,7 +2057,22 @@ export default function JolvoApp() {
               <div className="profile-content"><p className="empty-tab">Cargando perfil...</p></div>
             ) : (
             <div className="profile-content">
-              <div className="profile-avatar-lg" style={{ background: PALETTE[profileUsername.length % PALETTE.length] }}>{profileUsername[0]?.toUpperCase()}</div>
+              <div
+                className="profile-avatar-lg"
+                style={
+                  isOwnProfile && myAvatarUrl
+                    ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover", backgroundPosition: "center", cursor: "pointer" }
+                    : { background: PALETTE[profileUsername.length % PALETTE.length], cursor: isOwnProfile ? "pointer" : "default" }
+                }
+                onClick={() => isOwnProfile && document.getElementById("avatar-upload-input").click()}
+                role={isOwnProfile ? "button" : undefined}
+                title={isOwnProfile ? "Cambiar foto de perfil" : undefined}
+              >
+                {!(isOwnProfile && myAvatarUrl) && profileUsername[0]?.toUpperCase()}
+              </div>
+              {isOwnProfile && (
+                <input type="file" accept="image/*" id="avatar-upload-input" style={{ display: "none" }} onChange={(e) => uploadAvatarPhoto(e.target.files[0])} />
+              )}
               <p className="profile-name">
                 @{profileUsername}
                 <span className="milestone-badges">
@@ -3290,8 +3343,6 @@ export default function JolvoApp() {
               )}
             </div>
 
-            <MiniMap lat={openItem.sellerLat} lng={openItem.sellerLng} seed={openItem.id} />
-
             {isAdmin && (
               <div className="admin-toolbar">
                 <span className="admin-toolbar-label">Admin</span>
@@ -3306,6 +3357,8 @@ export default function JolvoApp() {
           </>
         );
 
+        const mapEl = <MiniMap lat={openItem.sellerLat} lng={openItem.sellerLng} seed={openItem.id} />;
+
         return isDesktop ? (
           <div className="item-page">
             <button className="back-btn" onClick={closeItemView}><ArrowLeft size={16} /> Volver</button>
@@ -3315,14 +3368,17 @@ export default function JolvoApp() {
               </div>
               <div className="item-page-info">{infoEl}</div>
             </div>
-            <div className="related-full">{relatedEl}</div>
+            <div className="related-full">
+              {mapEl}
+              {relatedEl}
+            </div>
           </div>
         ) : (
           <div className="overlay detail-overlay" onClick={closeItemView}>
             <div className="modal detail-modal" onClick={(e) => e.stopPropagation()}>
               <button className="close-btn dark-close" onClick={closeItemView}><X size={14} /></button>
               {galleryEl}
-              <div className="detail-body">{infoEl}{relatedEl}</div>
+              <div className="detail-body">{infoEl}{mapEl}{relatedEl}</div>
             </div>
           </div>
         );

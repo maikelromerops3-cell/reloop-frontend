@@ -129,11 +129,11 @@ export async function fetchProfile(username) {
   return res.json();
 }
 
-export async function updateMyLocation({ city, latitude, longitude, bio } = {}) {
+export async function updateMyLocation({ city, latitude, longitude, bio, avatarUrl, coverUrl } = {}) {
   const res = await fetch(`${API_URL}/users/me`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ city, latitude, longitude, bio }),
+    body: JSON.stringify({ city, latitude, longitude, bio, avatarUrl, coverUrl }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la ubicación");
   return res.json();
