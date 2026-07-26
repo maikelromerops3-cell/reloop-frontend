@@ -133,7 +133,7 @@ function ItemCard({ item, onOpen, index, saved, toggleSave }) {
       <div className="card-info">
         <h3>{item.title}</h3>
         <p>{item.size ? `${item.size} · ` : ""}{item.condition}</p>
-        <p className="card-city"><MapPin size={10} /> {item.city ? `${item.city} · ` : ""}{timeAgo(item.minutesAgo)}</p>
+        <p className="card-city"><MapPin size={10} /> {item.distanceKm !== null ? `a ${item.distanceKm < 1 ? "menos de 1" : Math.round(item.distanceKm)} km · ` : item.city ? `${item.city} · ` : ""}{timeAgo(item.minutesAgo)}</p>
       </div>
     </div>
   );
@@ -229,7 +229,6 @@ export default function JolvoApp() {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-  const [showCookieBanner, setShowCookieBanner] = useState(!localStorage.getItem("reloop_cookies_accepted"));
   const [notifications, setNotifications] = useState([]);
   const LEADERBOARD = [
     { rank: 1, username: "denia.k", city: "Sevilla", points: 1240 },
@@ -1489,10 +1488,6 @@ export default function JolvoApp() {
         .site-footer { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; padding: 20px 26px 100px; color: #6A6A73; font-size: 11px; }
         .site-footer button { background: none; border: none; color: #6A6A73; font-size: 11px; cursor: pointer; font-family: inherit; text-decoration: underline; }
         .site-footer button:hover { color: #F2F2F0; }
-        .cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; background: #1A1A1E; border-top: 1px solid #29292f; padding: 14px 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; }
-        .cookie-banner p { font-size: 12px; color: #C8C8CE; margin: 0; max-width: 560px; }
-        .cookie-banner p button { background: none; border: none; color: #4DE1C1; text-decoration: underline; cursor: pointer; font-size: 12px; font-family: inherit; }
-        .cookie-accept { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: #121214; border: none; border-radius: 12px; padding: 9px 18px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
         .legal-modal { max-width: 460px; }
         .legal-text { font-size: 13px; color: #C8C8CE; line-height: 1.6; max-height: 55vh; overflow-y: auto; }
         .legal-text p { margin: 0 0 12px; }
@@ -1905,18 +1900,6 @@ export default function JolvoApp() {
         <button onClick={() => setShowLegal("cookies")}>Cookies</button>
       </footer>
       </>
-      )}
-
-      {showCookieBanner && (
-        <div className="cookie-banner">
-          <p>Usamos cookies esenciales para que la web funcione, y opcionalmente analítica para mejorar la experiencia. <button onClick={() => setShowLegal("cookies")}>Más info</button></p>
-          <button
-            className="cookie-accept"
-            onClick={() => { localStorage.setItem("reloop_cookies_accepted", "1"); setShowCookieBanner(false); }}
-          >
-            Aceptar
-          </button>
-        </div>
       )}
 
       {showLegal && (
@@ -3475,7 +3458,8 @@ export default function JolvoApp() {
                 </p>
                 <p className="seller-rating">
                   <Star size={11} fill="#FFC24D" color="#FFC24D" /> 4.8 · 32 ventas
-                  {openItem.city && <> · <MapPin size={11} /> {openItem.city}</>}
+                  {openItem.distanceKm !== null && <> · <MapPin size={11} /> a {openItem.distanceKm < 1 ? "menos de 1" : Math.round(openItem.distanceKm)} km</>}
+                  {openItem.distanceKm === null && openItem.city && <> · <MapPin size={11} /> {openItem.city}</>}
                 </p>
                 <div className="seller-mini-verify">
                   <span className="verify-chip done"><CheckCircle size={10} /> Email</span>
