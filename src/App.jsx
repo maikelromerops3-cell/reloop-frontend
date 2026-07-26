@@ -1617,7 +1617,7 @@ export default function JolvoApp() {
         .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 0 26px 18px; font-size: 12.5px; color: #C8C8CE; line-height: 1.5; }
         .community-impact svg { flex-shrink: 0; }
         .community-impact strong { color: #4DE1C1; font-weight: 700; }
-        .recent-row-section { margin: 0 0 22px; padding: 0 26px; }
+        .recent-row-section { margin: 10px 0 22px; padding: 0 26px; }
         @media (max-width: 640px) {
           .community-impact { margin: 0 16px 16px; }
           .recent-row-section { padding: 0 16px; }
@@ -1886,21 +1886,6 @@ export default function JolvoApp() {
         })}
       </div>
 
-      {(!openItem || numCols < 3) && category === "Para ti" && !query && allItems.length > 3 && (
-        <div className="recent-row-section">
-          <p className="profile-section-title related-heading">Recién publicado</p>
-          <div className="mini-row">
-            {[...allItems].sort((a, b) => a.minutesAgo - b.minutesAgo).slice(0, 8).map((i, idx) => (
-              <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
-                <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
-                <p className="mini-title">{i.title}</p>
-                <p className="mini-price">{i.price}€</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {(!openItem || numCols < 3) && (
       <>
       {loadError && !loading && (
@@ -1956,6 +1941,20 @@ export default function JolvoApp() {
         {items.length > numCols * feedRowsShown && (
           <div className="load-more-row">
             <button className="btn ghost" onClick={() => setFeedRowsShown((n) => n + 5)}>Cargar más artículos</button>
+          </div>
+        )}
+        {category === "Para ti" && !query && allItems.length > 3 && (
+          <div className="recent-row-section">
+            <p className="profile-section-title related-heading">Recién publicado</p>
+            <div className="mini-row">
+              {[...allItems].sort((a, b) => a.minutesAgo - b.minutesAgo).slice(0, 8).map((i, idx) => (
+                <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
+                  <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
+                  <p className="mini-title">{i.title}</p>
+                  <p className="mini-price">{i.price}€</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         </>
