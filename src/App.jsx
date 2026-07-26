@@ -1661,25 +1661,30 @@ export default function JolvoApp() {
         .chat-btn:hover { background: #29292f; }
         .empty { padding: 60px 26px; text-align: center; color: #6A6A73; font-size: 13px; }
         .toggle-link { font-size: 12px; margin-top: 14px; text-align: center; cursor: pointer; color: #4DE1C1; }
-        .auth-modal { max-width: 380px; }
-        .auth-brand { text-align: center; margin-bottom: 20px; }
-        .social-auth-col { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 14px; }
-        .google-signin-slot { display: flex; justify-content: center; width: 100%; min-height: 40px; }
-        .auth-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; color: #6A6A73; font-size: 11px; }
+        .auth-modal { max-width: 400px; padding: 34px 30px; }
+        .auth-brand { text-align: center; margin-bottom: 26px; }
+        .social-auth-col { display: flex; flex-direction: column; gap: 12px; align-items: center; margin-bottom: 20px; }
+        .google-signin-slot { display: flex; justify-content: center; width: 100%; min-height: 42px; }
+        .auth-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: #6A6A73; font-size: 11px; letter-spacing: 0.3px; }
         .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: #29292f; }
-        .auth-mark { margin: 0 auto 12px; }
+        .auth-mark { margin: 0 auto 16px; }
         @media (max-width: 780px) {
           .detail-overlay .auth-mark { width: 46px; height: 46px; }
           .detail-overlay .auth-mark svg, .detail-overlay .auth-mark img { width: 22px; height: 22px; }
         }
-        .auth-title { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
-        .auth-subtitle { font-size: 12px; color: #9A9AA3; margin: 0; }
-        .tabs { display: flex; background: #121214; border: 1px solid #29292f; border-radius: 14px; padding: 4px; margin-bottom: 6px; }
-        .tab { flex: 1; border: none; background: transparent; color: #9A9AA3; padding: 9px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .auth-title { font-size: 21px; font-weight: 700; margin: 0 0 6px; }
+        .auth-subtitle { font-size: 13px; color: #9A9AA3; margin: 0; line-height: 1.5; }
+        .tabs { display: flex; background: #121214; border: 1px solid #29292f; border-radius: 14px; padding: 4px; margin-bottom: 24px; }
+        .tab { flex: 1; border: none; background: transparent; color: #9A9AA3; padding: 11px; border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
         .tab.active { background: #F2F2F0; color: #121214; }
-        .input-icon { display: flex; align-items: center; gap: 8px; border: 1px solid #333; border-radius: 12px; padding: 0 12px; background: #121214; }
+        .auth-modal label { margin: 18px 0 7px; }
+        .auth-modal label:first-of-type { margin-top: 0; }
+        .input-icon { display: flex; align-items: center; gap: 10px; border: 1px solid #333; border-radius: 13px; padding: 0 14px; background: #121214; transition: border-color 0.15s; }
+        .input-icon:focus-within { border-color: #FF4D6D88; }
         .input-icon svg { color: #6A6A73; flex-shrink: 0; }
-        .input-icon input { border: none; padding: 10px 0; background: transparent; }
+        .input-icon input { border: none; padding: 13px 0; background: transparent; }
+        .auth-modal .submit-btn { margin-top: 26px; padding: 15px; font-size: 14px; border-radius: 14px; }
+        .auth-modal .toggle-link { margin-top: 16px; font-size: 12.5px; }
         .post-modal { max-width: 400px; }
         .upload-box { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 1.5px dashed #333; border-radius: 16px; padding: 26px 16px; margin-bottom: 18px; color: #C8C8CE; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
         .upload-box:hover { border-color: #FF4D6D; }
@@ -1710,6 +1715,19 @@ export default function JolvoApp() {
         </div>
         <div className="top-actions">
           {loggedIn && (
+            <button className="icon-btn" onClick={() => setShowOrders(true)}>
+              <Package size={16} />
+            </button>
+          )}
+          {loggedIn && (
+            <button className="icon-btn" onClick={handleOpenNotifs}>
+              <Bell size={16} />
+              {notifications.some((n) => !n.read) && (
+                <span className="notif-dot">{notifications.filter((n) => !n.read).length}</span>
+              )}
+            </button>
+          )}
+          {loggedIn && (
             <button className="icon-btn" onClick={() => setShowFavorites(true)}>
               <Heart size={16} fill={saved.size > 0 ? "#FF4D6D" : "none"} color={saved.size > 0 ? "#FF4D6D" : "currentColor"} />
               {saved.size > 0 && <span className="notif-dot">{saved.size}</span>}
@@ -1722,25 +1740,18 @@ export default function JolvoApp() {
             </span>
           )}
           <button className="btn primary" onClick={() => { setEditingItem(null); setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] }); setShowPost(true); }}><Plus size={14} /> Vender</button>
+          {!loggedIn && (
+            <button className="btn ghost" onClick={() => setShowAuth(true)}><LogIn size={14} /> <span className="btn-label">Entrar</span></button>
+          )}
 
           <div className="more-menu-wrap">
             <button className="icon-btn more-menu-btn" onClick={() => setShowMoreMenu((v) => !v)}>
               <MoreHorizontal size={16} />
-              {loggedIn && notifications.some((n) => !n.read) && <span className="notif-dot">{notifications.filter((n) => !n.read).length}</span>}
             </button>
             {showMoreMenu && (
               <>
                 <div className="more-menu-backdrop" onClick={() => setShowMoreMenu(false)} />
                 <div className="more-menu-panel">
-                  {loggedIn && (
-                    <button onClick={() => { setShowMoreMenu(false); setShowOrders(true); }}><Package size={15} /> Pedidos</button>
-                  )}
-                  {loggedIn && (
-                    <button onClick={() => { setShowMoreMenu(false); handleOpenNotifs(); }}>
-                      <Bell size={15} /> Notificaciones
-                      {notifications.some((n) => !n.read) && <span className="notif-dot inline">{notifications.filter((n) => !n.read).length}</span>}
-                    </button>
-                  )}
                   {loggedIn && (
                     <button onClick={() => { setShowMoreMenu(false); setShowSettings(true); }}><Settings size={15} /> Ajustes</button>
                   )}
@@ -1748,10 +1759,8 @@ export default function JolvoApp() {
                   {isModerator && (
                     <button onClick={() => { setShowMoreMenu(false); openAdminPanel(); }}><ShieldCheck size={15} /> Admin</button>
                   )}
-                  {loggedIn ? (
+                  {loggedIn && (
                     <button onClick={() => { setShowMoreMenu(false); apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); toast("Sesión cerrada"); }}><LogOut size={15} /> Salir</button>
-                  ) : (
-                    <button onClick={() => { setShowMoreMenu(false); setShowAuth(true); }}><LogIn size={15} /> Entrar</button>
                   )}
                 </div>
               </>
