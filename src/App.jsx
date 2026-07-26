@@ -226,6 +226,8 @@ export default function JolvoApp() {
   const [editingItem, setEditingItem] = useState(null);
   const [showLegal, setShowLegal] = useState(null); // "about" | "terms" | "privacy" | "cookies" | null
   const [cookieChoice, setCookieChoice] = useState(() => localStorage.getItem("reloop_cookie_consent") || null);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
   const [cropperState, setCropperState] = useState(null); // { imageSrc, target, aspect, queue } | null
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -681,6 +683,16 @@ export default function JolvoApp() {
   function handleCookieChoice(choice) {
     setCookieChoice(choice);
     localStorage.setItem("reloop_cookie_consent", choice);
+  }
+
+  function handleNewsletterSubmit(e) {
+    e.preventDefault();
+    if (!/^\S+@\S+\.\S+$/.test(newsletterEmail)) {
+      toast.error("Escribe un email válido");
+      return;
+    }
+    setNewsletterSubscribed(true);
+    toast.success("¡Te has suscrito!");
   }
 
   function closeProfileView() {
@@ -1614,13 +1626,20 @@ export default function JolvoApp() {
         .back-btn:hover { color: #F2F2F0; }
         .item-page-grid { display: flex; gap: 40px; align-items: flex-start; }
         .item-page-gallery { flex: 1.1; min-width: 0; }
-        .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 0 26px 18px; font-size: 12.5px; color: #C8C8CE; line-height: 1.5; }
+        .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 10px 26px 18px; font-size: 12.5px; color: #C8C8CE; line-height: 1.5; }
         .community-impact svg { flex-shrink: 0; }
         .community-impact strong { color: #4DE1C1; font-weight: 700; }
-        .recent-row-section { margin: 10px 0 22px; padding: 0 26px; }
+        .newsletter-band { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: linear-gradient(135deg, #8C7CFF22, #FF4D6D14); border: 1px solid #8C7CFF33; border-radius: 18px; padding: 22px 28px; margin: 10px 26px 22px; }
+        .newsletter-title { font-size: 16px; font-weight: 700; margin: 0 0 3px; }
+        .newsletter-sub { font-size: 12.5px; color: #9A9AA3; margin: 0; }
+        .newsletter-form { display: flex; gap: 10px; flex-wrap: wrap; }
+        .newsletter-form input { width: 240px; border: 1px solid #333; border-radius: 12px; padding: 11px 14px; font-size: 13px; background: #121214; color: #F2F2F0; font-family: inherit; }
+        .newsletter-thanks { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #4DE1C1; font-weight: 600; }
         @media (max-width: 640px) {
           .community-impact { margin: 0 16px 16px; }
-          .recent-row-section { padding: 0 16px; }
+          .newsletter-band { margin: 10px 16px 18px; padding: 20px; }
+          .newsletter-form { width: 100%; }
+          .newsletter-form input { flex: 1; min-width: 0; width: auto; }
         }
         .related-full { margin-top: 30px; }
         .related-full .mini-row .mini-card { flex: 0 0 180px; }
@@ -1784,19 +1803,6 @@ export default function JolvoApp() {
         </div>
       )}
 
-      {(!openItem || numCols < 3) && allItems.length > 0 && (
-        <div className="community-impact">
-          <Leaf size={18} color="#4DE1C1" />
-          <p>
-            Entre toda la comunidad ya se han ahorrado{" "}
-            <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 2.1, 0)).toLocaleString("es-ES")} kg de CO₂</strong>
-            {" "}y{" "}
-            <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 90, 0)).toLocaleString("es-ES")} L de agua</strong>
-            {" "}frente a comprar todo nuevo
-          </p>
-        </div>
-      )}
-
       <div className="search-row">
         <div className="search-box">
           <Search size={15} color="#9A9AA3" />
@@ -1943,18 +1949,37 @@ export default function JolvoApp() {
             <button className="btn ghost" onClick={() => setFeedRowsShown((n) => n + 5)}>Cargar más artículos</button>
           </div>
         )}
-        {category === "Para ti" && !query && allItems.length > 3 && (
-          <div className="recent-row-section">
-            <p className="profile-section-title related-heading">Recién publicado</p>
-            <div className="mini-row">
-              {[...allItems].sort((a, b) => a.minutesAgo - b.minutesAgo).slice(0, 8).map((i, idx) => (
-                <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
-                  <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
-                  <p className="mini-title">{i.title}</p>
-                  <p className="mini-price">{i.price}€</p>
-                </div>
-              ))}
+        {category === "Para ti" && !query && allItems.length > 0 && (
+          <div className="community-impact">
+            <Leaf size={18} color="#4DE1C1" />
+            <p>
+              Entre toda la comunidad ya se han ahorrado{" "}
+              <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 2.1, 0)).toLocaleString("es-ES")} kg de CO₂</strong>
+              {" "}y{" "}
+              <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 90, 0)).toLocaleString("es-ES")} L de agua</strong>
+              {" "}frente a comprar todo nuevo
+            </p>
+          </div>
+        )}
+        {category === "Para ti" && !query && (
+          <div className="newsletter-band">
+            <div className="newsletter-text">
+              <p className="newsletter-title">¡Suscríbete a nuestro boletín!</p>
+              <p className="newsletter-sub">No vuelvas a perderte ninguna oferta.</p>
             </div>
+            {newsletterSubscribed ? (
+              <p className="newsletter-thanks"><CheckCircle size={16} color="#4DE1C1" /> ¡Ya estás suscrito!</p>
+            ) : (
+              <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
+                <input
+                  type="email"
+                  placeholder="Introduce tu correo electrónico"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                />
+                <button type="submit" className="btn primary">Suscribirme</button>
+              </form>
+            )}
           </div>
         )}
         </>
