@@ -1614,6 +1614,14 @@ export default function JolvoApp() {
         .back-btn:hover { color: #F2F2F0; }
         .item-page-grid { display: flex; gap: 40px; align-items: flex-start; }
         .item-page-gallery { flex: 1.1; min-width: 0; }
+        .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 0 26px 18px; font-size: 12.5px; color: #C8C8CE; line-height: 1.5; }
+        .community-impact svg { flex-shrink: 0; }
+        .community-impact strong { color: #4DE1C1; font-weight: 700; }
+        .recent-row-section { margin: 0 0 22px; padding: 0 26px; }
+        @media (max-width: 640px) {
+          .community-impact { margin: 0 16px 16px; }
+          .recent-row-section { padding: 0 16px; }
+        }
         .related-full { margin-top: 30px; }
         .related-full .mini-row .mini-card { flex: 0 0 180px; }
         .item-page-info { flex: 1; min-width: 0; max-width: 440px; }
@@ -1776,6 +1784,19 @@ export default function JolvoApp() {
         </div>
       )}
 
+      {(!openItem || numCols < 3) && allItems.length > 0 && (
+        <div className="community-impact">
+          <Leaf size={18} color="#4DE1C1" />
+          <p>
+            Entre toda la comunidad ya se han ahorrado{" "}
+            <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 2.1, 0)).toLocaleString("es-ES")} kg de CO₂</strong>
+            {" "}y{" "}
+            <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 90, 0)).toLocaleString("es-ES")} L de agua</strong>
+            {" "}frente a comprar todo nuevo
+          </p>
+        </div>
+      )}
+
       <div className="search-row">
         <div className="search-box">
           <Search size={15} color="#9A9AA3" />
@@ -1864,6 +1885,21 @@ export default function JolvoApp() {
           );
         })}
       </div>
+
+      {(!openItem || numCols < 3) && category === "Para ti" && !query && allItems.length > 3 && (
+        <div className="recent-row-section">
+          <p className="profile-section-title related-heading">Recién publicado</p>
+          <div className="mini-row">
+            {[...allItems].sort((a, b) => a.minutesAgo - b.minutesAgo).slice(0, 8).map((i, idx) => (
+              <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
+                <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
+                <p className="mini-title">{i.title}</p>
+                <p className="mini-price">{i.price}€</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {(!openItem || numCols < 3) && (
       <>
