@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
+import Cropper from "react-easy-crop";
 import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn } from "lucide-react";
 import {
   fetchItems, createItem, updateItem, deleteItem,
@@ -75,6 +76,31 @@ function wait(ms = 400) {
 }
 
 // Convierte un artículo tal como lo devuelve el backend al formato que usa la interfaz
+// A partir de una imagen y el área seleccionada en el recortador, genera el archivo final ya recortado
+function getCroppedImageFile(imageSrc, croppedAreaPixels, fileName) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = croppedAreaPixels.width;
+      canvas.height = croppedAreaPixels.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(
+        img,
+        croppedAreaPixels.x, croppedAreaPixels.y, croppedAreaPixels.width, croppedAreaPixels.height,
+        0, 0, croppedAreaPixels.width, croppedAreaPixels.height
+      );
+      canvas.toBlob((blob) => {
+        if (!blob) return reject(new Error("No se pudo recortar la imagen"));
+        resolve(new File([blob], fileName, { type: "image/jpeg" }));
+      }, "image/jpeg", 0.92);
+    };
+    img.onerror = () => reject(new Error("No se pudo cargar la imagen"));
+    img.src = imageSrc;
+  });
+}
+
 function normalizeItem(raw) {
   const minutesAgo = raw.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(raw.createdAt).getTime()) / 60000)) : 0;
   return {
@@ -93,28 +119,6 @@ function normalizeItem(raw) {
   };
 }
 
-function MiniMap({ lat, lng, seed }) {
-  if (lat == null || lng == null) return null;
-  // Pequeño desplazamiento fijo (según el artículo) para no enseñar la ubicación exacta del vendedor
-  function jitter(salt) {
-    let h = 0;
-    const s = String(seed);
-    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-    return ((Math.abs(h + salt) % 200) - 100) / 10000; // aprox. ±1 km
-  }
-  const jLat = lat + jitter(1);
-  const jLng = lng + jitter(2);
-  const delta = 0.035;
-  const bbox = `${jLng - delta},${jLat - delta},${jLng + delta},${jLat + delta}`;
-  const src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${jLat},${jLng}`;
-  return (
-    <div className="mini-map">
-      <iframe src={src} title="Ubicación aproximada" loading="lazy" />
-      <p className="mini-map-note">Ubicación aproximada, no exacta</p>
-    </div>
-  );
-}
-
 function ItemCard({ item, onOpen, index, saved, toggleSave }) {
   return (
     <div className="card" onClick={() => onOpen(item)}>
@@ -129,7 +133,7 @@ function ItemCard({ item, onOpen, index, saved, toggleSave }) {
       <div className="card-info">
         <h3>{item.title}</h3>
         <p>{item.size ? `${item.size} · ` : ""}{item.condition}</p>
-        <p className="card-city"><MapPin size={10} /> {item.distanceKm !== null ? `a ${item.distanceKm < 1 ? "menos de 1" : Math.round(item.distanceKm)} km · ` : item.city ? `${item.city} · ` : ""}{timeAgo(item.minutesAgo)}</p>
+        <p className="card-city"><MapPin size={10} /> {item.city ? `${item.city} · ` : ""}{timeAgo(item.minutesAgo)}</p>
       </div>
     </div>
   );
@@ -220,6 +224,11 @@ export default function JolvoApp() {
 
   const [editingItem, setEditingItem] = useState(null);
   const [showLegal, setShowLegal] = useState(null); // "about" | "terms" | "privacy" | "cookies" | null
+  const [cookieChoice, setCookieChoice] = useState(() => localStorage.getItem("reloop_cookie_consent") || null);
+  const [cropperState, setCropperState] = useState(null); // { imageSrc, target, aspect, queue } | null
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [showCookieBanner, setShowCookieBanner] = useState(!localStorage.getItem("reloop_cookies_accepted"));
   const [notifications, setNotifications] = useState([]);
   const LEADERBOARD = [
@@ -524,7 +533,7 @@ export default function JolvoApp() {
   }
   function closeItemView() {
     setOpenItem(null);
-    navigate("/");
+    navigate(-1);
   }
   function goHome() {
     setOpenItem(null);
@@ -534,10 +543,51 @@ export default function JolvoApp() {
     navigate("/");
   }
 
+  function startCropping(file, target, queue = []) {
+    if (!file) return;
+    const imageSrc = URL.createObjectURL(file);
+    setCropperState({ imageSrc, target, aspect: target === "cover" ? 3 : 1, queue });
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+  }
+
+  function onCropComplete(_croppedArea, pixels) {
+    setCroppedAreaPixels(pixels);
+  }
+
+  function cancelCropping() {
+    if (cropperState) URL.revokeObjectURL(cropperState.imageSrc);
+    setCropperState(null);
+  }
+
+  async function confirmCrop() {
+    if (!cropperState || !croppedAreaPixels) return;
+    const { target, queue, imageSrc } = cropperState;
+    try {
+      const croppedFile = await getCroppedImageFile(imageSrc, croppedAreaPixels, `recorte-${Date.now()}.jpg`);
+      URL.revokeObjectURL(imageSrc);
+
+      if (target === "avatar") await uploadAvatarPhoto(croppedFile);
+      else if (target === "cover") await uploadCoverPhoto(croppedFile);
+      else if (target === "item") await uploadItemPhoto(croppedFile);
+
+      if (queue.length > 0) {
+        const [next, ...rest] = queue;
+        startCropping(next, target, rest);
+      } else {
+        setCropperState(null);
+      }
+    } catch (err) {
+      toast.error(err.message || "No se pudo recortar la imagen");
+      setCropperState(null);
+    }
+  }
+
   async function uploadAvatarPhoto(file) {
     if (!file) return;
     try {
-      const { url } = await uploadImage(file);
+      const url = await uploadImage(file);
       await updateMyLocation({ avatarUrl: url });
       setMyAvatarUrl(url);
       localStorage.setItem("reloop_avatar", url);
@@ -550,7 +600,7 @@ export default function JolvoApp() {
   async function uploadCoverPhoto(file) {
     if (!file) return;
     try {
-      const { url } = await uploadImage(file);
+      const url = await uploadImage(file);
       await updateMyLocation({ coverUrl: url });
       setMyCoverUrl(url);
       localStorage.setItem("reloop_cover", url);
@@ -626,9 +676,14 @@ export default function JolvoApp() {
     openProfile(username);
     navigate(`/perfil/${username}`);
   }
+  function handleCookieChoice(choice) {
+    setCookieChoice(choice);
+    localStorage.setItem("reloop_cookie_consent", choice);
+  }
+
   function closeProfileView() {
     setShowProfile(false);
-    navigate("/");
+    navigate(-1);
   }
 
   async function toggleSave(id) {
@@ -708,21 +763,24 @@ export default function JolvoApp() {
     setShowPost(true);
   }
 
-  async function handleImageSelect(e) {
+  function handleImageSelect(e) {
     const files = Array.from(e.target.files || []).slice(0, 6 - form.images.length);
     e.target.value = ""; // permite volver a seleccionar el mismo archivo si se quita y se vuelve a añadir
+    if (files.length === 0) return;
+    const [first, ...rest] = files;
+    startCropping(first, "item", rest);
+  }
 
-    for (const file of files) {
-      const tempId = `uploading-${Math.random()}`;
-      setUploadingImages((prev) => [...prev, tempId]);
-      try {
-        const url = await uploadImage(file);
-        setForm((prev) => ({ ...prev, images: [...prev.images, url] }));
-      } catch (err) {
-        toast.error(err.message || "No se pudo subir la foto");
-      } finally {
-        setUploadingImages((prev) => prev.filter((id) => id !== tempId));
-      }
+  async function uploadItemPhoto(file) {
+    const tempId = `uploading-${Math.random()}`;
+    setUploadingImages((prev) => [...prev, tempId]);
+    try {
+      const url = await uploadImage(file);
+      setForm((prev) => ({ ...prev, images: [...prev.images, url] }));
+    } catch (err) {
+      toast.error(err.message || "No se pudo subir la foto");
+    } finally {
+      setUploadingImages((prev) => prev.filter((id) => id !== tempId));
     }
   }
 
@@ -1028,7 +1086,7 @@ export default function JolvoApp() {
         toast("Añade tu ciudad desde tu perfil para ver la distancia a otros artículos", { icon: "📍", duration: 6000 });
       }
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message?.includes("pattern") ? "No se pudo completar el inicio de sesión con Google. Inténtalo de nuevo." : err.message);
     }
   }
 
@@ -1036,7 +1094,7 @@ export default function JolvoApp() {
     if (!showAuth) return;
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId || !window.google) return;
-    window.google.accounts.id.initialize({ client_id: clientId, callback: handleGoogleCredential });
+    window.google.accounts.id.initialize({ client_id: clientId, callback: handleGoogleCredential, itp_support: true, ux_mode: "popup" });
     const el = document.getElementById("google-signin-btn");
     if (el) {
       el.innerHTML = "";
@@ -1110,6 +1168,18 @@ export default function JolvoApp() {
 
   return (
     <div className="app">
+      {!cookieChoice && (
+        <div className="cookie-banner">
+          <p>
+            Usamos cookies propias y de terceros para que la web funcione, recordar tu sesión y entender cómo la usas.{" "}
+            <button className="cookie-link" onClick={() => setShowLegal("cookies")}>Más información</button>
+          </p>
+          <div className="cookie-actions">
+            <button className="btn ghost" onClick={() => handleCookieChoice("rejected")}>Solo necesarias</button>
+            <button className="btn primary" onClick={() => handleCookieChoice("accepted")}>Aceptar todo</button>
+          </div>
+        </div>
+      )}
       <Toaster
         position="bottom-center"
         toastOptions={{
@@ -1407,6 +1477,15 @@ export default function JolvoApp() {
         @keyframes shimmer { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
 
         .empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 70px 30px; text-align: center; }
+        .cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: #1A1A1E; border-top: 1px solid #29292f; padding: 16px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between; box-shadow: 0 -8px 24px rgba(0,0,0,0.35); }
+        .cookie-banner p { font-size: 12.5px; color: #C8C8CE; margin: 0; max-width: 640px; line-height: 1.5; flex: 1; min-width: 220px; }
+        .cookie-link { background: none; border: none; color: #4DE1C1; text-decoration: underline; cursor: pointer; font-size: 12.5px; font-family: inherit; padding: 0; }
+        .cookie-actions { display: flex; gap: 10px; flex-shrink: 0; }
+        @media (max-width: 600px) {
+          .cookie-banner { flex-direction: column; align-items: stretch; }
+          .cookie-actions { justify-content: stretch; }
+          .cookie-actions .btn { flex: 1; justify-content: center; }
+        }
         .site-footer { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; padding: 20px 26px 100px; color: #6A6A73; font-size: 11px; }
         .site-footer button { background: none; border: none; color: #6A6A73; font-size: 11px; cursor: pointer; font-family: inherit; text-decoration: underline; }
         .site-footer button:hover { color: #F2F2F0; }
@@ -1496,10 +1575,16 @@ export default function JolvoApp() {
         .chat-send-btn:not(:disabled):active { transform: scale(0.92); }
 
         .overlay { position: fixed; inset: 0; background: rgba(10,10,12,0.85); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+        .cropper-overlay { z-index: 50; }
+        .cropper-box { background: #1A1A1E; border: 1px solid #29292f; border-radius: 20px; padding: 20px; width: 100%; max-width: 420px; }
+        .cropper-canvas { position: relative; width: 100%; height: 320px; background: #000; border-radius: 12px; overflow: hidden; }
+        .cropper-zoom-slider { width: 100%; margin: 16px 0 4px; accent-color: #FF4D6D; }
+        .cropper-actions { display: flex; gap: 10px; margin-top: 14px; }
+        .cropper-actions .btn { flex: 1; justify-content: center; }
         .overlay-top { z-index: 15; }
         .modal { background: #1A1A1E; border: 1px solid #29292f; border-radius: 22px; max-width: 400px; width: 100%; padding: 26px; position: relative; max-height: 88vh; overflow-y: auto; }
         .modal h3 { font-size: 19px; font-weight: 700; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
-        .close-btn { position: absolute; top: 16px; right: 16px; background: #29292f; border: none; border-radius: 50%; width: 28px; height: 28px; color: #fff; cursor: pointer; }
+        .close-btn { position: absolute; top: 16px; right: 16px; background: #29292f; border: none; border-radius: 50%; width: 28px; height: 28px; color: #fff; cursor: pointer; z-index: 5; }
         label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; color: #9A9AA3; }
         input, select { width: 100%; border: 1px solid #333; border-radius: 12px; padding: 10px 12px; font-size: 13px; background: #121214; color: #F2F2F0; font-family: inherit; }
         .post-textarea { width: 100%; border: 1px solid #333; border-radius: 12px; padding: 10px 12px; font-size: 13px; background: #121214; color: #F2F2F0; font-family: inherit; resize: vertical; margin-bottom: 4px; }
@@ -1546,6 +1631,7 @@ export default function JolvoApp() {
         }
         .detail-media { height: 220px; position: relative; border-radius: 22px 22px 0 0; }
         .dark-close { top: 14px; right: 14px; background: #00000066; }
+        .dark-close-left { top: 14px; left: 14px; right: auto; background: #00000066; z-index: 6; }
         .detail-heart { position: absolute; top: 14px; right: 14px; }
         .detail-body { padding: 20px 22px 24px; }
         .detail-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
@@ -1574,7 +1660,6 @@ export default function JolvoApp() {
         .auth-brand { text-align: center; margin-bottom: 20px; }
         .social-auth-col { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 14px; }
         .google-signin-slot { display: flex; justify-content: center; width: 100%; min-height: 40px; }
-        .apple-signin-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 320px; padding: 10px; border-radius: 10px; border: 1px solid #333; background: #000; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .auth-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; color: #6A6A73; font-size: 11px; }
         .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: #29292f; }
         .auth-mark { margin: 0 auto 12px; }
@@ -2036,13 +2121,6 @@ export default function JolvoApp() {
 
             <div className="social-auth-col">
               <div id="google-signin-btn" className="google-signin-slot" />
-              <button
-                type="button"
-                className="apple-signin-btn"
-                onClick={() => toast("El inicio de sesión con Apple todavía no está disponible", { icon: "🍎" })}
-              >
-                <User size={15} /> Continuar con Apple
-              </button>
             </div>
 
             <div className="auth-divider"><span>o con tu email</span></div>
@@ -2098,7 +2176,7 @@ export default function JolvoApp() {
               <div className="banner-texture" />
               {isOwnProfile && (
                 <>
-                  <input type="file" accept="image/*" id="cover-upload-input" style={{ display: "none" }} onChange={(e) => uploadCoverPhoto(e.target.files[0])} />
+                  <input type="file" accept="image/*" id="cover-upload-input" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "cover"); e.target.value = ""; }} />
                   <button className="cover-btn" onClick={() => document.getElementById("cover-upload-input").click()}><ImagePlus size={13} /> Cambiar portada</button>
                 </>
               )}
@@ -2123,7 +2201,7 @@ export default function JolvoApp() {
                 {!(isOwnProfile && myAvatarUrl) && profileUsername[0]?.toUpperCase()}
               </div>
               {isOwnProfile && (
-                <input type="file" accept="image/*" id="avatar-upload-input" style={{ display: "none" }} onChange={(e) => uploadAvatarPhoto(e.target.files[0])} />
+                <input type="file" accept="image/*" id="avatar-upload-input" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "avatar"); e.target.value = ""; }} />
               )}
               <p className="profile-name">
                 @{profileUsername}
@@ -3025,6 +3103,35 @@ export default function JolvoApp() {
         </div>
       )}
 
+      {cropperState && (
+        <div className="overlay cropper-overlay" onClick={(e) => e.stopPropagation()}>
+          <div className="cropper-box">
+            <p className="auth-title" style={{ textAlign: "center", marginBottom: 12 }}>Ajusta la foto</p>
+            <div className="cropper-canvas">
+              <Cropper
+                image={cropperState.imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={cropperState.aspect}
+                cropShape={cropperState.target === "avatar" ? "round" : "rect"}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </div>
+            <input
+              type="range" min={1} max={3} step={0.05} value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="cropper-zoom-slider"
+            />
+            <div className="cropper-actions">
+              <button className="btn ghost" onClick={cancelCropping}>Cancelar</button>
+              <button className="btn primary" onClick={confirmCrop}>Usar esta foto</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showEditProfile && (
         <div className="overlay" onClick={() => setShowEditProfile(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 380 }}>
@@ -3043,7 +3150,7 @@ export default function JolvoApp() {
                 {!myAvatarUrl && username[0]?.toUpperCase()}
               </div>
               <div>
-                <input type="file" accept="image/*" id="avatar-upload-input-modal" style={{ display: "none" }} onChange={(e) => uploadAvatarPhoto(e.target.files[0])} />
+                <input type="file" accept="image/*" id="avatar-upload-input-modal" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "avatar"); e.target.value = ""; }} />
                 <button type="button" className="btn ghost" onClick={() => document.getElementById("avatar-upload-input-modal").click()}>
                   <ImagePlus size={13} /> Cambiar foto
                 </button>
@@ -3368,8 +3475,7 @@ export default function JolvoApp() {
                 </p>
                 <p className="seller-rating">
                   <Star size={11} fill="#FFC24D" color="#FFC24D" /> 4.8 · 32 ventas
-                  {openItem.distanceKm !== null && <> · <MapPin size={11} /> a {openItem.distanceKm < 1 ? "menos de 1" : Math.round(openItem.distanceKm)} km</>}
-                  {openItem.distanceKm === null && openItem.city && <> · <MapPin size={11} /> {openItem.city}</>}
+                  {openItem.city && <> · <MapPin size={11} /> {openItem.city}</>}
                 </p>
                 <div className="seller-mini-verify">
                   <span className="verify-chip done"><CheckCircle size={10} /> Email</span>
@@ -3429,7 +3535,7 @@ export default function JolvoApp() {
           </>
         );
 
-        const mapEl = <MiniMap lat={openItem.sellerLat} lng={openItem.sellerLng} seed={openItem.id} />;
+
 
         return isDesktop ? (
           <div className="item-page">
@@ -3440,7 +3546,6 @@ export default function JolvoApp() {
               </div>
               <div className="item-page-info">
                 {infoEl}
-                {mapEl}
               </div>
             </div>
             <div className="related-full">
@@ -3450,9 +3555,9 @@ export default function JolvoApp() {
         ) : (
           <div className="overlay detail-overlay" onClick={closeItemView}>
             <div className="modal detail-modal" onClick={(e) => e.stopPropagation()}>
-              <button className="close-btn dark-close" onClick={closeItemView}><X size={14} /></button>
+              <button className="close-btn dark-close-left" onClick={closeItemView}><X size={14} /></button>
               {galleryEl}
-              <div className="detail-body">{infoEl}{mapEl}{relatedEl}</div>
+              <div className="detail-body">{infoEl}{relatedEl}</div>
             </div>
           </div>
         );
