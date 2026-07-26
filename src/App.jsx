@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
-import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn } from "lucide-react";
+import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn, MoreHorizontal } from "lucide-react";
 import {
   fetchItems, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
@@ -198,6 +198,7 @@ export default function JolvoApp() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [stripeStatus, setStripeStatus] = useState(null);
   const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState({ purchases: [], sales: [] });
@@ -270,6 +271,8 @@ export default function JolvoApp() {
   const [saved, setSaved] = useState(new Set());
   const [loggedIn, setLoggedIn] = useState(isLoggedIn());
   const [numCols, setNumCols] = useState(2);
+  const [feedRowsShown, setFeedRowsShown] = useState(5);
+  useEffect(() => { setFeedRowsShown(5); }, [category, query]);
 
   useEffect(() => {
     function updateCols() {
@@ -1196,6 +1199,12 @@ export default function JolvoApp() {
         .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #FF4D6D, #8C7CFF); display: flex; align-items: center; justify-content: center; }
         .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
         .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        .more-menu-wrap { position: relative; }
+        .more-menu-backdrop { position: fixed; inset: 0; z-index: 59; }
+        .more-menu-panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; background: #1A1A1E; border: 1px solid #29292f; border-radius: 14px; padding: 6px; min-width: 190px; box-shadow: 0 12px 32px rgba(0,0,0,0.4); display: flex; flex-direction: column; }
+        .more-menu-panel button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; background: none; border: none; color: #F2F2F0; font-size: 13.5px; font-family: inherit; border-radius: 8px; cursor: pointer; text-align: left; position: relative; }
+        .more-menu-panel button:hover { background: #29292f; }
+        .notif-dot.inline { position: static; margin-left: auto; }
         @media (max-width: 640px) {
           .btn-label { display: none; }
           .league-btn, .admin-panel-btn, .top-actions > .btn.ghost:not(.league-btn):not(.admin-panel-btn) { width: 36px; height: 36px; padding: 0; border-radius: 50%; justify-content: center; }
@@ -1206,8 +1215,8 @@ export default function JolvoApp() {
         .profile-modal { max-width: 400px; padding: 0; }
         .profile-banner { height: 100px; position: relative; overflow: hidden; border-radius: 22px 22px 0 0; }
         .banner-texture { position: absolute; inset: 0; background-image: radial-gradient(#ffffff22 1px, transparent 1px); background-size: 10px 10px; }
-        .profile-content { padding: 0 22px 24px; text-align: center; margin-top: -44px; }
-        .profile-avatar-lg { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: #121214; margin: 0 auto 10px; border: 4px solid #1A1A1E; box-shadow: 0 0 0 2px #29292f; }
+        .profile-content { padding: 0 22px 24px; text-align: center; margin-top: -30px; position: relative; z-index: 2; }
+        .profile-avatar-lg { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: #121214; margin: 0 auto 10px; border: 5px solid #1A1A1E; box-shadow: 0 0 0 2px #29292f, 0 4px 14px rgba(0,0,0,0.45); position: relative; z-index: 2; }
         .edit-avatar-row { display: flex; align-items: center; gap: 14px; margin: 14px 0 6px; }
         .profile-name { font-size: 18px; font-weight: 700; margin: 0; }
         .profile-sub { font-size: 12px; color: #9A9AA3; margin: 4px 0 14px; display: flex; align-items: center; justify-content: center; gap: 4px; }
@@ -1475,6 +1484,7 @@ export default function JolvoApp() {
         .shimmer { background: linear-gradient(100deg, #1F1F24 30%, #2A2A30 50%, #1F1F24 70%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
         @keyframes shimmer { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
 
+        .load-more-row { display: flex; justify-content: center; padding: 24px 0 8px; }
         .empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 70px 30px; text-align: center; }
         .cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: #1A1A1E; border-top: 1px solid #29292f; padding: 16px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between; box-shadow: 0 -8px 24px rgba(0,0,0,0.35); }
         .cookie-banner p { font-size: 12.5px; color: #C8C8CE; margin: 0; max-width: 640px; line-height: 1.5; flex: 1; min-width: 220px; }
@@ -1700,26 +1710,10 @@ export default function JolvoApp() {
         </div>
         <div className="top-actions">
           {loggedIn && (
-            <button className="icon-btn" onClick={() => setShowOrders(true)}>
-              <Package size={16} />
-            </button>
-          )}
-          {loggedIn && (
             <button className="icon-btn" onClick={() => setShowFavorites(true)}>
               <Heart size={16} fill={saved.size > 0 ? "#FF4D6D" : "none"} color={saved.size > 0 ? "#FF4D6D" : "currentColor"} />
               {saved.size > 0 && <span className="notif-dot">{saved.size}</span>}
             </button>
-          )}
-          {loggedIn && (
-            <button className="icon-btn" onClick={handleOpenNotifs}>
-              <Bell size={16} />
-              {notifications.some((n) => !n.read) && (
-                <span className="notif-dot">{notifications.filter((n) => !n.read).length}</span>
-              )}
-            </button>
-          )}
-          {loggedIn && (
-            <button className="icon-btn" onClick={() => setShowSettings(true)}><Settings size={16} /></button>
           )}
           {loggedIn && (
             <span className="badge profile-badge" onClick={viewProfile}>
@@ -1727,16 +1721,42 @@ export default function JolvoApp() {
               @{username}
             </span>
           )}
-          <button className="btn ghost league-btn" onClick={() => setShowLeague(true)}><Trophy size={14} /> <span className="btn-label">Liga</span></button>
-          {isModerator && (
-            <button className="btn ghost admin-panel-btn" onClick={openAdminPanel}><ShieldCheck size={14} /> <span className="btn-label">Admin</span></button>
-          )}
           <button className="btn primary" onClick={() => { setEditingItem(null); setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] }); setShowPost(true); }}><Plus size={14} /> Vender</button>
-          {loggedIn ? (
-            <button className="btn ghost" onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); toast("Sesión cerrada"); }}><LogOut size={14} /> <span className="btn-label">Salir</span></button>
-          ) : (
-            <button className="btn ghost" onClick={() => setShowAuth(true)}><LogIn size={14} /> <span className="btn-label">Entrar</span></button>
-          )}
+
+          <div className="more-menu-wrap">
+            <button className="icon-btn more-menu-btn" onClick={() => setShowMoreMenu((v) => !v)}>
+              <MoreHorizontal size={16} />
+              {loggedIn && notifications.some((n) => !n.read) && <span className="notif-dot">{notifications.filter((n) => !n.read).length}</span>}
+            </button>
+            {showMoreMenu && (
+              <>
+                <div className="more-menu-backdrop" onClick={() => setShowMoreMenu(false)} />
+                <div className="more-menu-panel">
+                  {loggedIn && (
+                    <button onClick={() => { setShowMoreMenu(false); setShowOrders(true); }}><Package size={15} /> Pedidos</button>
+                  )}
+                  {loggedIn && (
+                    <button onClick={() => { setShowMoreMenu(false); handleOpenNotifs(); }}>
+                      <Bell size={15} /> Notificaciones
+                      {notifications.some((n) => !n.read) && <span className="notif-dot inline">{notifications.filter((n) => !n.read).length}</span>}
+                    </button>
+                  )}
+                  {loggedIn && (
+                    <button onClick={() => { setShowMoreMenu(false); setShowSettings(true); }}><Settings size={15} /> Ajustes</button>
+                  )}
+                  <button onClick={() => { setShowMoreMenu(false); setShowLeague(true); }}><Trophy size={15} /> Liga</button>
+                  {isModerator && (
+                    <button onClick={() => { setShowMoreMenu(false); openAdminPanel(); }}><ShieldCheck size={15} /> Admin</button>
+                  )}
+                  {loggedIn ? (
+                    <button onClick={() => { setShowMoreMenu(false); apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); toast("Sesión cerrada"); }}><LogOut size={15} /> Salir</button>
+                  ) : (
+                    <button onClick={() => { setShowMoreMenu(false); setShowAuth(true); }}><LogIn size={15} /> Entrar</button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -1871,12 +1891,14 @@ export default function JolvoApp() {
         </div>
       )}
       {!loading && items.length > 0 && (
+        <>
         <div className="two-col">
           {Array.from({ length: Math.min(numCols, items.length) }).map((_, col) => {
             const effectiveCols = Math.min(numCols, items.length);
+            const visibleItems = items.slice(0, effectiveCols * feedRowsShown);
             return (
               <div className="col" key={col}>
-                {items.filter((_, i) => i % effectiveCols === col).map((item) => {
+                {visibleItems.filter((_, i) => i % effectiveCols === col).map((item) => {
                   const realIndex = items.indexOf(item);
                   return (
                     <ItemCard key={item.id} item={item} index={realIndex} onOpen={viewItem} saved={saved.has(item.id)} toggleSave={toggleSave} />
@@ -1886,6 +1908,12 @@ export default function JolvoApp() {
             );
           })}
         </div>
+        {items.length > numCols * feedRowsShown && (
+          <div className="load-more-row">
+            <button className="btn ghost" onClick={() => setFeedRowsShown((n) => n + 5)}>Cargar más artículos</button>
+          </div>
+        )}
+        </>
       )}
 
       <footer className="site-footer">
@@ -3395,7 +3423,7 @@ export default function JolvoApp() {
               <>
                 <p className="profile-section-title related-heading">Más de @{openItem.seller}</p>
                 <div className="mini-row">
-                  {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).slice(0, 5).map((i, idx) => (
+                  {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).slice(0, 7).map((i, idx) => (
                     <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
                       <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
                       <p className="mini-title">{i.title}</p>
@@ -3410,7 +3438,7 @@ export default function JolvoApp() {
               <>
                 <p className="profile-section-title related-heading">Artículos parecidos</p>
                 <div className="mini-row">
-                  {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).slice(0, 5).map((i, idx) => (
+                  {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).slice(0, 7).map((i, idx) => (
                     <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
                       <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
                       <p className="mini-title">{i.title}</p>
