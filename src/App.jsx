@@ -1376,7 +1376,7 @@ export default function JolvoApp() {
         .filter-price-inputs span { color: #6A6A73; }
         .filter-clear-btn { background: none; border: none; color: #FF4D6D; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; align-self: flex-start; }
         .filter-location-prompt { display: flex; align-items: center; gap: 6px; background: #4DE1C114; border: 1px solid #4DE1C133; color: #4DE1C1; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: 10px; cursor: pointer; font-family: inherit; }
-        .cat-scroll { display: flex; gap: 18px; padding: 14px 26px 6px; overflow-x: auto; scrollbar-width: none; }
+        .cat-scroll { display: flex; gap: 8px; padding: 14px 26px 6px; overflow-x: auto; scrollbar-width: none; }
         .cat-scroll::-webkit-scrollbar { display: none; }
         .cat-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; font-family: inherit; flex-shrink: 0; color: #9A9AA3; }
         .cat-icon-wrap { width: 52px; height: 52px; border-radius: 50%; background: #1F1F24; border: 1px solid #29292f; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: border-color .15s ease, transform .15s ease; }
@@ -1722,13 +1722,14 @@ export default function JolvoApp() {
         .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 10px 26px 18px; font-size: 12.5px; color: #C8C8CE; line-height: 1.5; }
         .community-impact svg { flex-shrink: 0; }
         .community-impact strong { color: #4DE1C1; font-weight: 700; }
-        .newsletter-band { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: linear-gradient(135deg, #8C7CFF, #FF4D6D); border: none; border-radius: 0; padding: 30px 40px; margin: 30px 0 0; }
+        .newsletter-band { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: linear-gradient(135deg, #8C7CFF, #FF4D6D); border: none; border-radius: 0; padding: 30px 40px; margin: 30px 0 0; max-width: 1300px; margin-left: auto; margin-right: auto; }
         .newsletter-title { color: #121214; }
         .newsletter-sub { color: #121214cc; }
         @media (max-width: 640px) {
           .newsletter-band { margin: 20px 0 0; padding: 24px 20px; }
         }
         .site-footer-rich { background: #121214; border-top: 1px solid #29292f; padding: 30px 40px 100px; margin-top: 0; }
+        .site-footer-rich > * { max-width: 1300px; margin-left: auto; margin-right: auto; }
         .footer-brand-line { font-size: 11px; letter-spacing: 1.5px; color: #6A6A73; text-transform: uppercase; margin: 0; }
         .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
         .footer-social-row { display: flex; align-items: center; gap: 14px; }
