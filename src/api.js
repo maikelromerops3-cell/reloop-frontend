@@ -22,6 +22,19 @@ export async function fetchItems({ query, category, size, minPrice, maxPrice, so
   return res.json();
 }
 
+export async function searchByImage(file) {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const res = await fetch(`${API_URL}/items/search-by-image`, {
+    method: "POST",
+    headers: { ...authHeaders() },
+    body: formData,
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo analizar la foto");
+  return res.json();
+}
+
 export async function fetchItem(id) {
   const res = await fetch(`${API_URL}/items/${id}`);
   if (!res.ok) throw new Error("Artículo no encontrado");

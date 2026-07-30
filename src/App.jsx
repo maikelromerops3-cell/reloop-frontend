@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
-import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn, MoreHorizontal } from "lucide-react";
+import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar } from "lucide-react";
 import {
   fetchItems, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, submitReview, fetchReviews,
-  fetchProfile, updateMyLocation, loginWithGoogle,
+  fetchProfile, updateMyLocation, loginWithGoogle, searchByImage,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
@@ -20,9 +20,9 @@ import {
   fetchPublicSettings, fetchAdminSettings, updateAdminSettings, adminEditItem, exportUsersCsv, exportTransactionsCsv, changeUserRole,
 } from "./api";
 
-const CATEGORY_ICONS = { "Todo": LayoutGrid, "Moda": Shirt, "Electrónica": Zap, "Hogar": PackageOpen, "Deporte": Footprints, "Juguetes y ocio": Watch, "Otros": Tag };
-const CATEGORY_COLORS = { "Todo": "#C8C8CE", "Moda": "#FF4D6D", "Electrónica": "#4DA8FF", "Hogar": "#FFC24D", "Deporte": "#4DE1C1", "Juguetes y ocio": "#8C7CFF", "Otros": "#FF8A4D" };
-const CATEGORIES = ["Todo", "Moda", "Electrónica", "Hogar", "Deporte", "Juguetes y ocio", "Otros"];
+const CATEGORY_ICONS = { "Todo": LayoutGrid, "Moda": Shirt, "Electrónica": Zap, "Hogar": PackageOpen, "Deporte": Footprints, "Juguetes y ocio": Watch, "Vehículos": Car, "Libros y música": BookOpen, "Belleza y cuidado personal": Sparkles, "Bebé e infantil": Baby, "Jardín y herramientas": Wrench, "Instrumentos musicales": Guitar, "Otros": Tag };
+const CATEGORY_COLORS = { "Todo": "#C8C8CE", "Moda": "#FF4D6D", "Electrónica": "#4DA8FF", "Hogar": "#FFC24D", "Deporte": "#4DE1C1", "Juguetes y ocio": "#8C7CFF", "Vehículos": "#6A9BFF", "Libros y música": "#E0A458", "Belleza y cuidado personal": "#FF8FB1", "Bebé e infantil": "#7FD8A6", "Jardín y herramientas": "#A3C96B", "Instrumentos musicales": "#C97BFF", "Otros": "#FF8A4D" };
+const CATEGORIES = ["Todo", "Moda", "Electrónica", "Hogar", "Deporte", "Juguetes y ocio", "Vehículos", "Libros y música", "Belleza y cuidado personal", "Bebé e infantil", "Jardín y herramientas", "Instrumentos musicales", "Otros"];
 function buildFaqItems(s) {
   return [
     { q: "¿Cómo publico una prenda?", a: "Dale al botón \"Vender\", añade fotos, título, precio y descripción, y publícala. Aparecerá al momento en el feed." },
@@ -101,6 +101,14 @@ function getCroppedImageFile(imageSrc, croppedAreaPixels, fileName) {
   });
 }
 
+function TikTokIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M16.6 5.82a4.28 4.28 0 0 1-3.28-1.9V16.5a4.7 4.7 0 1 1-4-4.64v2.5a2.2 2.2 0 1 0 1.5 2.1V2h2.4a4.28 4.28 0 0 0 3.38 4.2v2.5a6.77 6.77 0 0 1-3.38-.92v.02c0-.03 3.38.02 3.38.02V5.82z" />
+    </svg>
+  );
+}
+
 function normalizeItem(raw) {
   const minutesAgo = raw.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(raw.createdAt).getTime()) / 60000)) : 0;
   return {
@@ -172,6 +180,9 @@ export default function JolvoApp() {
 
   const [allItems, setAllItems] = useState([]);
   const [items, setItems] = useState([]);
+  const [photoSearchResults, setPhotoSearchResults] = useState(null); // null = búsqueda normal, array = resultados por foto
+  const [photoSearchKeywords, setPhotoSearchKeywords] = useState([]);
+  const [searchingPhoto, setSearchingPhoto] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [query, setQuery] = useState("");
@@ -274,7 +285,25 @@ export default function JolvoApp() {
   const [loggedIn, setLoggedIn] = useState(isLoggedIn());
   const [numCols, setNumCols] = useState(2);
   const [feedRowsShown, setFeedRowsShown] = useState(5);
-  useEffect(() => { setFeedRowsShown(5); }, [category, query]);
+  useEffect(() => { setFeedRowsShown(5); if (photoSearchResults !== null) clearPhotoSearch(); }, [category, query]);
+
+  // Scroll infinito: al acercarnos al final de la página, mostramos más filas del feed automáticamente
+  const displayItemsLengthRef = useRef(0);
+  useEffect(() => {
+    displayItemsLengthRef.current = (photoSearchResults !== null ? photoSearchResults : items).length;
+  });
+  useEffect(() => {
+    function onScroll() {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 800) {
+        setFeedRowsShown((n) => {
+          const maxRows = Math.ceil(displayItemsLengthRef.current / Math.max(numCols, 1));
+          return n < maxRows ? n + 5 : n;
+        });
+      }
+    }
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [numCols]);
 
   useEffect(() => {
     function updateCols() {
@@ -430,7 +459,7 @@ export default function JolvoApp() {
   const [supportSubject, setSupportSubject] = useState("");
   const [supportMessage, setSupportMessage] = useState("");
   const [mySupportMessages, setMySupportMessages] = useState([]);
-  const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo") });
+  const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo"), instagramUrl: "", tiktokUrl: "", facebookUrl: "", twitterUrl: "" });
   const [adminSettingsForm, setAdminSettingsForm] = useState(null);
   const [adminUserFilters, setAdminUserFilters] = useState({ verified: "", stripeConnected: "" });
   const [adminUserPage, setAdminUserPage] = useState(1);
@@ -535,6 +564,19 @@ export default function JolvoApp() {
     setGalleryIndex(0);
     navigate(`/item/${item.id}`);
   }
+
+  useEffect(() => {
+    if (openItem) {
+      document.title = `${openItem.title} — ${openItem.price}€ | Jolvo, segunda mano`;
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) metaDesc.setAttribute("content", `${openItem.title} de segunda mano por ${openItem.price}€. ${openItem.category ? `Categoría: ${openItem.category}.` : ""} Cómpralo en Jolvo, la app de compraventa de segunda mano.`);
+    } else {
+      document.title = "Jolvo — Compra y vende de segunda mano en España | Ropa, electrónica y más";
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) metaDesc.setAttribute("content", "Compra y vende de segunda mano en España: ropa, electrónica, hogar, vehículos y mucho más. Publica gratis en segundos, chatea con otros usuarios y paga seguro.");
+    }
+  }, [openItem]);
+
   function closeItemView() {
     setOpenItem(null);
     navigate(-1);
@@ -683,6 +725,30 @@ export default function JolvoApp() {
   function handleCookieChoice(choice) {
     setCookieChoice(choice);
     localStorage.setItem("reloop_cookie_consent", choice);
+  }
+
+  async function handlePhotoSearch(file) {
+    if (!file) return;
+    setSearchingPhoto(true);
+    try {
+      const { keywords, items: results } = await searchByImage(file);
+      if (!keywords || keywords.length === 0) {
+        toast.error("No se pudo identificar qué hay en la foto");
+        return;
+      }
+      setPhotoSearchKeywords(keywords);
+      setPhotoSearchResults(results);
+      toast.success(`Buscando: ${keywords.join(", ")}`);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSearchingPhoto(false);
+    }
+  }
+
+  function clearPhotoSearch() {
+    setPhotoSearchResults(null);
+    setPhotoSearchKeywords([]);
   }
 
   function handleNewsletterSubmit(e) {
@@ -1211,6 +1277,27 @@ export default function JolvoApp() {
         .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #FF4D6D, #8C7CFF); display: flex; align-items: center; justify-content: center; }
         .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
         .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        .mobile-bottom-nav { display: none; }
+        @media (max-width: 780px) {
+          .hide-on-mobile-nav { display: none !important; }
+          .mobile-bottom-nav {
+            display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
+            background: #1A1A1E; border-top: 1px solid #29292f; padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+            justify-content: space-around; align-items: center;
+          }
+          .mobile-bottom-nav button {
+            background: none; border: none; color: #9A9AA3; display: flex; flex-direction: column; align-items: center;
+            gap: 3px; font-size: 10px; font-family: inherit; cursor: pointer; padding: 4px 8px; position: relative; flex: 1;
+          }
+          .mobile-nav-sell {
+            background: linear-gradient(135deg, #FF4D6D, #FF7A45) !important; color: #121214 !important; border-radius: 50%;
+            width: 46px; height: 46px; flex: none !important; margin-top: -18px; box-shadow: 0 6px 16px rgba(255,77,109,0.4);
+          }
+          .mobile-nav-sell span { display: none; }
+          .bottom-nav-avatar { width: 20px; height: 20px; font-size: 10px; margin: 0; }
+          .bottom-nav-dot { position: absolute; top: -2px; right: 10px; }
+          body { padding-bottom: 62px; }
+        }
         .more-menu-wrap { position: relative; }
         .more-menu-backdrop { position: fixed; inset: 0; z-index: 59; }
         .more-menu-panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; background: #1A1A1E; border: 1px solid #29292f; border-radius: 14px; padding: 6px; min-width: 190px; box-shadow: 0 12px 32px rgba(0,0,0,0.4); display: flex; flex-direction: column; }
@@ -1273,6 +1360,12 @@ export default function JolvoApp() {
 
         .search-row { padding: 20px 26px 4px; display: flex; gap: 10px; align-items: center; }
         .filter-toggle-btn { flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; background: #1F1F24; border: 1px solid #333; color: #9A9AA3; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color .15s ease, color .15s ease; }
+        .filter-toggle-btn:disabled { opacity: 0.6; cursor: default; }
+        .photo-search-banner { display: flex; align-items: center; gap: 8px; background: #1A1A1E; border: 1px solid #29292f; border-radius: 12px; padding: 10px 16px; margin: 0 26px 14px; font-size: 12.5px; color: #C8C8CE; }
+        .photo-search-banner strong { color: #F2F2F0; }
+        .photo-search-banner button { margin-left: auto; display: flex; align-items: center; gap: 4px; background: none; border: none; color: #9A9AA3; font-size: 12px; cursor: pointer; font-family: inherit; }
+        .photo-search-banner button:hover { color: #FF4D6D; }
+        @media (max-width: 640px) { .photo-search-banner { margin: 0 16px 14px; } }
         .filter-toggle-btn.active { border-color: #FF4D6D; color: #FF4D6D; background: #FF4D6D14; }
         .filter-panel { margin: 10px 26px 0; background: #1F1F24; border: 1px solid #29292f; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
         .filter-panel-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -1629,7 +1722,31 @@ export default function JolvoApp() {
         .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 10px 26px 18px; font-size: 12.5px; color: #C8C8CE; line-height: 1.5; }
         .community-impact svg { flex-shrink: 0; }
         .community-impact strong { color: #4DE1C1; font-weight: 700; }
-        .newsletter-band { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: linear-gradient(135deg, #8C7CFF22, #FF4D6D14); border: 1px solid #8C7CFF33; border-radius: 18px; padding: 22px 28px; margin: 10px 26px 22px; }
+        .newsletter-band { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: linear-gradient(135deg, #8C7CFF, #FF4D6D); border: none; border-radius: 0; padding: 30px 40px; margin: 30px 0 0; }
+        .newsletter-title { color: #121214; }
+        .newsletter-sub { color: #121214cc; }
+        @media (max-width: 640px) {
+          .newsletter-band { margin: 20px 0 0; padding: 24px 20px; }
+        }
+        .site-footer-rich { background: #121214; border-top: 1px solid #29292f; padding: 30px 40px 100px; margin-top: 0; }
+        .footer-brand-line { font-size: 11px; letter-spacing: 1.5px; color: #6A6A73; text-transform: uppercase; margin: 0; }
+        .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+        .footer-social-row { display: flex; align-items: center; gap: 14px; }
+        .footer-social-label { font-size: 11px; letter-spacing: 1px; color: #6A6A73; text-transform: uppercase; }
+        .footer-social-row a { color: #C8C8CE; display: flex; }
+        .footer-social-row a:hover { color: #F2F2F0; }
+        .footer-cols { display: flex; gap: 60px; flex-wrap: wrap; margin-bottom: 30px; }
+        .footer-col { display: flex; flex-direction: column; gap: 10px; }
+        .footer-col-title { font-size: 11px; letter-spacing: 1px; color: #9A9AA3; text-transform: uppercase; margin: 0 0 4px; }
+        .footer-col button { background: none; border: none; color: #C8C8CE; font-size: 13px; cursor: pointer; font-family: inherit; text-align: left; padding: 0; }
+        .footer-col button:hover { color: #F2F2F0; text-decoration: underline; }
+        .footer-bottom-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 20px; border-top: 1px solid #29292f; color: #6A6A73; font-size: 11px; }
+        .footer-bottom-bar button { background: none; border: none; color: #6A6A73; font-size: 11px; cursor: pointer; font-family: inherit; text-decoration: underline; }
+        .footer-bottom-bar button:hover { color: #F2F2F0; }
+        @media (max-width: 640px) {
+          .site-footer-rich { padding: 24px 20px 100px; }
+          .footer-cols { gap: 34px; }
+        }
         .newsletter-title { font-size: 16px; font-weight: 700; margin: 0 0 3px; }
         .newsletter-sub { font-size: 12.5px; color: #9A9AA3; margin: 0; }
         .newsletter-form { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -1637,7 +1754,6 @@ export default function JolvoApp() {
         .newsletter-thanks { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #4DE1C1; font-weight: 600; }
         @media (max-width: 640px) {
           .community-impact { margin: 0 16px 16px; }
-          .newsletter-band { margin: 10px 16px 18px; padding: 20px; }
           .newsletter-form { width: 100%; }
           .newsletter-form input { flex: 1; min-width: 0; width: auto; }
         }
@@ -1713,22 +1829,33 @@ export default function JolvoApp() {
         .auth-modal .submit-btn { margin-top: 26px; padding: 15px; font-size: 14px; border-radius: 14px; }
         .auth-modal .toggle-link { margin-top: 16px; font-size: 12.5px; }
         .post-modal { max-width: 400px; }
-        .upload-box { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 1.5px dashed #333; border-radius: 16px; padding: 26px 16px; margin-bottom: 18px; color: #C8C8CE; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
+        @media (min-width: 780px) {
+          .post-modal { max-width: 760px; }
+          .post-modal-grid { display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start; }
+        }
+        .post-section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6A6A73; font-weight: 700; margin: 24px 0 10px; }
+        .post-section-label:first-of-type { margin-top: 6px; }
+        .upload-box { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 1.5px dashed #333; border-radius: 16px; padding: 26px 16px; margin-bottom: 12px; color: #C8C8CE; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
         .upload-box:hover { border-color: #FF4D6D; }
-        .upload-box { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-        .image-preview-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+        .image-preview-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
         .image-preview.uploading { display: flex; align-items: center; justify-content: center; background: #121214; color: #6A6A73; }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .image-preview { position: relative; width: 60px; height: 60px; border-radius: 10px; overflow: hidden; border: 1px solid #333; }
+        .image-preview { position: relative; width: 100%; aspect-ratio: 1; border-radius: 12px; overflow: hidden; border: 1px solid #333; }
         .image-preview img { width: 100%; height: 100%; object-fit: cover; }
-        .image-preview button { position: absolute; top: 2px; right: 2px; background: #000000aa; border: none; color: #fff; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+        .image-preview button { position: absolute; top: 4px; right: 4px; background: #000000aa; border: none; color: #fff; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
         .upload-hint { font-size: 11px; color: #6A6A73; font-weight: 400; }
         .pill-group { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
         .pill { border: 1px solid #333; background: #121214; color: #C8C8CE; border-radius: 20px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
         .pill.active { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: #121214; border-color: transparent; font-weight: 700; }
         .price-input { max-width: 140px; }
         .euro-prefix { color: #6A6A73; font-weight: 700; font-size: 14px; }
+        .post-preview-card { border: 1px solid #29292f; border-radius: 16px; overflow: hidden; background: #121214; margin-top: 18px; }
+        .post-preview-media { height: 140px; background: #1A1A1E; display: flex; align-items: center; justify-content: center; color: #6A6A73; background-size: cover; background-position: center; }
+        .post-preview-body { padding: 10px 12px; }
+        .post-preview-price { color: #4DE1C1; font-weight: 700; font-size: 14px; margin: 0; }
+        .post-preview-title { font-size: 12.5px; color: #C8C8CE; margin: 3px 0 0; }
+        .post-preview-meta { font-size: 11px; color: #6A6A73; margin: 3px 0 0; }
       `}</style>
 
       <header className="top">
@@ -1747,7 +1874,7 @@ export default function JolvoApp() {
             </button>
           )}
           {loggedIn && (
-            <button className="icon-btn" onClick={handleOpenNotifs}>
+            <button className="icon-btn hide-on-mobile-nav" onClick={handleOpenNotifs}>
               <Bell size={16} />
               {notifications.some((n) => !n.read) && (
                 <span className="notif-dot">{notifications.filter((n) => !n.read).length}</span>
@@ -1755,20 +1882,20 @@ export default function JolvoApp() {
             </button>
           )}
           {loggedIn && (
-            <button className="icon-btn" onClick={() => setShowFavorites(true)}>
+            <button className="icon-btn hide-on-mobile-nav" onClick={() => setShowFavorites(true)}>
               <Heart size={16} fill={saved.size > 0 ? "#FF4D6D" : "none"} color={saved.size > 0 ? "#FF4D6D" : "currentColor"} />
               {saved.size > 0 && <span className="notif-dot">{saved.size}</span>}
             </button>
           )}
           {loggedIn && (
-            <span className="badge profile-badge" onClick={viewProfile}>
+            <span className="badge profile-badge hide-on-mobile-nav" onClick={viewProfile}>
               <span className="mini-avatar" style={{ background: avatarColor }}>{username[0]?.toUpperCase()}</span>
               @{username}
             </span>
           )}
-          <button className="btn primary" onClick={() => { setEditingItem(null); setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] }); setShowPost(true); }}><Plus size={14} /> Vender</button>
+          <button className="btn primary hide-on-mobile-nav" onClick={() => { setEditingItem(null); setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] }); setShowPost(true); }}><Plus size={14} /> Vender</button>
           {!loggedIn && (
-            <button className="btn ghost" onClick={() => setShowAuth(true)}><LogIn size={14} /> <span className="btn-label">Entrar</span></button>
+            <button className="btn ghost hide-on-mobile-nav" onClick={() => setShowAuth(true)}><LogIn size={14} /> <span className="btn-label">Entrar</span></button>
           )}
 
           <div className="more-menu-wrap">
@@ -1796,6 +1923,44 @@ export default function JolvoApp() {
         </div>
       </header>
 
+      <div className="mobile-bottom-nav">
+        <button onClick={() => { closeItemView(); setCategory("Para ti"); setQuery(""); }}>
+          <Home size={20} />
+          <span>Inicio</span>
+        </button>
+        {loggedIn && (
+          <button onClick={() => setShowFavorites(true)}>
+            <Heart size={20} fill={saved.size > 0 ? "#FF4D6D" : "none"} color={saved.size > 0 ? "#FF4D6D" : "currentColor"} />
+            <span>Favoritos</span>
+            {saved.size > 0 && <span className="notif-dot bottom-nav-dot">{saved.size}</span>}
+          </button>
+        )}
+        <button
+          className="mobile-nav-sell"
+          onClick={() => { setEditingItem(null); setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] }); setShowPost(true); }}
+        >
+          <Plus size={22} />
+        </button>
+        {loggedIn ? (
+          <button onClick={handleOpenNotifs}>
+            <Bell size={20} />
+            <span>Avisos</span>
+            {notifications.some((n) => !n.read) && <span className="notif-dot bottom-nav-dot">{notifications.filter((n) => !n.read).length}</span>}
+          </button>
+        ) : (
+          <button onClick={() => setShowAuth(true)}>
+            <LogIn size={20} />
+            <span>Entrar</span>
+          </button>
+        )}
+        {loggedIn && (
+          <button onClick={viewProfile}>
+            <span className="mini-avatar bottom-nav-avatar" style={{ background: avatarColor }}>{username[0]?.toUpperCase()}</span>
+            <span>Perfil</span>
+          </button>
+        )}
+      </div>
+
       {(!openItem || numCols < 3) && (
         <div className="hero">
           <h2>Lo que ya no usas, <span className="accent">alguien lo está buscando</span>.</h2>
@@ -1809,13 +1974,37 @@ export default function JolvoApp() {
           <input
             placeholder="Buscar prendas..."
             value={query}
-            onChange={(e) => { setQuery(e.target.value); if (openItem) closeItemView(); }}
+            onChange={(e) => { setQuery(e.target.value); if (openItem) closeItemView(); if (photoSearchResults) clearPhotoSearch(); }}
           />
         </div>
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          id="photo-search-input"
+          style={{ display: "none" }}
+          onChange={(e) => { if (e.target.files[0]) handlePhotoSearch(e.target.files[0]); e.target.value = ""; }}
+        />
+        <button
+          className="filter-toggle-btn"
+          onClick={() => document.getElementById("photo-search-input").click()}
+          disabled={searchingPhoto}
+          title="Buscar por foto"
+        >
+          {searchingPhoto ? <RefreshCw size={15} className="spin" /> : <Camera size={15} />}
+        </button>
         <button className={"filter-toggle-btn" + (showFilters ? " active" : "")} onClick={() => setShowFilters(!showFilters)}>
           <SlidersHorizontal size={15} />
         </button>
       </div>
+
+      {photoSearchResults !== null && (
+        <div className="photo-search-banner">
+          <Camera size={14} />
+          <span>Resultados para: <strong>{photoSearchKeywords.join(", ")}</strong></span>
+          <button onClick={clearPhotoSearch}><X size={13} /> Quitar</button>
+        </div>
+      )}
 
       {showFilters && (
         <div className="filter-panel">
@@ -1926,16 +2115,18 @@ export default function JolvoApp() {
           </button>
         </div>
       )}
-      {!loading && items.length > 0 && (
+      {!loading && (photoSearchResults !== null ? photoSearchResults : items).length > 0 && (() => {
+        const displayItems = photoSearchResults !== null ? photoSearchResults : items;
+        return (
         <>
         <div className="two-col">
-          {Array.from({ length: Math.min(numCols, items.length) }).map((_, col) => {
-            const effectiveCols = Math.min(numCols, items.length);
-            const visibleItems = items.slice(0, effectiveCols * feedRowsShown);
+          {Array.from({ length: Math.min(numCols, displayItems.length) }).map((_, col) => {
+            const effectiveCols = Math.min(numCols, displayItems.length);
+            const visibleItems = displayItems.slice(0, effectiveCols * feedRowsShown);
             return (
               <div className="col" key={col}>
                 {visibleItems.filter((_, i) => i % effectiveCols === col).map((item) => {
-                  const realIndex = items.indexOf(item);
+                  const realIndex = displayItems.indexOf(item);
                   return (
                     <ItemCard key={item.id} item={item} index={realIndex} onOpen={viewItem} saved={saved.has(item.id)} toggleSave={toggleSave} />
                   );
@@ -1944,9 +2135,9 @@ export default function JolvoApp() {
             );
           })}
         </div>
-        {items.length > numCols * feedRowsShown && (
+        {displayItems.length > numCols * feedRowsShown && (
           <div className="load-more-row">
-            <button className="btn ghost" onClick={() => setFeedRowsShown((n) => n + 5)}>Cargar más artículos</button>
+            <RefreshCw size={16} className="spin" style={{ color: "#6A6A73" }} />
           </div>
         )}
         {category === "Para ti" && !query && allItems.length > 0 && (
@@ -1983,18 +2174,52 @@ export default function JolvoApp() {
           </div>
         )}
         </>
-      )}
+        );
+      })()}
 
-      <footer className="site-footer">
-        <button onClick={() => setShowLegal("about")}>Quiénes somos</button>
-        <span>·</span>
-        <button onClick={openHelpCenter}>Ayuda</button>
-        <span>·</span>
-        <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
-        <span>·</span>
-        <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
-        <span>·</span>
-        <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+      <footer className="site-footer-rich">
+        <div className="footer-top-row">
+          <p className="footer-brand-line">JOLVO — COMPRA Y VENDE DE SEGUNDA MANO.</p>
+          {(platformSettings.instagramUrl || platformSettings.tiktokUrl || platformSettings.facebookUrl || platformSettings.twitterUrl) && (
+            <div className="footer-social-row">
+              <span className="footer-social-label">SÍGUENOS</span>
+              {platformSettings.facebookUrl && (
+                <a href={platformSettings.facebookUrl} target="_blank" rel="noopener noreferrer"><Facebook size={15} /></a>
+              )}
+              {platformSettings.instagramUrl && (
+                <a href={platformSettings.instagramUrl} target="_blank" rel="noopener noreferrer"><Instagram size={15} /></a>
+              )}
+              {platformSettings.tiktokUrl && (
+                <a href={platformSettings.tiktokUrl} target="_blank" rel="noopener noreferrer"><TikTokIcon size={15} /></a>
+              )}
+              {platformSettings.twitterUrl && (
+                <a href={platformSettings.twitterUrl} target="_blank" rel="noopener noreferrer"><Twitter size={15} /></a>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="footer-cols">
+          <div className="footer-col">
+            <p className="footer-col-title">Jolvo</p>
+            <button onClick={() => setShowLegal("about")}>Quiénes somos</button>
+            <button onClick={openHelpCenter}>Ayuda</button>
+          </div>
+          <div className="footer-col">
+            <p className="footer-col-title">Legal</p>
+            <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
+            <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
+            <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+          </div>
+        </div>
+        <div className="footer-bottom-bar">
+          <span>© Jolvo {new Date().getFullYear()}</span>
+          <span>·</span>
+          <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
+          <span>·</span>
+          <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
+          <span>·</span>
+          <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+        </div>
       </footer>
       </>
       )}
@@ -2062,93 +2287,116 @@ export default function JolvoApp() {
             <p className="auth-title">{editingItem ? "Editar prenda" : "Nueva prenda"}</p>
             <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu prenda" : "Rellena los datos y publícala en segundos"}</p>
 
-            <label htmlFor="photo-upload" className="upload-box">
-              <ImagePlus size={22} color="#6A6A73" />
-              <span>Añadir fotos</span>
-              <span className="upload-hint">Hasta 6 imágenes, formato JPG o PNG</span>
-            </label>
-            <input
-              id="photo-upload"
-              type="file"
-              accept="image/png, image/jpeg"
-              multiple
-              style={{ display: "none" }}
-              onChange={handleImageSelect}
-            />
-            {(form.images.length > 0 || uploadingImages.length > 0) && (
-              <div className="image-preview-row">
-                {form.images.map((img, i) => (
-                  <div key={i} className="image-preview">
-                    <img src={img} alt={`Foto ${i + 1}`} />
-                    <button type="button" onClick={() => removeImage(i)}><X size={12} /></button>
-                  </div>
-                ))}
-                {uploadingImages.map((id) => (
-                  <div key={id} className="image-preview uploading">
-                    <RefreshCw size={16} className="spin" />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <form onSubmit={handlePublish}>
-              <label>Título</label>
-              <div className="input-icon">
-                <Tag size={14} />
-                <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej. Bicicleta urbana, chaqueta vaquera, lámpara..." />
-              </div>
-
-              <label>Descripción</label>
-              <textarea
-                className="post-textarea"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Medidas, estado real, motivo de venta, defectos si los hay..."
-                rows={3}
-              />
-
-              <label>Categoría</label>
-              <div className="pill-group">
-                {platformSettings.categories.map((c) => (
-                  <button type="button" key={c} className={"pill" + (form.category === c ? " active" : "")} onClick={() => setForm({ ...form, category: c, size: "", isShoe: false })}>{c}</button>
-                ))}
-              </div>
-
-              {form.category === "Moda" && (
-                <>
-                  <label>Tipo de talla</label>
-                  <div className="pill-group">
-                    <button type="button" className={"pill" + (!form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: false, size: "" })}>Ropa (XS-XL)</button>
-                    <button type="button" className={"pill" + (form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: true, size: "" })}>Calzado (nº)</button>
-                  </div>
-
-                  <label>Talla</label>
-                  <div className="pill-group">
-                    {(form.isShoe ? SHOE_SIZES : SIZES).map((s) => (
-                      <button type="button" key={s} className={"pill" + (form.size === s ? " active" : "")} onClick={() => setForm({ ...form, size: s })}>{s}</button>
+            <div className="post-modal-grid">
+              <div className="post-photos-col">
+                <p className="post-section-label">Fotos</p>
+                <label htmlFor="photo-upload" className="upload-box">
+                  <ImagePlus size={22} color="#6A6A73" />
+                  <span>Añadir fotos</span>
+                  <span className="upload-hint">Hasta 6 imágenes, formato JPG o PNG</span>
+                </label>
+                <input
+                  id="photo-upload"
+                  type="file"
+                  accept="image/png, image/jpeg"
+                  multiple
+                  style={{ display: "none" }}
+                  onChange={handleImageSelect}
+                />
+                {(form.images.length > 0 || uploadingImages.length > 0) && (
+                  <div className="image-preview-row">
+                    {form.images.map((img, i) => (
+                      <div key={i} className="image-preview">
+                        <img src={img} alt={`Foto ${i + 1}`} />
+                        <button type="button" onClick={() => removeImage(i)}><X size={12} /></button>
+                      </div>
+                    ))}
+                    {uploadingImages.map((id) => (
+                      <div key={id} className="image-preview uploading">
+                        <RefreshCw size={16} className="spin" />
+                      </div>
                     ))}
                   </div>
-                </>
-              )}
+                )}
 
-              <label>Estado</label>
-              <div className="pill-group">
-                {["Como nuevo", "Muy bueno", "Bueno", "Aceptable"].map((c) => (
-                  <button type="button" key={c} className={"pill" + (form.condition === c ? " active" : "")} onClick={() => setForm({ ...form, condition: c })}>{c}</button>
-                ))}
+                <p className="post-section-label">Vista previa</p>
+                <div className="post-preview-card">
+                  <div className="post-preview-media" style={form.images[0] ? { backgroundImage: `url(${form.images[0]})` } : {}}>
+                    {!form.images[0] && <ImagePlus size={20} />}
+                  </div>
+                  <div className="post-preview-body">
+                    <p className="post-preview-price">{form.price ? `${form.price}€` : "0€"}</p>
+                    <p className="post-preview-title">{form.title || "Título de tu prenda"}</p>
+                    <p className="post-preview-meta">
+                      {form.category}{form.size ? ` · Talla ${form.size}` : ""} · {form.condition}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <label>Precio</label>
-              <div className="input-icon price-input">
-                <span className="euro-prefix">€</span>
-                <input type="number" min="1" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="0" />
-              </div>
+              <div className="post-form-col">
+                <form onSubmit={handlePublish}>
+                  <p className="post-section-label">Detalles</p>
+                  <label>Título</label>
+                  <div className="input-icon">
+                    <Tag size={14} />
+                    <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej. Bicicleta urbana, chaqueta vaquera, lámpara..." />
+                  </div>
 
-              {postError && <p style={{ color: "#FF4D6D", fontSize: 12, marginTop: 10 }}>{postError}</p>}
-              <button className="submit-btn" type="submit" disabled={uploadingImages.length > 0}>
-                {uploadingImages.length > 0 ? "Subiendo fotos..." : !loggedIn ? "Iniciar sesión para publicar" : editingItem ? "Guardar cambios" : "Publicar prenda"}
-              </button>
-            </form>
+                  <label>Descripción</label>
+                  <textarea
+                    className="post-textarea"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Medidas, estado real, motivo de venta, defectos si los hay..."
+                    rows={3}
+                  />
+
+                  <label>Categoría</label>
+                  <div className="pill-group">
+                    {platformSettings.categories.map((c) => (
+                      <button type="button" key={c} className={"pill" + (form.category === c ? " active" : "")} onClick={() => setForm({ ...form, category: c, size: "", isShoe: false })}>{c}</button>
+                    ))}
+                  </div>
+
+                  {form.category === "Moda" && (
+                    <>
+                      <label>Tipo de talla</label>
+                      <div className="pill-group">
+                        <button type="button" className={"pill" + (!form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: false, size: "" })}>Ropa (XS-XL)</button>
+                        <button type="button" className={"pill" + (form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: true, size: "" })}>Calzado (nº)</button>
+                      </div>
+
+                      <label>Talla</label>
+                      <div className="pill-group">
+                        {(form.isShoe ? SHOE_SIZES : SIZES).map((s) => (
+                          <button type="button" key={s} className={"pill" + (form.size === s ? " active" : "")} onClick={() => setForm({ ...form, size: s })}>{s}</button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  <label>Estado</label>
+                  <div className="pill-group">
+                    {["Como nuevo", "Muy bueno", "Bueno", "Aceptable"].map((c) => (
+                      <button type="button" key={c} className={"pill" + (form.condition === c ? " active" : "")} onClick={() => setForm({ ...form, condition: c })}>{c}</button>
+                    ))}
+                  </div>
+
+                  <p className="post-section-label">Precio</p>
+                  <label>Precio de venta</label>
+                  <div className="input-icon price-input">
+                    <span className="euro-prefix">€</span>
+                    <input type="number" min="1" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="0" />
+                  </div>
+
+                  {postError && <p style={{ color: "#FF4D6D", fontSize: 12, marginTop: 10 }}>{postError}</p>}
+                  <button className="submit-btn" type="submit" disabled={uploadingImages.length > 0}>
+                    {uploadingImages.length > 0 ? "Subiendo fotos..." : !loggedIn ? "Iniciar sesión para publicar" : editingItem ? "Guardar cambios" : "Publicar prenda"}
+                  </button>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -3053,6 +3301,30 @@ export default function JolvoApp() {
                       rows={6}
                       value={adminSettingsForm.categories.join("\n")}
                       onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, categories: e.target.value.split("\n") }))}
+                    />
+                    <label>Instagram (URL completa, déjalo vacío para no mostrarlo)</label>
+                    <input
+                      type="text" className="input-plain" placeholder="https://instagram.com/tu_cuenta"
+                      value={adminSettingsForm.instagramUrl || ""}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, instagramUrl: e.target.value }))}
+                    />
+                    <label>TikTok (URL completa)</label>
+                    <input
+                      type="text" className="input-plain" placeholder="https://tiktok.com/@tu_cuenta"
+                      value={adminSettingsForm.tiktokUrl || ""}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, tiktokUrl: e.target.value }))}
+                    />
+                    <label>Facebook (URL completa)</label>
+                    <input
+                      type="text" className="input-plain" placeholder="https://facebook.com/tu_pagina"
+                      value={adminSettingsForm.facebookUrl || ""}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, facebookUrl: e.target.value }))}
+                    />
+                    <label>X / Twitter (URL completa)</label>
+                    <input
+                      type="text" className="input-plain" placeholder="https://x.com/tu_cuenta"
+                      value={adminSettingsForm.twitterUrl || ""}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, twitterUrl: e.target.value }))}
                     />
                     <button className="btn primary admin-refund-btn" onClick={saveAdminSettings}>Guardar configuración</button>
                   </div>
