@@ -1394,13 +1394,13 @@ export default function JolvoApp() {
         .two-col { display: flex; gap: 14px; padding: 10px 20px 110px; align-items: flex-start; }
 
         @media (min-width: 780px) {
-          header.top, .hero, .search-row, .cat-scroll, .two-col {
+          header.top, .hero, .search-row, .cat-scroll, .two-col, .community-impact {
             max-width: 1300px; margin-left: auto; margin-right: auto; width: 100%;
           }
           header.top { border-radius: 0 0 20px 20px; }
         }
         @media (min-width: 1500px) {
-          header.top, .hero, .search-row, .cat-scroll, .two-col {
+          header.top, .hero, .search-row, .cat-scroll, .two-col, .community-impact {
             max-width: 1600px;
           }
         }
@@ -1719,7 +1719,7 @@ export default function JolvoApp() {
         .back-btn:hover { color: #F2F2F0; }
         .item-page-grid { display: flex; gap: 40px; align-items: flex-start; }
         .item-page-gallery { flex: 1.1; min-width: 0; }
-        .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 10px 26px 18px; font-size: 12.5px; color: #C8C8CE; line-height: 1.5; }
+        .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 20px 20px 0; font-size: 12.5px; color: #C8C8CE; line-height: 1.5; }
         .community-impact svg { flex-shrink: 0; }
         .community-impact strong { color: #4DE1C1; font-weight: 700; }
         .newsletter-outer { background: linear-gradient(120deg, #8C7CFF, #FF4D6D 70%); margin-top: 34px; }
@@ -1758,7 +1758,7 @@ export default function JolvoApp() {
           .footer-cols { gap: 34px; }
         }
         @media (max-width: 640px) {
-          .community-impact { margin: 0 16px 16px; }
+          .community-impact { padding: 16px 20px; }
         }
         .related-full { margin-top: 30px; }
         .related-full .mini-row .mini-card { flex: 0 0 180px; }
