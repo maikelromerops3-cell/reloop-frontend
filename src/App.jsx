@@ -1378,9 +1378,9 @@ export default function JolvoApp() {
         .filter-location-prompt { display: flex; align-items: center; gap: 6px; background: #4DE1C114; border: 1px solid #4DE1C133; color: #4DE1C1; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: 10px; cursor: pointer; font-family: inherit; }
         .cat-scroll { display: flex; gap: 8px; padding: 14px 26px 6px; overflow-x: auto; scrollbar-width: none; }
         .cat-scroll::-webkit-scrollbar { display: none; }
-        .cat-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; font-family: inherit; flex-shrink: 0; color: #9A9AA3; }
+        .cat-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; font-family: inherit; flex-shrink: 0; color: #9A9AA3; width: 68px; }
         .cat-icon-wrap { width: 52px; height: 52px; border-radius: 50%; background: #1F1F24; border: 1px solid #29292f; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: border-color .15s ease, transform .15s ease; }
-        .cat-circle span:last-child { font-size: 11px; font-weight: 600; }
+        .cat-circle span:last-child { font-size: 10.5px; font-weight: 600; text-align: center; line-height: 1.25; }
         .cat-circle.active { color: #F2F2F0; }
         .cat-circle.active .cat-icon-wrap { border-color: #FF4D6D; background: linear-gradient(135deg, #FF4D6D33, #FF8A4D33); transform: translateY(-2px); }
         .cat-circle.active .cat-icon-wrap.forYou { border-color: #FF4D6D; }
@@ -1722,41 +1722,43 @@ export default function JolvoApp() {
         .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 10px 26px 18px; font-size: 12.5px; color: #C8C8CE; line-height: 1.5; }
         .community-impact svg { flex-shrink: 0; }
         .community-impact strong { color: #4DE1C1; font-weight: 700; }
-        .newsletter-band { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: linear-gradient(135deg, #8C7CFF, #FF4D6D); border: none; border-radius: 0; padding: 30px 40px; margin: 30px 0 0; max-width: 1300px; margin-left: auto; margin-right: auto; }
-        .newsletter-title { color: #121214; }
-        .newsletter-sub { color: #121214cc; }
-        @media (max-width: 640px) {
-          .newsletter-band { margin: 20px 0 0; padding: 24px 20px; }
-        }
-        .site-footer-rich { background: #121214; border-top: 1px solid #29292f; padding: 30px 40px 100px; margin-top: 0; }
-        .site-footer-rich > * { max-width: 1300px; margin-left: auto; margin-right: auto; }
-        .footer-brand-line { font-size: 11px; letter-spacing: 1.5px; color: #6A6A73; text-transform: uppercase; margin: 0; }
-        .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
-        .footer-social-row { display: flex; align-items: center; gap: 14px; }
-        .footer-social-label { font-size: 11px; letter-spacing: 1px; color: #6A6A73; text-transform: uppercase; }
-        .footer-social-row a { color: #C8C8CE; display: flex; }
-        .footer-social-row a:hover { color: #F2F2F0; }
-        .footer-cols { display: flex; gap: 60px; flex-wrap: wrap; margin-bottom: 30px; }
-        .footer-col { display: flex; flex-direction: column; gap: 10px; }
-        .footer-col-title { font-size: 11px; letter-spacing: 1px; color: #9A9AA3; text-transform: uppercase; margin: 0 0 4px; }
-        .footer-col button { background: none; border: none; color: #C8C8CE; font-size: 13px; cursor: pointer; font-family: inherit; text-align: left; padding: 0; }
-        .footer-col button:hover { color: #F2F2F0; text-decoration: underline; }
-        .footer-bottom-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 20px; border-top: 1px solid #29292f; color: #6A6A73; font-size: 11px; }
-        .footer-bottom-bar button { background: none; border: none; color: #6A6A73; font-size: 11px; cursor: pointer; font-family: inherit; text-decoration: underline; }
-        .footer-bottom-bar button:hover { color: #F2F2F0; }
-        @media (max-width: 640px) {
-          .site-footer-rich { padding: 24px 20px 100px; }
-          .footer-cols { gap: 34px; }
-        }
-        .newsletter-title { font-size: 16px; font-weight: 700; margin: 0 0 3px; }
-        .newsletter-sub { font-size: 12.5px; color: #9A9AA3; margin: 0; }
+        .newsletter-outer { background: linear-gradient(120deg, #8C7CFF, #FF4D6D 70%); margin-top: 34px; }
+        .newsletter-band { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto; padding: 44px 40px; }
+        .newsletter-title { color: #121214; font-size: 20px; font-weight: 800; margin: 0 0 5px; }
+        .newsletter-sub { color: #121214; opacity: 0.75; font-size: 13.5px; margin: 0; }
         .newsletter-form { display: flex; gap: 10px; flex-wrap: wrap; }
-        .newsletter-form input { width: 240px; border: 1px solid #333; border-radius: 12px; padding: 11px 14px; font-size: 13px; background: #121214; color: #F2F2F0; font-family: inherit; }
-        .newsletter-thanks { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #4DE1C1; font-weight: 600; }
+        .newsletter-form input { width: 260px; border: none; border-radius: 12px; padding: 13px 16px; font-size: 13px; background: #ffffffee; color: #121214; font-family: inherit; }
+        .newsletter-form input::placeholder { color: #6A6A73; }
+        .newsletter-form .btn.primary { background: #121214; color: #fff; border: none; padding: 13px 22px; border-radius: 12px; font-weight: 700; font-size: 13px; }
+        .newsletter-thanks { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #121214; font-weight: 700; }
         @media (max-width: 640px) {
-          .community-impact { margin: 0 16px 16px; }
+          .newsletter-band { padding: 30px 20px; }
           .newsletter-form { width: 100%; }
           .newsletter-form input { flex: 1; min-width: 0; width: auto; }
+        }
+
+        .site-footer-rich { background: #17171b; border-top: 1px solid #29292f; padding: 48px 40px 100px; }
+        .footer-inner { max-width: 1100px; margin: 0 auto; }
+        .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 34px; padding-bottom: 24px; border-bottom: 1px solid #29292f; }
+        .footer-brand-line { font-size: 12px; letter-spacing: 1.5px; color: #C8C8CE; text-transform: uppercase; margin: 0; font-weight: 700; }
+        .footer-social-row { display: flex; align-items: center; gap: 16px; }
+        .footer-social-label { font-size: 11px; letter-spacing: 1px; color: #6A6A73; text-transform: uppercase; }
+        .footer-social-row a { color: #9A9AA3; display: flex; width: 30px; height: 30px; border-radius: 50%; background: #1F1F24; align-items: center; justify-content: center; transition: color .15s ease, background .15s ease; }
+        .footer-social-row a:hover { color: #F2F2F0; background: #29292f; }
+        .footer-cols { display: flex; gap: 80px; flex-wrap: wrap; margin-bottom: 34px; }
+        .footer-col { display: flex; flex-direction: column; gap: 12px; }
+        .footer-col-title { font-size: 11px; letter-spacing: 1.2px; color: #6A6A73; text-transform: uppercase; margin: 0 0 4px; font-weight: 700; }
+        .footer-col button { background: none; border: none; color: #C8C8CE; font-size: 13.5px; cursor: pointer; font-family: inherit; text-align: left; padding: 0; transition: color .15s ease; }
+        .footer-col button:hover { color: #FF8A8F; }
+        .footer-bottom-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 22px; border-top: 1px solid #29292f; color: #6A6A73; font-size: 11.5px; }
+        .footer-bottom-bar button { background: none; border: none; color: #6A6A73; font-size: 11.5px; cursor: pointer; font-family: inherit; text-decoration: none; }
+        .footer-bottom-bar button:hover { color: #F2F2F0; text-decoration: underline; }
+        @media (max-width: 640px) {
+          .site-footer-rich { padding: 36px 20px 100px; }
+          .footer-cols { gap: 34px; }
+        }
+        @media (max-width: 640px) {
+          .community-impact { margin: 0 16px 16px; }
         }
         .related-full { margin-top: 30px; }
         .related-full .mini-row .mini-card { flex: 0 0 180px; }
@@ -2154,24 +2156,26 @@ export default function JolvoApp() {
           </div>
         )}
         {category === "Para ti" && !query && (
-          <div className="newsletter-band">
-            <div className="newsletter-text">
-              <p className="newsletter-title">¡Suscríbete a nuestro boletín!</p>
-              <p className="newsletter-sub">No vuelvas a perderte ninguna oferta.</p>
+          <div className="newsletter-outer">
+            <div className="newsletter-band">
+              <div className="newsletter-text">
+                <p className="newsletter-title">¡Suscríbete a nuestro boletín!</p>
+                <p className="newsletter-sub">No vuelvas a perderte ninguna oferta.</p>
+              </div>
+              {newsletterSubscribed ? (
+                <p className="newsletter-thanks"><CheckCircle size={16} color="#4DE1C1" /> ¡Ya estás suscrito!</p>
+              ) : (
+                <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
+                  <input
+                    type="email"
+                    placeholder="Introduce tu correo electrónico"
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
+                  />
+                  <button type="submit" className="btn primary">Suscribirme</button>
+                </form>
+              )}
             </div>
-            {newsletterSubscribed ? (
-              <p className="newsletter-thanks"><CheckCircle size={16} color="#4DE1C1" /> ¡Ya estás suscrito!</p>
-            ) : (
-              <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
-                <input
-                  type="email"
-                  placeholder="Introduce tu correo electrónico"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                />
-                <button type="submit" className="btn primary">Suscribirme</button>
-              </form>
-            )}
           </div>
         )}
         </>
@@ -2179,6 +2183,7 @@ export default function JolvoApp() {
       })()}
 
       <footer className="site-footer-rich">
+        <div className="footer-inner">
         <div className="footer-top-row">
           <p className="footer-brand-line">JOLVO — COMPRA Y VENDE DE SEGUNDA MANO.</p>
           {(platformSettings.instagramUrl || platformSettings.tiktokUrl || platformSettings.facebookUrl || platformSettings.twitterUrl) && (
@@ -2220,6 +2225,7 @@ export default function JolvoApp() {
           <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
           <span>·</span>
           <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+        </div>
         </div>
       </footer>
       </>
