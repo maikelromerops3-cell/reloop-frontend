@@ -1,6 +1,6 @@
 {
-  "appId": "com.articom.app",
-  "appName": "Articom",
+  "appId": "com.ropelin.app",
+  "appName": "Ropelin",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"

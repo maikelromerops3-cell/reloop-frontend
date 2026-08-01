@@ -28,7 +28,7 @@ function buildFaqItems(s) {
   return [
     { q: "¿Cómo publico una prenda?", a: "Dale al botón \"Vender\", añade fotos, título, precio y descripción, y publícala. Aparecerá al momento en el feed." },
     { q: "¿Cómo recibo el dinero de una venta?", a: "Conecta tu cuenta de Stripe desde Ajustes. En cuanto se confirme el pago del comprador, el dinero (menos la comisión) se transfiere a tu cuenta." },
-    { q: "¿Cuánto cobra Jolvo por cada venta?", a: `Una comisión del ${s.commissionPercent}% sobre el precio del artículo. El comprador paga además ${s.shippingFee.toFixed(2)}€ de gastos de envío fijos.` },
+    { q: "¿Cuánto cobra Ropelin por cada venta?", a: `Una comisión del ${s.commissionPercent}% sobre el precio del artículo. El comprador paga además ${s.shippingFee.toFixed(2)}€ de gastos de envío fijos.` },
     { q: "¿Qué hago si el comprador no genera la etiqueta o no responde?", a: "Puedes contactar con el comprador desde el chat de la compra. Si no se resuelve, escríbenos desde \"Contactar\" y lo revisamos." },
     { q: "¿Puedo devolver un artículo si no era como esperaba?", a: "Contacta primero con el vendedor. Si no llegáis a un acuerdo, puedes abrir una disputa desde tus compras y nuestro equipo lo revisará." },
     { q: "¿Qué es \"Destacar\" una prenda?", a: `Por ${s.boostPrice.toFixed(2)}€ tu artículo aparece arriba del todo del feed durante ${s.boostDurationHours} horas, para que lo vea más gente.` },
@@ -148,7 +148,7 @@ function ItemCard({ item, onOpen, index, saved, toggleSave }) {
   );
 }
 
-export default function JolvoApp() {
+export default function RopelinApp() {
   const params = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -590,11 +590,11 @@ export default function JolvoApp() {
 
   useEffect(() => {
     if (openItem) {
-      document.title = `${openItem.title} — ${openItem.price}€ | Jolvo, segunda mano`;
+      document.title = `${openItem.title} — ${openItem.price}€ | Ropelin, segunda mano`;
       const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) metaDesc.setAttribute("content", `${openItem.title} de segunda mano por ${openItem.price}€. ${openItem.category ? `Categoría: ${openItem.category}.` : ""} Cómpralo en Jolvo, la app de compraventa de segunda mano.`);
+      if (metaDesc) metaDesc.setAttribute("content", `${openItem.title} de segunda mano por ${openItem.price}€. ${openItem.category ? `Categoría: ${openItem.category}.` : ""} Cómpralo en Ropelin, la app de compraventa de segunda mano.`);
     } else {
-      document.title = "Jolvo — Compra y vende de segunda mano en España | Ropa, electrónica y más";
+      document.title = "Ropelin — Compra y vende de segunda mano en España | Ropa, electrónica y más";
       const metaDesc = document.querySelector('meta[name="description"]');
       if (metaDesc) metaDesc.setAttribute("content", "Compra y vende de segunda mano en España: ropa, electrónica, hogar, vehículos y mucho más. Publica gratis en segundos, chatea con otros usuarios y paga seguro.");
     }
@@ -1266,7 +1266,7 @@ export default function JolvoApp() {
             <div className="offer-sent">
               <CheckCircle size={26} color="#4DE1C1" />
               <p>¡Contraseña actualizada!</p>
-              <button className="submit-btn" onClick={() => navigate("/")}>Ir a Jolvo</button>
+              <button className="submit-btn" onClick={() => navigate("/")}>Ir a Ropelin</button>
             </div>
           ) : (
             <>
@@ -1296,7 +1296,7 @@ export default function JolvoApp() {
             {verifyStatus === "loading" && <><RefreshCw size={26} color="#9A9AA3" className="spin" /><p>Verificando...</p></>}
             {verifyStatus === "ok" && <><CheckCircle size={26} color="#4DE1C1" /><p>¡Email confirmado!</p></>}
             {verifyStatus === "error" && <><X size={26} color="#FF4D6D" /><p>Enlace no válido o caducado</p></>}
-            <button className="submit-btn" onClick={() => navigate("/")}>Ir a Jolvo</button>
+            <button className="submit-btn" onClick={() => navigate("/")}>Ir a Ropelin</button>
           </div>
         </div>
       </div>
@@ -1935,7 +1935,7 @@ export default function JolvoApp() {
               <path d="M 54 30 L 54 62 A 13 13 0 1 1 39 56" fill="none" stroke="#121214" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h1>Jolvo</h1>
+          <h1>Ropelin</h1>
         </div>
         <div className="top-actions">
           {loggedIn && (
@@ -2254,7 +2254,7 @@ export default function JolvoApp() {
       <footer className="site-footer-rich">
         <div className="footer-inner">
         <div className="footer-top-row">
-          <p className="footer-brand-line">JOLVO — COMPRA Y VENDE DE SEGUNDA MANO.</p>
+          <p className="footer-brand-line">ROPELIN — COMPRA Y VENDE DE SEGUNDA MANO.</p>
           {(platformSettings.instagramUrl || platformSettings.tiktokUrl || platformSettings.facebookUrl || platformSettings.twitterUrl) && (
             <div className="footer-social-row">
               <span className="footer-social-label">SÍGUENOS</span>
@@ -2275,7 +2275,7 @@ export default function JolvoApp() {
         </div>
         <div className="footer-cols">
           <div className="footer-col">
-            <p className="footer-col-title">Jolvo</p>
+            <p className="footer-col-title">Ropelin</p>
             <button onClick={() => setShowLegal("about")}>Quiénes somos</button>
             <button onClick={openHelpCenter}>Ayuda</button>
           </div>
@@ -2287,7 +2287,7 @@ export default function JolvoApp() {
           </div>
         </div>
         <div className="footer-bottom-bar">
-          <span>© Jolvo {new Date().getFullYear()}</span>
+          <span>© Ropelin {new Date().getFullYear()}</span>
           <span>·</span>
           <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
           <span>·</span>
@@ -2308,9 +2308,9 @@ export default function JolvoApp() {
               <>
                 <p className="auth-title">Quiénes somos</p>
                 <div className="legal-text">
-                  <p>Jolvo nació con una idea sencilla: lo que para ti ya no tiene uso, para otra persona puede ser justo lo que estaba buscando.</p>
+                  <p>Ropelin nació con una idea sencilla: lo que para ti ya no tiene uso, para otra persona puede ser justo lo que estaba buscando.</p>
                   <p>Somos un mercado de segunda mano donde puedes comprar y vender de todo — ropa, electrónica, artículos para el hogar y mucho más — de forma fácil, segura y a un clic de distancia.</p>
-                  <p><strong>Nuestra misión</strong> es alargar la vida de las cosas y hacer que reutilizar sea la opción más cómoda, no la más difícil. Cada compra en Jolvo es una prenda o un objeto que no termina en la basura.</p>
+                  <p><strong>Nuestra misión</strong> es alargar la vida de las cosas y hacer que reutilizar sea la opción más cómoda, no la más difícil. Cada compra en Ropelin es una prenda o un objeto que no termina en la basura.</p>
                   <p><strong>Cómo funciona:</strong> publica lo que ya no uses en un par de minutos, negocia el precio si quieres, y cuando se cierre la venta nosotros nos encargamos de que el pago y el envío sean seguros para las dos partes.</p>
                   <p style={{ color: "#6A6A73", fontSize: 11, marginTop: 16 }}>Este es un texto de ejemplo — ajústalo con la historia real de tu proyecto cuando quieras.</p>
                 </div>
@@ -2320,11 +2320,11 @@ export default function JolvoApp() {
               <>
                 <p className="auth-title">Términos y condiciones</p>
                 <div className="legal-text">
-                  <p><strong>1. Objeto.</strong> Jolvo es una plataforma que conecta a compradores y vendedores de artículos de segunda mano. No somos propietarios de los artículos publicados ni parte de la compraventa entre usuarios.</p>
+                  <p><strong>1. Objeto.</strong> Ropelin es una plataforma que conecta a compradores y vendedores de artículos de segunda mano. No somos propietarios de los artículos publicados ni parte de la compraventa entre usuarios.</p>
                   <p><strong>2. Registro.</strong> Debes ser mayor de edad y aportar datos veraces al crear tu cuenta.</p>
-                  <p><strong>3. Comisiones.</strong> Jolvo cobra una comisión sobre cada venta completada a través de la plataforma, detallada antes de confirmar el pago.</p>
-                  <p><strong>4. Responsabilidad.</strong> Cada vendedor es responsable de la veracidad de sus anuncios y del estado real de los artículos. Jolvo no garantiza la calidad de los productos.</p>
-                  <p><strong>5. Envíos.</strong> Los envíos se gestionan a través de transportistas externos; Jolvo facilita la generación de etiquetas pero no es responsable de incidencias del transportista.</p>
+                  <p><strong>3. Comisiones.</strong> Ropelin cobra una comisión sobre cada venta completada a través de la plataforma, detallada antes de confirmar el pago.</p>
+                  <p><strong>4. Responsabilidad.</strong> Cada vendedor es responsable de la veracidad de sus anuncios y del estado real de los artículos. Ropelin no garantiza la calidad de los productos.</p>
+                  <p><strong>5. Envíos.</strong> Los envíos se gestionan a través de transportistas externos; Ropelin facilita la generación de etiquetas pero no es responsable de incidencias del transportista.</p>
                   <p><strong>6. Cuenta.</strong> Podemos suspender cuentas que incumplan estas condiciones o la normativa vigente.</p>
                   <p style={{ color: "#6A6A73", fontSize: 11, marginTop: 16 }}>Este es un texto de ejemplo. Antes de operar de verdad, revísalo con un abogado o gestoría para adaptarlo a tu caso concreto.</p>
                 </div>
@@ -2514,7 +2514,7 @@ export default function JolvoApp() {
 
             <div className="auth-brand">
               <div className="brand-mark auth-mark"><Zap size={18} color="#121214" /></div>
-              <p className="auth-title">{authMode === "login" ? "Bienvenido de vuelta" : "Únete a Jolvo"}</p>
+              <p className="auth-title">{authMode === "login" ? "Bienvenido de vuelta" : "Únete a Ropelin"}</p>
               <p className="auth-subtitle">{authMode === "login" ? "Entra para seguir comprando y vendiendo" : "Crea tu cuenta en unos segundos"}</p>
             </div>
 
@@ -3644,7 +3644,7 @@ export default function JolvoApp() {
                 <p className="auth-title" style={{ margin: 0 }}>Denunciar {showReportForm.targetType === "item" ? "artículo" : "usuario"}</p>
               </div>
             </div>
-            <p className="auth-subtitle" style={{ marginBottom: 14 }}>Cuéntanos qué ha pasado, lo revisará el equipo de Jolvo.</p>
+            <p className="auth-subtitle" style={{ marginBottom: 14 }}>Cuéntanos qué ha pasado, lo revisará el equipo de Ropelin.</p>
             <form onSubmit={submitReportForm}>
               <textarea
                 className="report-textarea"
@@ -3727,7 +3727,7 @@ export default function JolvoApp() {
                         </p>
                         <p className="admin-user-meta">{new Date(m.createdAt).toLocaleDateString("es-ES")}</p>
                         <p className="admin-dispute-reason">{m.message}</p>
-                        {m.adminReply && <p className="admin-dispute-reason" style={{ color: "#4DE1C1" }}>Respuesta de Jolvo: {m.adminReply}</p>}
+                        {m.adminReply && <p className="admin-dispute-reason" style={{ color: "#4DE1C1" }}>Respuesta de Ropelin: {m.adminReply}</p>}
                       </div>
                     ))}
                   </div>
