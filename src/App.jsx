@@ -564,9 +564,10 @@ export default function RopelinApp() {
     setItems(filtered);
   }, [allItems, query, category, priceFilter, sizeFilter, distanceFilter, sortBy]);
 
-  // Al entrar a la web, si no has iniciado sesión, se muestra el login/registro automáticamente
+  // Al entrar a la web desde escritorio, si no has iniciado sesión, se muestra el login/registro automáticamente.
+  // En móvil no se fuerza: solo queda el botón de "Entrar" normal.
   useEffect(() => {
-    if (!loggedIn) setShowAuth(true);
+    if (!loggedIn && window.innerWidth >= 780) setShowAuth(true);
   }, []);
 
   // Enlaces directos: si la URL es /item/:id o /perfil/:username, abre lo que corresponda
