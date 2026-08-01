@@ -166,6 +166,15 @@ export async function updateMyLocation({ city, latitude, longitude, bio, avatarU
   return res.json();
 }
 
+export async function deleteMyAccount() {
+  const res = await fetch(`${API_URL}/users/me`, {
+    method: "DELETE",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo eliminar la cuenta");
+  return res.json();
+}
+
 // --- Stripe Connect (cobros del vendedor) ---
 
 export async function connectStripe() {
