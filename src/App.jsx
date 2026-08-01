@@ -10,6 +10,7 @@ import {
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount,
+  fetchMyFollowing, followUser, unfollowUser,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
@@ -532,6 +533,14 @@ export default function JolvoApp() {
       .catch(() => {});
   }, [loggedIn]);
 
+  // Carga a quién sigo al iniciar sesión, igual que los favoritos
+  useEffect(() => {
+    if (!loggedIn) { setFollowing(new Set()); return; }
+    fetchMyFollowing()
+      .then((usernames) => setFollowing(new Set(usernames)))
+      .catch(() => {});
+  }, [loggedIn]);
+
   // Filtra en el cliente sobre la lista ya cargada del backend (búsqueda, categoría, precio, talla, distancia y orden)
   useEffect(() => {
     let filtered = allItems.filter((it) => {
@@ -827,10 +836,21 @@ export default function JolvoApp() {
 
   function toggleFollow(seller) {
     if (!loggedIn) { setShowAuth(true); return; }
+    const alreadyFollowing = following.has(seller);
     setFollowing((prev) => {
       const next = new Set(prev);
-      next.has(seller) ? next.delete(seller) : next.add(seller);
+      alreadyFollowing ? next.delete(seller) : next.add(seller);
       return next;
+    });
+    const action = alreadyFollowing ? unfollowUser(seller) : followUser(seller);
+    action.catch((err) => {
+      // Si falla de verdad en el servidor, revertimos el cambio visual
+      setFollowing((prev) => {
+        const next = new Set(prev);
+        alreadyFollowing ? next.add(seller) : next.delete(seller);
+        return next;
+      });
+      toast.error(err.message);
     });
   }
 

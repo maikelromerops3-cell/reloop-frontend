@@ -175,6 +175,30 @@ export async function deleteMyAccount() {
   return res.json();
 }
 
+export async function fetchMyFollowing() {
+  const res = await fetch(`${API_URL}/users/me/following`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error("No se pudo cargar a quién sigues");
+  return res.json();
+}
+
+export async function followUser(username) {
+  const res = await fetch(`${API_URL}/users/${username}/follow`, {
+    method: "POST",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo seguir a este usuario");
+  return res.json();
+}
+
+export async function unfollowUser(username) {
+  const res = await fetch(`${API_URL}/users/${username}/follow`, {
+    method: "DELETE",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo dejar de seguir");
+  return res.json();
+}
+
 // --- Stripe Connect (cobros del vendedor) ---
 
 export async function connectStripe() {
