@@ -9,7 +9,7 @@ import {
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, submitReview, fetchReviews,
-  fetchProfile, updateMyLocation, loginWithGoogle, searchByImage,
+  fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
@@ -209,6 +209,9 @@ export default function JolvoApp() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [stripeStatus, setStripeStatus] = useState(null);
   const [showOrders, setShowOrders] = useState(false);
@@ -286,6 +289,17 @@ export default function JolvoApp() {
   const [numCols, setNumCols] = useState(2);
   const [feedRowsShown, setFeedRowsShown] = useState(5);
   useEffect(() => { setFeedRowsShown(5); if (photoSearchResults !== null) clearPhotoSearch(); }, [category, query]);
+
+  // Bloquea el scroll de la página de fondo mientras haya cualquier ventana/modal abierto,
+  // para que en móvil arrastrar dentro del modal no mueva el feed de detrás
+  const anyModalOpen = !!(
+    openItem || showAuth || showPost || showProfile || showChat || showLegal ||
+    showSettings || showOrders || showFavorites || showLeague || showAdminPanel || cropperState
+  );
+  useEffect(() => {
+    document.body.style.overflow = anyModalOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [anyModalOpen]);
 
   // Scroll infinito: al acercarnos al final de la página, mostramos más filas del feed automáticamente
   const displayItemsLengthRef = useRef(0);
@@ -722,6 +736,29 @@ export default function JolvoApp() {
     openProfile(username);
     navigate(`/perfil/${username}`);
   }
+  async function handleDeleteAccount() {
+    if (deleteConfirmText !== username) {
+      toast.error("Escribe tu nombre de usuario exactamente para confirmar");
+      return;
+    }
+    setDeletingAccount(true);
+    try {
+      await deleteMyAccount();
+      toast.success("Tu cuenta se ha eliminado");
+      apiLogout();
+      setLoggedIn(false);
+      setUsername("");
+      setUserRole("user");
+      setShowDeleteAccount(false);
+      setShowSettings(false);
+      navigate("/");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
+
   function handleCookieChoice(choice) {
     setCookieChoice(choice);
     localStorage.setItem("reloop_cookie_consent", choice);
@@ -1573,6 +1610,16 @@ export default function JolvoApp() {
         .settings-toggle-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin: 14px 0; }
         .settings-toggle-row input { width: auto; accent-color: #FF4D6D; }
         .logout-btn { width: 100%; margin-top: 10px; border: 1px solid #FF4D6D55; background: transparent; color: #FF4D6D; border-radius: 14px; padding: 11px; font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit; }
+        .danger-zone { margin-top: 26px; padding-top: 20px; border-top: 1px solid #29292f; }
+        .danger-zone-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #FF4D6D; font-weight: 700; margin: 0 0 12px; }
+        .danger-zone-btn { width: 100%; background: #FF4D6D; color: #fff; border: none; border-radius: 14px; padding: 12px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
+        .danger-zone-btn:disabled { opacity: 0.6; cursor: default; }
+        .delete-confirm-box { display: flex; flex-direction: column; gap: 10px; }
+        .delete-confirm-text { font-size: 12.5px; color: #C8C8CE; line-height: 1.5; margin: 0; }
+        .delete-confirm-input { width: 100%; border: 1px solid #FF4D6D55; border-radius: 12px; padding: 10px 12px; font-size: 13px; background: #121214; color: #F2F2F0; font-family: inherit; }
+        .delete-confirm-actions { display: flex; gap: 10px; }
+        .delete-confirm-actions .btn { flex: 1; }
+        .delete-confirm-actions .danger-zone-btn { flex: 1; }
         .checkout-modal { max-width: 380px; }
         .checkout-summary { background: #121214; border: 1px solid #29292f; border-radius: 14px; padding: 12px 14px; margin: 16px 0; }
         .checkout-note { font-size: 11px; color: #6A6A73; margin: 0; line-height: 1.4; }
@@ -1926,6 +1973,7 @@ export default function JolvoApp() {
         </div>
       </header>
 
+      {!anyModalOpen && (
       <div className="mobile-bottom-nav">
         <button onClick={() => { closeItemView(); setCategory("Para ti"); setQuery(""); }}>
           <Home size={20} />
@@ -1963,6 +2011,7 @@ export default function JolvoApp() {
           </button>
         )}
       </div>
+      )}
 
       {(!openItem || numCols < 3) && (
         <div className="hero">
@@ -2955,6 +3004,32 @@ export default function JolvoApp() {
 
             <button className="submit-btn">Guardar cambios</button>
             <button className="logout-btn" onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); setShowSettings(false); toast("Sesión cerrada"); }}>Cerrar sesión</button>
+
+            <div className="danger-zone">
+              <p className="danger-zone-title">Zona de peligro</p>
+              {!showDeleteAccount ? (
+                <button className="danger-zone-btn" onClick={() => setShowDeleteAccount(true)}>Eliminar mi cuenta</button>
+              ) : (
+                <div className="delete-confirm-box">
+                  <p className="delete-confirm-text">
+                    Esto es permanente. Se borrarán tus favoritos, notificaciones y artículos aún no vendidos.
+                    Para confirmar, escribe tu nombre de usuario (<strong>{username}</strong>) abajo:
+                  </p>
+                  <input
+                    className="delete-confirm-input"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder={username}
+                  />
+                  <div className="delete-confirm-actions">
+                    <button className="btn ghost" onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}>Cancelar</button>
+                    <button className="danger-zone-btn" disabled={deletingAccount} onClick={handleDeleteAccount}>
+                      {deletingAccount ? "Eliminando..." : "Eliminar cuenta definitivamente"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
