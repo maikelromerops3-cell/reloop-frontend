@@ -290,17 +290,6 @@ export default function JolvoApp() {
   const [feedRowsShown, setFeedRowsShown] = useState(5);
   useEffect(() => { setFeedRowsShown(5); if (photoSearchResults !== null) clearPhotoSearch(); }, [category, query]);
 
-  // Bloquea el scroll de la página de fondo mientras haya cualquier ventana/modal abierto,
-  // para que en móvil arrastrar dentro del modal no mueva el feed de detrás
-  const anyModalOpen = !!(
-    openItem || showAuth || showPost || showProfile || showChat || showLegal ||
-    showSettings || showOrders || showFavorites || showLeague || showAdminPanel || cropperState
-  );
-  useEffect(() => {
-    document.body.style.overflow = anyModalOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [anyModalOpen]);
-
   // Scroll infinito: al acercarnos al final de la página, mostramos más filas del feed automáticamente
   const displayItemsLengthRef = useRef(0);
   useEffect(() => {
@@ -451,6 +440,17 @@ export default function JolvoApp() {
   const isAdmin = userRole === "admin";
   const isModerator = userRole === "admin" || userRole === "moderator";
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+
+  // Bloquea el scroll de la página de fondo mientras haya cualquier ventana/modal abierto,
+  // para que en móvil arrastrar dentro del modal no mueva el feed de detrás
+  const anyModalOpen = !!(
+    openItem || showAuth || showPost || showProfile || showChat || showLegal ||
+    showSettings || showOrders || showFavorites || showLeague || showAdminPanel || cropperState
+  );
+  useEffect(() => {
+    document.body.style.overflow = anyModalOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [anyModalOpen]);
   const [adminSection, setAdminSection] = useState(null); // null = menú principal del panel
   const [adminTab, setAdminTab] = useState("users");
   const [adminUsers, setAdminUsers] = useState([]);
