@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
-import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar } from "lucide-react";
+import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield } from "lucide-react";
 import {
   fetchItems, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
@@ -10,7 +10,7 @@ import {
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount,
-  fetchMyFollowing, followUser, unfollowUser,
+  fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
@@ -474,7 +474,7 @@ export default function RopelinApp() {
   const [supportSubject, setSupportSubject] = useState("");
   const [supportMessage, setSupportMessage] = useState("");
   const [mySupportMessages, setMySupportMessages] = useState([]);
-  const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo"), instagramUrl: "", tiktokUrl: "", facebookUrl: "", twitterUrl: "" });
+  const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo"), instagramUrl: "", tiktokUrl: "", facebookUrl: "", twitterUrl: "", updatesText: "" });
   const [adminSettingsForm, setAdminSettingsForm] = useState(null);
   const [adminUserFilters, setAdminUserFilters] = useState({ verified: "", stripeConnected: "" });
   const [adminUserPage, setAdminUserPage] = useState(1);
@@ -804,8 +804,12 @@ export default function RopelinApp() {
       toast.error("Escribe un email válido");
       return;
     }
-    setNewsletterSubscribed(true);
-    toast.success("¡Te has suscrito!");
+    subscribeNewsletter(newsletterEmail)
+      .then(() => {
+        setNewsletterSubscribed(true);
+        toast.success("¡Te has suscrito!");
+      })
+      .catch((err) => toast.error(err.message));
   }
 
   function closeProfileView() {
@@ -1673,6 +1677,28 @@ export default function RopelinApp() {
         .site-footer button:hover { color: #F2F2F0; }
         .legal-modal { max-width: 460px; }
         .legal-text { font-size: 13px; color: #C8C8CE; line-height: 1.6; max-height: 55vh; overflow-y: auto; }
+        .about-impact-box { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 14px; padding: 14px 16px; margin: 4px 0 20px; }
+        .about-impact-box p { margin: 0; font-size: 12.5px; color: #C8C8CE; line-height: 1.5; }
+        .about-impact-box strong { color: #4DE1C1; }
+        .about-block { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+        .about-block-icon { width: 34px; height: 34px; border-radius: 10px; background: #26262c; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .about-block-title { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; color: #F2F2F0; }
+        .about-block-text { margin: 0; font-size: 13px; color: #C8C8CE; line-height: 1.5; }
+        .about-block-link { background: none; border: none; padding: 0; margin: 0; font-size: 13px; color: #FF4D6D; font-weight: 600; cursor: pointer; text-decoration: underline; font-family: inherit; }
+        .updates-counter { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4DE1C1; font-weight: 600; margin: 0 0 20px; }
+        .update-entry { margin-bottom: 22px; }
+        .update-date { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #FF4D6D; font-weight: 700; margin: 0 0 10px; }
+        .update-bubbles { display: flex; flex-direction: column; gap: 8px; }
+        .update-bubble { display: flex; align-items: flex-start; gap: 10px; background: #121214; border: 1px solid #29292f; border-radius: 14px; padding: 12px 14px; }
+        .update-bubble-icon { width: 30px; height: 30px; border-radius: 10px; background: #26262c; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .update-bubble p { margin: 3px 0 0; font-size: 13px; color: #C8C8CE; line-height: 1.5; }
+        .update-type-tag { font-size: 10px; font-weight: 700; border: 1px solid; border-radius: 999px; padding: 2px 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .updates-subscribe-box { background: linear-gradient(135deg, #8C7CFF14, #FF4D6D0a); border: 1px solid #29292f; border-radius: 16px; padding: 18px; margin-top: 4px; }
+        .updates-subscribe-title { margin: 0 0 10px; font-size: 13px; color: #F2F2F0; font-weight: 700; }
+        .updates-subscribe-form { display: flex; gap: 8px; }
+        .updates-subscribe-form input { flex: 1; border: 1px solid #333; border-radius: 10px; padding: 9px 12px; font-size: 12.5px; background: #121214; color: #F2F2F0; font-family: inherit; }
+        .updates-subscribe-form .btn.primary { padding: 9px 16px; font-size: 12.5px; border-radius: 10px; }
+        .updates-subscribe-done { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; color: #4DE1C1; font-weight: 700; justify-content: center; }
         .legal-text p { margin: 0 0 12px; }
         .empty-title { font-size: 14px; font-weight: 700; margin: 6px 0 0; }
         .empty-sub { font-size: 12px; color: #6A6A73; margin: 0 0 14px; max-width: 260px; }
@@ -1813,7 +1839,7 @@ export default function RopelinApp() {
         .footer-social-label { font-size: 11px; letter-spacing: 1px; color: #6A6A73; text-transform: uppercase; }
         .footer-social-row a { color: #9A9AA3; display: flex; width: 30px; height: 30px; border-radius: 50%; background: #1F1F24; align-items: center; justify-content: center; transition: color .15s ease, background .15s ease; }
         .footer-social-row a:hover { color: #F2F2F0; background: #29292f; }
-        .footer-cols { display: flex; gap: 80px; flex-wrap: wrap; margin-bottom: 34px; }
+        .footer-cols { display: flex; gap: 56px; flex-wrap: wrap; margin-bottom: 34px; }
         .footer-col { display: flex; flex-direction: column; gap: 12px; }
         .footer-col-title { font-size: 11px; letter-spacing: 1.2px; color: #6A6A73; text-transform: uppercase; margin: 0 0 4px; font-weight: 700; }
         .footer-col button { background: none; border: none; color: #C8C8CE; font-size: 13.5px; cursor: pointer; font-family: inherit; text-align: left; padding: 0; transition: color .15s ease; }
@@ -1821,6 +1847,12 @@ export default function RopelinApp() {
         .footer-bottom-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 22px; border-top: 1px solid #29292f; color: #6A6A73; font-size: 11.5px; }
         .footer-bottom-bar button { background: none; border: none; color: #6A6A73; font-size: 11.5px; cursor: pointer; font-family: inherit; text-decoration: none; }
         .footer-bottom-bar button:hover { color: #F2F2F0; text-decoration: underline; }
+        .footer-link-accent { color: #FF4D6D !important; font-weight: 600; }
+        .footer-link-plain { color: #C8C8CE; font-size: 13.5px; text-decoration: none; }
+        .footer-link-plain:hover { color: #F2F2F0; }
+        .footer-trust-badge { display: flex; align-items: center; gap: 5px; background: #1F1F24; border: 1px solid #29292f; border-radius: 999px; padding: 5px 12px; margin-left: auto; font-size: 11px; }
+        .footer-trust-badge strong { color: #635BFF; font-weight: 800; }
+        @media (max-width: 640px) { .footer-trust-badge { margin-left: 0; } }
         @media (max-width: 640px) {
           .site-footer-rich { padding: 36px 20px 100px; }
           .footer-cols { gap: 34px; }
@@ -2278,13 +2310,27 @@ export default function RopelinApp() {
           <div className="footer-col">
             <p className="footer-col-title">Ropelin</p>
             <button onClick={() => setShowLegal("about")}>Quiénes somos</button>
+            <button onClick={() => setShowLegal("updates")}>Novedades</button>
             <button onClick={openHelpCenter}>Ayuda</button>
+          </div>
+          <div className="footer-col">
+            <p className="footer-col-title">Comprar y vender</p>
+            <button onClick={() => { setEditingItem(null); setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] }); setShowPost(true); }}>Publicar un artículo</button>
+            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Moda"); setQuery(""); navigate("/"); }}>Moda</button>
+            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Electrónica"); setQuery(""); navigate("/"); }}>Electrónica</button>
+            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Hogar"); setQuery(""); navigate("/"); }}>Hogar</button>
+            <button className="footer-link-accent" onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Todo"); setQuery(""); navigate("/"); }}>Ver todas →</button>
           </div>
           <div className="footer-col">
             <p className="footer-col-title">Legal</p>
             <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
             <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
             <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+          </div>
+          <div className="footer-col">
+            <p className="footer-col-title">Contacto</p>
+            <a href="mailto:hola@ropelin.com" className="footer-link-plain">hola@ropelin.com</a>
+            <button onClick={openHelpCenter}>Centro de ayuda</button>
           </div>
         </div>
         <div className="footer-bottom-bar">
@@ -2295,6 +2341,7 @@ export default function RopelinApp() {
           <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
           <span>·</span>
           <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+          <span className="footer-trust-badge">🔒 Pagos seguros con <strong>stripe</strong></span>
         </div>
         </div>
       </footer>
@@ -2305,15 +2352,137 @@ export default function RopelinApp() {
         <div className="overlay" onClick={() => setShowLegal(null)}>
           <div className="modal legal-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={() => setShowLegal(null)}><X size={14} /></button>
+            {showLegal === "updates" && (() => {
+              const AGOSTO = [
+                { Icon: Camera, type: "Nuevo", text: "Búsqueda por foto: haz una foto y te buscamos artículos parecidos" },
+                { Icon: Tag, type: "Nuevo", text: "Nuevas categorías: Vehículos, Libros y música, Belleza, Bebé e infantil, Jardín y herramientas, Instrumentos musicales" },
+                { Icon: UserPlus, type: "Nuevo", text: "Ahora puedes seguir a otros vendedores y te avisamos cuando publiquen algo nuevo" },
+                { Icon: RefreshCw, type: "Mejora", text: "Scroll infinito en el feed, sin necesidad de pulsar \"cargar más\"" },
+                { Icon: LogIn, type: "Nuevo", text: "Inicio de sesión con Google" },
+                { Icon: Mail, type: "Nuevo", text: "Correo de bienvenida al registrarte" },
+              ];
+              const JULIO = [
+                { Icon: Crop, type: "Mejora", text: "Editor de recorte al subir fotos de perfil, portada y artículos" },
+                { Icon: MapPin, type: "Nuevo", text: "Ciudad y distancia aproximada en cada artículo" },
+                { Icon: Shield, type: "Nuevo", text: "Banner de consentimiento de cookies" },
+                { Icon: LayoutGrid, type: "Mejora", text: "Rediseño del formulario de publicar y del pie de página" },
+              ];
+              const TYPE_COLORS = { Nuevo: "#4DE1C1", Mejora: "#8C7CFF", Arreglo: "#FF8A4D" };
+              const total = AGOSTO.length + JULIO.length;
+
+              return (
+                <>
+                  <p className="auth-title">Novedades</p>
+                  <div className="legal-text updates-list">
+                    {platformSettings.updatesText ? (
+                      <p style={{ whiteSpace: "pre-wrap" }}>{platformSettings.updatesText}</p>
+                    ) : (
+                      <>
+                        <p className="updates-counter"><Sparkles size={13} color="#4DE1C1" /> {total} novedades este mes</p>
+
+                        <div className="update-entry">
+                          <p className="update-date">Agosto 2026</p>
+                          <div className="update-bubbles">
+                            {AGOSTO.map(({ Icon, type, text }) => (
+                              <div className="update-bubble" key={text}>
+                                <div className="update-bubble-icon"><Icon size={15} color="#9A9AA3" /></div>
+                                <div>
+                                  <span className="update-type-tag" style={{ color: TYPE_COLORS[type], borderColor: `${TYPE_COLORS[type]}55` }}>{type}</span>
+                                  <p>{text}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="update-entry">
+                          <p className="update-date">Julio 2026</p>
+                          <div className="update-bubbles">
+                            {JULIO.map(({ Icon, type, text }) => (
+                              <div className="update-bubble" key={text}>
+                                <div className="update-bubble-icon"><Icon size={15} color="#9A9AA3" /></div>
+                                <div>
+                                  <span className="update-type-tag" style={{ color: TYPE_COLORS[type], borderColor: `${TYPE_COLORS[type]}55` }}>{type}</span>
+                                  <p>{text}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="updates-subscribe-box">
+                      {newsletterSubscribed ? (
+                        <p className="updates-subscribe-done"><CheckCircle size={14} color="#4DE1C1" /> Te avisaremos por email de las novedades</p>
+                      ) : (
+                        <>
+                          <p className="updates-subscribe-title">¿Quieres que te avisemos?</p>
+                          <form className="updates-subscribe-form" onSubmit={handleNewsletterSubmit}>
+                            <input
+                              type="email" placeholder="Tu email"
+                              value={newsletterEmail}
+                              onChange={(e) => setNewsletterEmail(e.target.value)}
+                            />
+                            <button type="submit" className="btn primary">Avisarme</button>
+                          </form>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
             {showLegal === "about" && (
               <>
                 <p className="auth-title">Quiénes somos</p>
                 <div className="legal-text">
                   <p>Ropelin nació con una idea sencilla: lo que para ti ya no tiene uso, para otra persona puede ser justo lo que estaba buscando.</p>
                   <p>Somos un mercado de segunda mano donde puedes comprar y vender de todo — ropa, electrónica, artículos para el hogar y mucho más — de forma fácil, segura y a un clic de distancia.</p>
-                  <p><strong>Nuestra misión</strong> es alargar la vida de las cosas y hacer que reutilizar sea la opción más cómoda, no la más difícil. Cada compra en Ropelin es una prenda o un objeto que no termina en la basura.</p>
-                  <p><strong>Cómo funciona:</strong> publica lo que ya no uses en un par de minutos, negocia el precio si quieres, y cuando se cierre la venta nosotros nos encargamos de que el pago y el envío sean seguros para las dos partes.</p>
-                  <p style={{ color: "#6A6A73", fontSize: 11, marginTop: 16 }}>Este es un texto de ejemplo — ajústalo con la historia real de tu proyecto cuando quieras.</p>
+
+                  {allItems.length > 0 && (
+                    <div className="about-impact-box">
+                      <Leaf size={18} color="#4DE1C1" />
+                      <p>
+                        Entre toda la comunidad ya se han ahorrado{" "}
+                        <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 2.1, 0)).toLocaleString("es-ES")} kg de CO₂</strong>
+                        {" "}y{" "}
+                        <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 90, 0)).toLocaleString("es-ES")} L de agua</strong>
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="about-block">
+                    <div className="about-block-icon"><User size={16} color="#9A9AA3" /></div>
+                    <div>
+                      <p className="about-block-title">Quién hay detrás</p>
+                      <p className="about-block-text">Creado por una sola persona, con ganas de cambiar cómo compramos y vendemos de segunda mano.</p>
+                    </div>
+                  </div>
+
+                  <div className="about-block">
+                    <div className="about-block-icon"><ShieldCheck size={16} color="#9A9AA3" /></div>
+                    <div>
+                      <p className="about-block-title">Por qué confiar en Ropelin</p>
+                      <p className="about-block-text">Los pagos se procesan con Stripe, y la comunidad está moderada para mantener la web segura para todos.</p>
+                    </div>
+                  </div>
+
+                  <div className="about-block">
+                    <div className="about-block-icon"><Sparkles size={16} color="#9A9AA3" /></div>
+                    <div>
+                      <p className="about-block-title">¿En qué estamos trabajando?</p>
+                      <button className="about-block-link" onClick={() => setShowLegal("updates")}>Ver las Novedades →</button>
+                    </div>
+                  </div>
+
+                  <div className="about-block">
+                    <div className="about-block-icon"><Mail size={16} color="#9A9AA3" /></div>
+                    <div>
+                      <p className="about-block-title">¿Alguna duda?</p>
+                      <button className="about-block-link" onClick={() => { setShowLegal(null); openHelpCenter(); }}>Escríbenos desde el Centro de ayuda →</button>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
@@ -3428,6 +3597,14 @@ export default function RopelinApp() {
                       type="text" className="input-plain" placeholder="https://x.com/tu_cuenta"
                       value={adminSettingsForm.twitterUrl || ""}
                       onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, twitterUrl: e.target.value }))}
+                    />
+                    <label>Novedades (lo que se ve en "Novedades" del pie de página)</label>
+                    <textarea
+                      className="report-textarea"
+                      rows={8}
+                      placeholder={"Escribe aquí lo último que hayas añadido a la web, por ejemplo:\n\nAgosto 2026\n- Búsqueda por foto\n- Nuevas categorías"}
+                      value={adminSettingsForm.updatesText || ""}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, updatesText: e.target.value }))}
                     />
                     <button className="btn primary admin-refund-btn" onClick={saveAdminSettings}>Guardar configuración</button>
                   </div>

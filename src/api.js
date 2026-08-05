@@ -175,6 +175,16 @@ export async function deleteMyAccount() {
   return res.json();
 }
 
+export async function subscribeNewsletter(email) {
+  const res = await fetch(`${API_URL}/newsletter/subscribe`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo completar la suscripción");
+  return res.json();
+}
+
 export async function fetchMyFollowing() {
   const res = await fetch(`${API_URL}/users/me/following`, { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error("No se pudo cargar a quién sigues");
