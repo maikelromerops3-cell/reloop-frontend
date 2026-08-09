@@ -284,6 +284,7 @@ export default function RopelinApp() {
   const [offerAmount, setOfferAmount] = useState("");
   const [offerSent, setOfferSent] = useState(false);
   const [showPost, setShowPost] = useState(false);
+  const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [openItem, setOpenItem] = useState(null);
   const [itemQuestions, setItemQuestions] = useState([]);
@@ -506,7 +507,6 @@ export default function RopelinApp() {
   const [banReason, setBanReason] = useState("");
   const [showReportForm, setShowReportForm] = useState(null); // { targetType, itemId?, reportedUsername? }
   const [reportReason, setReportReason] = useState("");
-  const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [helpTab, setHelpTab] = useState("faq");
   const [supportSubject, setSupportSubject] = useState("");
   const [supportMessage, setSupportMessage] = useState("");
