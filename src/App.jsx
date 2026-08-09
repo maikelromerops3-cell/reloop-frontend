@@ -452,7 +452,7 @@ export default function RopelinApp() {
   // para que en móvil arrastrar dentro del modal no mueva el feed de detrás.
   // El detalle de la prenda (openItem) solo cuenta como "modal" en móvil: en escritorio es la página normal, no una ventana flotante, y necesita su propio scroll.
   const anyModalOpen = !!(
-    (openItem && numCols < 3) || showAuth || showPost || showProfile || showChat || showLegal ||
+    (openItem && numCols < 3) || showAuth || (showPost && numCols < 3) || showProfile || showChat || showLegal ||
     showSettings || showOrders || showFavorites || showLeague || showAdminPanel || cropperState
   );
   useEffect(() => {
@@ -1886,6 +1886,7 @@ export default function RopelinApp() {
         @media (min-width: 1900px) {
           .item-page { max-width: 1600px; }
         }
+        .post-page { padding: 20px 26px 100px; max-width: 900px; margin: 0 auto; }
         .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: #C8C8CE; font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 0; margin-bottom: 16px; font-family: inherit; }
         .back-btn:hover { color: #F2F2F0; }
         .item-page-grid { display: flex; gap: 40px; align-items: flex-start; }
@@ -2634,130 +2635,142 @@ export default function RopelinApp() {
         </div>
       )}
 
-      {showPost && (
-        <div className="overlay detail-overlay" onClick={() => setShowPost(false)}>
-          <div className="modal post-modal detail-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="post-mobile-header">
-              <button className="post-mobile-close" onClick={() => setShowPost(false)}><X size={18} /></button>
-              <p className="post-mobile-title">{editingItem ? "Editar" : "Vender"}</p>
-            </div>
-            <button className="close-btn" onClick={() => setShowPost(false)}><X size={14} /></button>
-            <p className="auth-title">{editingItem ? "Editar prenda" : "Nueva prenda"}</p>
-            <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu prenda" : "Rellena los datos y publícala en segundos"}</p>
+      {showPost && (() => {
+        const postGridEl = (
+          <div className="post-modal-grid">
+            <div className="post-photos-col">
+              <p className="post-section-label">Fotos</p>
+              <label htmlFor="photo-upload" className="upload-box">
+                <ImagePlus size={22} color="#6A6A73" />
+                <span>Añadir fotos</span>
+                <span className="upload-hint">Hasta 6 imágenes, formato JPG o PNG</span>
+              </label>
+              <input
+                id="photo-upload"
+                type="file"
+                accept="image/png, image/jpeg"
+                multiple
+                style={{ display: "none" }}
+                onChange={handleImageSelect}
+              />
+              {(form.images.length > 0 || uploadingImages.length > 0) && (
+                <div className="image-preview-row">
+                  {form.images.map((img, i) => (
+                    <div key={i} className="image-preview">
+                      <img src={img} alt={`Foto ${i + 1}`} />
+                      <button type="button" onClick={() => removeImage(i)}><X size={12} /></button>
+                    </div>
+                  ))}
+                  {uploadingImages.map((id) => (
+                    <div key={id} className="image-preview uploading">
+                      <RefreshCw size={16} className="spin" />
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            <div className="post-modal-grid">
-              <div className="post-photos-col">
-                <p className="post-section-label">Fotos</p>
-                <label htmlFor="photo-upload" className="upload-box">
-                  <ImagePlus size={22} color="#6A6A73" />
-                  <span>Añadir fotos</span>
-                  <span className="upload-hint">Hasta 6 imágenes, formato JPG o PNG</span>
-                </label>
-                <input
-                  id="photo-upload"
-                  type="file"
-                  accept="image/png, image/jpeg"
-                  multiple
-                  style={{ display: "none" }}
-                  onChange={handleImageSelect}
-                />
-                {(form.images.length > 0 || uploadingImages.length > 0) && (
-                  <div className="image-preview-row">
-                    {form.images.map((img, i) => (
-                      <div key={i} className="image-preview">
-                        <img src={img} alt={`Foto ${i + 1}`} />
-                        <button type="button" onClick={() => removeImage(i)}><X size={12} /></button>
-                      </div>
-                    ))}
-                    {uploadingImages.map((id) => (
-                      <div key={id} className="image-preview uploading">
-                        <RefreshCw size={16} className="spin" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <p className="post-section-label">Vista previa</p>
-                <div className="post-preview-card">
-                  <div className="post-preview-media" style={form.images[0] ? { backgroundImage: `url(${form.images[0]})` } : {}}>
-                    {!form.images[0] && <ImagePlus size={20} />}
-                  </div>
-                  <div className="post-preview-body">
-                    <p className="post-preview-price">{form.price ? `${form.price}€` : "0€"}</p>
-                    <p className="post-preview-title">{form.title || "Título de tu prenda"}</p>
-                    <p className="post-preview-meta">
-                      {form.category}{form.size ? ` · Talla ${form.size}` : ""} · {form.condition}
-                    </p>
-                  </div>
+              <p className="post-section-label">Vista previa</p>
+              <div className="post-preview-card">
+                <div className="post-preview-media" style={form.images[0] ? { backgroundImage: `url(${form.images[0]})` } : {}}>
+                  {!form.images[0] && <ImagePlus size={20} />}
+                </div>
+                <div className="post-preview-body">
+                  <p className="post-preview-price">{form.price ? `${form.price}€` : "0€"}</p>
+                  <p className="post-preview-title">{form.title || "Título de tu prenda"}</p>
+                  <p className="post-preview-meta">
+                    {form.category}{form.size ? ` · Talla ${form.size}` : ""} · {form.condition}
+                  </p>
                 </div>
               </div>
+            </div>
 
-              <div className="post-form-col">
-                <form onSubmit={handlePublish}>
-                  <p className="post-section-label">Detalles</p>
-                  <label>Título</label>
-                  <div className="input-icon">
-                    <Tag size={14} />
-                    <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej. Bicicleta urbana, chaqueta vaquera, lámpara..." />
-                  </div>
+            <div className="post-form-col">
+              <form onSubmit={handlePublish}>
+                <p className="post-section-label">Detalles</p>
+                <label>Título</label>
+                <div className="input-icon">
+                  <Tag size={14} />
+                  <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej. Bicicleta urbana, chaqueta vaquera, lámpara..." />
+                </div>
 
-                  <label>Descripción</label>
-                  <textarea
-                    className="post-textarea"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    placeholder="Medidas, estado real, motivo de venta, defectos si los hay..."
-                    rows={3}
-                  />
+                <label>Descripción</label>
+                <textarea
+                  className="post-textarea"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="Medidas, estado real, motivo de venta, defectos si los hay..."
+                  rows={3}
+                />
 
-                  <label>Categoría</label>
-                  <div className="pill-group">
-                    {platformSettings.categories.map((c) => (
-                      <button type="button" key={c} className={"pill" + (form.category === c ? " active" : "")} onClick={() => setForm({ ...form, category: c, size: "", isShoe: false })}>{c}</button>
-                    ))}
-                  </div>
+                <label>Categoría</label>
+                <div className="pill-group">
+                  {platformSettings.categories.map((c) => (
+                    <button type="button" key={c} className={"pill" + (form.category === c ? " active" : "")} onClick={() => setForm({ ...form, category: c, size: "", isShoe: false })}>{c}</button>
+                  ))}
+                </div>
 
-                  {form.category === "Moda" && (
-                    <>
-                      <label>Tipo de talla</label>
-                      <div className="pill-group">
-                        <button type="button" className={"pill" + (!form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: false, size: "" })}>Ropa (XS-XL)</button>
-                        <button type="button" className={"pill" + (form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: true, size: "" })}>Calzado (nº)</button>
-                      </div>
+                {form.category === "Moda" && (
+                  <>
+                    <label>Tipo de talla</label>
+                    <div className="pill-group">
+                      <button type="button" className={"pill" + (!form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: false, size: "" })}>Ropa (XS-XL)</button>
+                      <button type="button" className={"pill" + (form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: true, size: "" })}>Calzado (nº)</button>
+                    </div>
 
-                      <label>Talla</label>
-                      <div className="pill-group">
-                        {(form.isShoe ? SHOE_SIZES : SIZES).map((s) => (
-                          <button type="button" key={s} className={"pill" + (form.size === s ? " active" : "")} onClick={() => setForm({ ...form, size: s })}>{s}</button>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                    <label>Talla</label>
+                    <div className="pill-group">
+                      {(form.isShoe ? SHOE_SIZES : SIZES).map((s) => (
+                        <button type="button" key={s} className={"pill" + (form.size === s ? " active" : "")} onClick={() => setForm({ ...form, size: s })}>{s}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
 
-                  <label>Estado</label>
-                  <div className="pill-group">
-                    {["Como nuevo", "Muy bueno", "Bueno", "Aceptable"].map((c) => (
-                      <button type="button" key={c} className={"pill" + (form.condition === c ? " active" : "")} onClick={() => setForm({ ...form, condition: c })}>{c}</button>
-                    ))}
-                  </div>
+                <label>Estado</label>
+                <div className="pill-group">
+                  {["Como nuevo", "Muy bueno", "Bueno", "Aceptable"].map((c) => (
+                    <button type="button" key={c} className={"pill" + (form.condition === c ? " active" : "")} onClick={() => setForm({ ...form, condition: c })}>{c}</button>
+                  ))}
+                </div>
 
-                  <p className="post-section-label">Precio</p>
-                  <label>Precio de venta</label>
-                  <div className="input-icon price-input">
-                    <span className="euro-prefix">€</span>
-                    <input type="number" min="1" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="0" />
-                  </div>
+                <p className="post-section-label">Precio</p>
+                <label>Precio de venta</label>
+                <div className="input-icon price-input">
+                  <span className="euro-prefix">€</span>
+                  <input type="number" min="1" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="0" />
+                </div>
 
-                  {postError && <p style={{ color: "#FF4D6D", fontSize: 12, marginTop: 10 }}>{postError}</p>}
-                  <button className="submit-btn" type="submit" disabled={uploadingImages.length > 0}>
-                    {uploadingImages.length > 0 ? "Subiendo fotos..." : !loggedIn ? "Iniciar sesión para publicar" : editingItem ? "Guardar cambios" : "Publicar prenda"}
-                  </button>
-                </form>
-              </div>
+                {postError && <p style={{ color: "#FF4D6D", fontSize: 12, marginTop: 10 }}>{postError}</p>}
+                <button className="submit-btn" type="submit" disabled={uploadingImages.length > 0}>
+                  {uploadingImages.length > 0 ? "Subiendo fotos..." : !loggedIn ? "Iniciar sesión para publicar" : editingItem ? "Guardar cambios" : "Publicar prenda"}
+                </button>
+              </form>
             </div>
           </div>
-        </div>
-      )}
+        );
+
+        return numCols >= 3 ? (
+          <div className="post-page">
+            <button className="back-btn" onClick={() => setShowPost(false)}><ArrowLeft size={16} /> Volver</button>
+            <p className="auth-title">{editingItem ? "Editar prenda" : "Nueva prenda"}</p>
+            <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu prenda" : "Rellena los datos y publícala en segundos"}</p>
+            {postGridEl}
+          </div>
+        ) : (
+          <div className="overlay detail-overlay" onClick={() => setShowPost(false)}>
+            <div className="modal post-modal detail-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="post-mobile-header">
+                <button className="post-mobile-close" onClick={() => setShowPost(false)}><X size={18} /></button>
+                <p className="post-mobile-title">{editingItem ? "Editar" : "Vender"}</p>
+              </div>
+              <button className="close-btn" onClick={() => setShowPost(false)}><X size={14} /></button>
+              <p className="auth-title">{editingItem ? "Editar prenda" : "Nueva prenda"}</p>
+              <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu prenda" : "Rellena los datos y publícala en segundos"}</p>
+              {postGridEl}
+            </div>
+          </div>
+        );
+      })()}
 
       {showForgotPassword && (
         <div className="overlay" onClick={() => { setShowForgotPassword(false); setForgotSent(false); setForgotError(null); }}>
