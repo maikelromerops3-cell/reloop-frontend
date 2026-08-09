@@ -453,7 +453,7 @@ export default function RopelinApp() {
   // El detalle de la prenda (openItem) solo cuenta como "modal" en móvil: en escritorio es la página normal, no una ventana flotante, y necesita su propio scroll.
   const legalPageOpen = showLegal === "about" || showLegal === "updates";
   // En escritorio, cuando se muestra el detalle de un artículo, el formulario de publicar, o Quiénes somos/Novedades como página, se oculta el feed de detrás (en vez de quedar apilado debajo)
-  const hidesFeedOnDesktop = numCols >= 3 && (openItem || showPost || legalPageOpen);
+  const hidesFeedOnDesktop = numCols >= 3 && (openItem || legalPageOpen);
   const anyModalOpen = !!(
     (openItem && numCols < 3) || showAuth || showProfile || showChat ||
     (showLegal && !(numCols >= 3 && legalPageOpen)) ||
