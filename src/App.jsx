@@ -2348,6 +2348,219 @@ export default function RopelinApp() {
         })}
       </div>
 
+      {openItem && (() => {
+        const isDesktop = numCols >= 3;
+
+        const galleryEl = (
+          <div
+            className="detail-media"
+            style={{ backgroundImage: `url(${(openItem.images && openItem.images[galleryIndex]) || openItem.photo})`, backgroundSize: "cover", backgroundPosition: "center" }}
+          >
+            {openItem.featured && <span className="featured-ribbon" style={{ top: 14 }}>Destacado</span>}
+            {openItem.images && openItem.images.length > 1 && (
+              <>
+                <button
+                  className="gallery-arrow left"
+                  onClick={() => setGalleryIndex((i) => (i === 0 ? openItem.images.length - 1 : i - 1))}
+                >‹</button>
+                <button
+                  className="gallery-arrow right"
+                  onClick={() => setGalleryIndex((i) => (i === openItem.images.length - 1 ? 0 : i + 1))}
+                >›</button>
+                <div className="gallery-dots">
+                  {openItem.images.map((_, i) => (
+                    <span key={i} className={"gallery-dot" + (i === galleryIndex ? " active" : "")} onClick={() => setGalleryIndex(i)} />
+                  ))}
+                </div>
+              </>
+            )}
+            <div className="detail-media-actions">
+              <button
+                className="heart detail-icon-btn"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/item/${openItem.id}`);
+                  toast("Enlace copiado", { icon: "🔗" });
+                }}
+              ><Share2 size={16} /></button>
+              <button className={"heart detail-icon-btn" + (saved.has(openItem.id) ? " on" : "")} onClick={() => toggleSave(openItem.id)}>
+                <Heart size={18} fill={saved.has(openItem.id) ? "#FF4D6D" : "none"} color={saved.has(openItem.id) ? "#FF4D6D" : "#fff"} />
+              </button>
+            </div>
+          </div>
+        );
+
+        const relatedEl = (
+          <>
+            {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).length > 0 && (
+              <>
+                <p className="profile-section-title related-heading">Más de @{openItem.seller}</p>
+                <div className="mini-row">
+                  {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).slice(0, 7).map((i, idx) => (
+                    <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
+                      <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
+                      <p className="mini-title">{i.title}</p>
+                      <p className="mini-price">{i.price}€</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).length > 0 && (
+              <>
+                <p className="profile-section-title related-heading">Artículos parecidos</p>
+                <div className="mini-row">
+                  {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).slice(0, 7).map((i, idx) => (
+                    <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
+                      <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
+                      <p className="mini-title">{i.title}</p>
+                      <p className="mini-price">{i.price}€</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        );
+
+        const infoEl = (
+          <>
+            <div className="detail-top">
+              <h3 className="detail-title">{openItem.title}</h3>
+              <div>
+                <p className="detail-price">{openItem.price}€</p>
+                {openItem.price < 25 && <p className="trend-tag"><TrendingDown size={11} /> Por debajo de la media</p>}
+              </div>
+            </div>
+
+            <p className="detail-meta-row">
+              <span>Publicado {timeAgo(openItem.minutesAgo)}</span>
+              {typeof openItem.views === "number" && <span>· <Eye size={12} /> {openItem.views} {openItem.views === 1 ? "vista" : "vistas"}</span>}
+              {openItem.favoritesCount > 0 && <span>· <Heart size={12} /> {openItem.favoritesCount} en favoritos</span>}
+            </p>
+
+            <div className="tag-row">
+              <span className="info-tag">{openItem.category}</span>
+              {openItem.size && <span className="info-tag">Talla {openItem.size}</span>}
+              <span className="info-tag">{openItem.condition}</span>
+            </div>
+
+            {openItem.description && (
+              <p className="detail-description">{openItem.description}</p>
+            )}
+
+            <div className="seller-card">
+              <div
+                className="mini-avatar seller-avatar"
+                style={{ background: PALETTE[openItem.seller.length % PALETTE.length], cursor: "pointer" }}
+                onClick={() => { setOpenItem(null); openProfile(openItem.seller); }}
+              >
+                {openItem.seller[0]?.toUpperCase()}
+              </div>
+              <div style={{ flex: 1, cursor: "pointer" }} onClick={() => { setOpenItem(null); openProfile(openItem.seller); }}>
+                <p className="seller-name">
+                  @{openItem.seller}
+                  {openItem.verified && <CheckCircle size={13} color="#4DE1C1" style={{ marginLeft: 5, verticalAlign: -2 }} />}
+                </p>
+                <p className="seller-rating">
+                  <Star size={11} fill="#FFC24D" color="#FFC24D" /> 4.8 · 32 ventas
+                  {openItem.distanceKm !== null && <> · <MapPin size={11} /> a {openItem.distanceKm < 1 ? "menos de 1" : Math.round(openItem.distanceKm)} km</>}
+                  {openItem.distanceKm === null && openItem.city && <> · <MapPin size={11} /> {openItem.city}</>}
+                </p>
+                <div className="seller-mini-verify">
+                  <span className="verify-chip done"><CheckCircle size={10} /> Email</span>
+                  <span className="verify-chip done"><CheckCircle size={10} /> Teléfono</span>
+                </div>
+              </div>
+              <button className={"follow-btn" + (following.has(openItem.seller) ? " on" : "")} onClick={() => toggleFollow(openItem.seller)}>
+                {following.has(openItem.seller) ? <UserCheck size={13} /> : <UserPlus size={13} />}
+                {following.has(openItem.seller) ? "Siguiendo" : "Seguir"}
+              </button>
+            </div>
+
+            {loggedIn && openItem.seller !== username && (
+              <button className="report-flag-btn" onClick={() => setShowReportForm({ targetType: "item", itemId: openItem.id })}>
+                <FileWarning size={12} /> Denunciar este artículo
+              </button>
+            )}
+
+            <div className="impact-box">
+              <Leaf size={16} color="#4DE1C1" />
+              <div>
+                <p className="impact-title">Impacto de esta compra</p>
+                <p className="impact-sub">Ahorras ~{(openItem.price * 2.1).toFixed(0)} kg de CO₂ y {(openItem.price * 90).toFixed(0)} L de agua frente a comprarlo nuevo</p>
+              </div>
+            </div>
+
+            <div className="shipping-box">
+              <Truck size={16} color="#9A9AA3" />
+              <div>
+                <p className="shipping-title">Cómo se entrega</p>
+                <p className="shipping-sub">Por correo, con etiqueta de envío (~{platformSettings.shippingFee}€) o en mano si quedáis cerca — lo acordáis por chat</p>
+              </div>
+            </div>
+
+            <div className="detail-actions">
+              {openItem.seller === username ? (
+                <>
+                  <button className="chat-btn" onClick={() => { startEdit(openItem); }}><Pencil size={15} /> Editar</button>
+                  {openItem.featured ? (
+                    <button className="buy-btn" disabled style={{ opacity: 0.6 }}><TrendingUp size={15} /> Ya destacado</button>
+                  ) : (
+                    <button className="offer-btn" onClick={() => handleBoost(openItem.id)}><TrendingUp size={15} /> {`Destacar por ${platformSettings.boostPrice}€`}</button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button className="chat-btn" onClick={() => openChat(openItem)}><MessageCircle size={15} /> Contactar</button>
+                  <button className="offer-btn" onClick={() => loggedIn ? setShowOffer(true) : setShowAuth(true)}><HandCoins size={15} /> Ofertar</button>
+                  <button className="buy-btn" onClick={() => loggedIn ? setShowCheckout(true) : setShowAuth(true)}>Comprar</button>
+                </>
+              )}
+            </div>
+
+            {isAdmin && (
+              <div className="admin-toolbar">
+                <span className="admin-toolbar-label">Admin</span>
+                <button className="admin-icon-action" onClick={() => openAdminItemEdit(openItem)} title="Editar publicación">
+                  <Pencil size={14} />
+                </button>
+                <button className="admin-icon-action danger" onClick={() => removeItem(openItem.id)} title="Eliminar publicación">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )}
+          </>
+        );
+
+
+
+        return isDesktop ? (
+          <div className="item-page">
+            <button className="back-btn" onClick={closeItemView}><ArrowLeft size={16} /> Volver</button>
+            <div className="item-page-grid">
+              <div className="item-page-gallery">
+                {galleryEl}
+              </div>
+              <div className="item-page-info">
+                {infoEl}
+              </div>
+            </div>
+            <div className="related-full">
+              {relatedEl}
+            </div>
+          </div>
+        ) : (
+          <div className="overlay detail-overlay" onClick={closeItemView}>
+            <div className="modal detail-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="close-btn dark-close-left" onClick={closeItemView}><X size={14} /></button>
+              {galleryEl}
+              <div className="detail-body">{infoEl}{relatedEl}</div>
+            </div>
+          </div>
+        );
+      })()}
+
       {showHelpCenter && (() => {
         const helpContentEl = (
           <>
@@ -4210,218 +4423,6 @@ export default function RopelinApp() {
         </div>
       )}
 
-      {openItem && (() => {
-        const isDesktop = numCols >= 3;
-
-        const galleryEl = (
-          <div
-            className="detail-media"
-            style={{ backgroundImage: `url(${(openItem.images && openItem.images[galleryIndex]) || openItem.photo})`, backgroundSize: "cover", backgroundPosition: "center" }}
-          >
-            {openItem.featured && <span className="featured-ribbon" style={{ top: 14 }}>Destacado</span>}
-            {openItem.images && openItem.images.length > 1 && (
-              <>
-                <button
-                  className="gallery-arrow left"
-                  onClick={() => setGalleryIndex((i) => (i === 0 ? openItem.images.length - 1 : i - 1))}
-                >‹</button>
-                <button
-                  className="gallery-arrow right"
-                  onClick={() => setGalleryIndex((i) => (i === openItem.images.length - 1 ? 0 : i + 1))}
-                >›</button>
-                <div className="gallery-dots">
-                  {openItem.images.map((_, i) => (
-                    <span key={i} className={"gallery-dot" + (i === galleryIndex ? " active" : "")} onClick={() => setGalleryIndex(i)} />
-                  ))}
-                </div>
-              </>
-            )}
-            <div className="detail-media-actions">
-              <button
-                className="heart detail-icon-btn"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/item/${openItem.id}`);
-                  toast("Enlace copiado", { icon: "🔗" });
-                }}
-              ><Share2 size={16} /></button>
-              <button className={"heart detail-icon-btn" + (saved.has(openItem.id) ? " on" : "")} onClick={() => toggleSave(openItem.id)}>
-                <Heart size={18} fill={saved.has(openItem.id) ? "#FF4D6D" : "none"} color={saved.has(openItem.id) ? "#FF4D6D" : "#fff"} />
-              </button>
-            </div>
-          </div>
-        );
-
-        const relatedEl = (
-          <>
-            {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).length > 0 && (
-              <>
-                <p className="profile-section-title related-heading">Más de @{openItem.seller}</p>
-                <div className="mini-row">
-                  {allItems.filter((i) => i.seller === openItem.seller && i.id !== openItem.id).slice(0, 7).map((i, idx) => (
-                    <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
-                      <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
-                      <p className="mini-title">{i.title}</p>
-                      <p className="mini-price">{i.price}€</p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).length > 0 && (
-              <>
-                <p className="profile-section-title related-heading">Artículos parecidos</p>
-                <div className="mini-row">
-                  {allItems.filter((i) => i.category === openItem.category && i.id !== openItem.id && i.seller !== openItem.seller).slice(0, 7).map((i, idx) => (
-                    <div key={i.id} className="mini-card" onClick={() => viewItem(i)}>
-                      <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
-                      <p className="mini-title">{i.title}</p>
-                      <p className="mini-price">{i.price}€</p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </>
-        );
-
-        const infoEl = (
-          <>
-            <div className="detail-top">
-              <h3 className="detail-title">{openItem.title}</h3>
-              <div>
-                <p className="detail-price">{openItem.price}€</p>
-                {openItem.price < 25 && <p className="trend-tag"><TrendingDown size={11} /> Por debajo de la media</p>}
-              </div>
-            </div>
-
-            <p className="detail-meta-row">
-              <span>Publicado {timeAgo(openItem.minutesAgo)}</span>
-              {typeof openItem.views === "number" && <span>· <Eye size={12} /> {openItem.views} {openItem.views === 1 ? "vista" : "vistas"}</span>}
-              {openItem.favoritesCount > 0 && <span>· <Heart size={12} /> {openItem.favoritesCount} en favoritos</span>}
-            </p>
-
-            <div className="tag-row">
-              <span className="info-tag">{openItem.category}</span>
-              {openItem.size && <span className="info-tag">Talla {openItem.size}</span>}
-              <span className="info-tag">{openItem.condition}</span>
-            </div>
-
-            {openItem.description && (
-              <p className="detail-description">{openItem.description}</p>
-            )}
-
-            <div className="seller-card">
-              <div
-                className="mini-avatar seller-avatar"
-                style={{ background: PALETTE[openItem.seller.length % PALETTE.length], cursor: "pointer" }}
-                onClick={() => { setOpenItem(null); openProfile(openItem.seller); }}
-              >
-                {openItem.seller[0]?.toUpperCase()}
-              </div>
-              <div style={{ flex: 1, cursor: "pointer" }} onClick={() => { setOpenItem(null); openProfile(openItem.seller); }}>
-                <p className="seller-name">
-                  @{openItem.seller}
-                  {openItem.verified && <CheckCircle size={13} color="#4DE1C1" style={{ marginLeft: 5, verticalAlign: -2 }} />}
-                </p>
-                <p className="seller-rating">
-                  <Star size={11} fill="#FFC24D" color="#FFC24D" /> 4.8 · 32 ventas
-                  {openItem.distanceKm !== null && <> · <MapPin size={11} /> a {openItem.distanceKm < 1 ? "menos de 1" : Math.round(openItem.distanceKm)} km</>}
-                  {openItem.distanceKm === null && openItem.city && <> · <MapPin size={11} /> {openItem.city}</>}
-                </p>
-                <div className="seller-mini-verify">
-                  <span className="verify-chip done"><CheckCircle size={10} /> Email</span>
-                  <span className="verify-chip done"><CheckCircle size={10} /> Teléfono</span>
-                </div>
-              </div>
-              <button className={"follow-btn" + (following.has(openItem.seller) ? " on" : "")} onClick={() => toggleFollow(openItem.seller)}>
-                {following.has(openItem.seller) ? <UserCheck size={13} /> : <UserPlus size={13} />}
-                {following.has(openItem.seller) ? "Siguiendo" : "Seguir"}
-              </button>
-            </div>
-
-            {loggedIn && openItem.seller !== username && (
-              <button className="report-flag-btn" onClick={() => setShowReportForm({ targetType: "item", itemId: openItem.id })}>
-                <FileWarning size={12} /> Denunciar este artículo
-              </button>
-            )}
-
-            <div className="impact-box">
-              <Leaf size={16} color="#4DE1C1" />
-              <div>
-                <p className="impact-title">Impacto de esta compra</p>
-                <p className="impact-sub">Ahorras ~{(openItem.price * 2.1).toFixed(0)} kg de CO₂ y {(openItem.price * 90).toFixed(0)} L de agua frente a comprarlo nuevo</p>
-              </div>
-            </div>
-
-            <div className="shipping-box">
-              <Truck size={16} color="#9A9AA3" />
-              <div>
-                <p className="shipping-title">Cómo se entrega</p>
-                <p className="shipping-sub">Por correo, con etiqueta de envío (~{platformSettings.shippingFee}€) o en mano si quedáis cerca — lo acordáis por chat</p>
-              </div>
-            </div>
-
-            <div className="detail-actions">
-              {openItem.seller === username ? (
-                <>
-                  <button className="chat-btn" onClick={() => { startEdit(openItem); }}><Pencil size={15} /> Editar</button>
-                  {openItem.featured ? (
-                    <button className="buy-btn" disabled style={{ opacity: 0.6 }}><TrendingUp size={15} /> Ya destacado</button>
-                  ) : (
-                    <button className="offer-btn" onClick={() => handleBoost(openItem.id)}><TrendingUp size={15} /> {`Destacar por ${platformSettings.boostPrice}€`}</button>
-                  )}
-                </>
-              ) : (
-                <>
-                  <button className="chat-btn" onClick={() => openChat(openItem)}><MessageCircle size={15} /> Contactar</button>
-                  <button className="offer-btn" onClick={() => loggedIn ? setShowOffer(true) : setShowAuth(true)}><HandCoins size={15} /> Ofertar</button>
-                  <button className="buy-btn" onClick={() => loggedIn ? setShowCheckout(true) : setShowAuth(true)}>Comprar</button>
-                </>
-              )}
-            </div>
-
-            {isAdmin && (
-              <div className="admin-toolbar">
-                <span className="admin-toolbar-label">Admin</span>
-                <button className="admin-icon-action" onClick={() => openAdminItemEdit(openItem)} title="Editar publicación">
-                  <Pencil size={14} />
-                </button>
-                <button className="admin-icon-action danger" onClick={() => removeItem(openItem.id)} title="Eliminar publicación">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            )}
-          </>
-        );
-
-
-
-        return isDesktop ? (
-          <div className="item-page">
-            <button className="back-btn" onClick={closeItemView}><ArrowLeft size={16} /> Volver</button>
-            <div className="item-page-grid">
-              <div className="item-page-gallery">
-                {galleryEl}
-              </div>
-              <div className="item-page-info">
-                {infoEl}
-              </div>
-            </div>
-            <div className="related-full">
-              {relatedEl}
-            </div>
-          </div>
-        ) : (
-          <div className="overlay detail-overlay" onClick={closeItemView}>
-            <div className="modal detail-modal" onClick={(e) => e.stopPropagation()}>
-              <button className="close-btn dark-close-left" onClick={closeItemView}><X size={14} /></button>
-              {galleryEl}
-              <div className="detail-body">{infoEl}{relatedEl}</div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 }
