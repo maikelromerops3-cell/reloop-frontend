@@ -11,7 +11,7 @@ import {
   fetchTransactions, createShipmentLabel, confirmReceived, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter,
-  fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion,
+  fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
@@ -1054,6 +1054,42 @@ export default function RopelinApp() {
   }
 
   const [checkoutError, setCheckoutError] = useState(null);
+  const [counterDrafts, setCounterDrafts] = useState({});
+  const [respondingOfferId, setRespondingOfferId] = useState(null);
+
+  async function handleOfferAction(itemId, messageId, action) {
+    const counterAmount = action === "counter" ? counterDrafts[messageId] : undefined;
+    if (action === "counter" && (!counterAmount || Number(counterAmount) <= 0)) {
+      toast.error("Escribe una cantidad válida para la contraoferta");
+      return;
+    }
+    setRespondingOfferId(messageId);
+    try {
+      await respondToOffer(itemId, messageId, action, counterAmount);
+      const updated = await fetchChatMessages(itemId);
+      setChatThreads((prev) => ({ ...prev, [itemId]: updated }));
+      setCounterDrafts((prev) => ({ ...prev, [messageId]: "" }));
+      toast.success(
+        action === "accept" ? "Oferta aceptada" :
+        action === "reject" ? "Oferta rechazada" :
+        "Contraoferta enviada"
+      );
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setRespondingOfferId(null);
+    }
+  }
+
+  async function payAcceptedOffer(itemId) {
+    setCheckoutError(null);
+    try {
+      const url = await startCheckout(itemId);
+      window.location.href = url;
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
 
   async function confirmCheckout() {
     setCheckoutError(null);
@@ -1894,6 +1930,18 @@ export default function RopelinApp() {
         .chat-bubble.me { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); border-bottom-right-radius: 5px; font-weight: 500; }
         .chat-bubble.offer-bubble { font-weight: 800; border-color: #FFC24D; }
         .chat-bubble.seller.offer-bubble { background: #FFC24D14; color: #FFC24D; }
+        .offer-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+        .offer-btn { border: none; border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .offer-btn.accept { background: #4DE1C1; color: var(--bg); }
+        .offer-btn.reject { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
+        .offer-btn.counter { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
+        .offer-btn:disabled { opacity: 0.6; cursor: default; }
+        .offer-counter-row { display: flex; gap: 6px; width: 100%; margin-top: 4px; }
+        .offer-counter-row input { flex: 1; min-width: 0; border: 1px solid var(--input-border); border-radius: 10px; padding: 6px 10px; font-size: 12px; background: var(--bg); color: var(--text); font-family: inherit; }
+        .offer-status-tag { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; }
+        .offer-status-tag.pending { background: #FFC24D14; color: #FFC24D; }
+        .offer-status-tag.accepted { background: #4DE1C114; color: #4DE1C1; }
+        .offer-status-tag.rejected { background: #FF4D6D14; color: #FF4D6D; }
         .chat-msg-time { font-size: 10px; color: var(--faint); margin: 4px 4px 0; }
         .chat-input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--border); flex-shrink: 0; align-items: center; background: #17171a; }
         .chat-input-row input { flex: 1; border: 1px solid var(--input-border); border-radius: 22px; padding: 11px 16px; background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit; transition: border-color .15s ease; }
@@ -4378,6 +4426,39 @@ export default function RopelinApp() {
                     <div className={"chat-bubble " + (mine ? "me" : "seller") + (m.offerAmount ? " offer-bubble" : "")}>
                       {m.offerAmount ? <><HandCoins size={13} style={{ marginRight: 5, verticalAlign: -2 }} />Oferta: {Number(m.offerAmount).toFixed(2)}€</> : m.content}
                     </div>
+                    {m.offerAmount && (
+                      <div className="offer-actions">
+                        {m.offerStatus === "pending" && !mine && (
+                          <>
+                            <button className="offer-btn accept" disabled={respondingOfferId === m.id} onClick={() => handleOfferAction(chatItem.id, m.id, "accept")}>Aceptar</button>
+                            <button className="offer-btn reject" disabled={respondingOfferId === m.id} onClick={() => handleOfferAction(chatItem.id, m.id, "reject")}>Rechazar</button>
+                            <div className="offer-counter-row">
+                              <input
+                                type="number" min="1" placeholder="Contraoferta €"
+                                value={counterDrafts[m.id] || ""}
+                                onChange={(e) => setCounterDrafts((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                              />
+                              <button className="offer-btn counter" disabled={respondingOfferId === m.id} onClick={() => handleOfferAction(chatItem.id, m.id, "counter")}>Contraofertar</button>
+                            </div>
+                          </>
+                        )}
+                        {m.offerStatus === "pending" && mine && (
+                          <span className="offer-status-tag pending">Pendiente de respuesta</span>
+                        )}
+                        {m.offerStatus === "accepted" && (
+                          <span className="offer-status-tag accepted"><CheckCircle size={12} /> Aceptada</span>
+                        )}
+                        {m.offerStatus === "accepted" && chatItem.seller !== username && (
+                          <button className="offer-btn accept" onClick={() => payAcceptedOffer(chatItem.id)}>Pagar {Number(m.offerAmount).toFixed(2)}€</button>
+                        )}
+                        {m.offerStatus === "rejected" && (
+                          <span className="offer-status-tag rejected">Rechazada</span>
+                        )}
+                        {m.offerStatus === "countered" && (
+                          <span className="offer-status-tag pending">Contraofertada</span>
+                        )}
+                      </div>
+                    )}
                     <span className="chat-msg-time">{timeAgoFromDate(m.createdAt)}</span>
                   </div>
                 );

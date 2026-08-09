@@ -220,6 +220,16 @@ export async function deleteItemQuestion(itemId, questionId) {
   return res.json();
 }
 
+export async function respondToOffer(itemId, messageId, action, counterAmount) {
+  const res = await fetch(`${API_URL}/messages/${itemId}/offer/${messageId}/respond`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ action, counterAmount }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo responder a la oferta");
+  return res.json();
+}
+
 export async function fetchMyFollowing() {
   const res = await fetch(`${API_URL}/users/me/following`, { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error("No se pudo cargar a quién sigues");
