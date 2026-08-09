@@ -452,7 +452,8 @@ export default function RopelinApp() {
   // para que en móvil arrastrar dentro del modal no mueva el feed de detrás.
   // El detalle de la prenda (openItem) solo cuenta como "modal" en móvil: en escritorio es la página normal, no una ventana flotante, y necesita su propio scroll.
   const anyModalOpen = !!(
-    (openItem && numCols < 3) || showAuth || (showPost && numCols < 3) || showProfile || showChat || showLegal ||
+    (openItem && numCols < 3) || showAuth || showProfile || showChat ||
+    (showLegal && !(numCols >= 3 && (showLegal === "about" || showLegal === "updates"))) ||
     showSettings || showOrders || showFavorites || showLeague || showAdminPanel || cropperState
   );
   useEffect(() => {
@@ -1887,6 +1888,8 @@ export default function RopelinApp() {
           .item-page { max-width: 1600px; }
         }
         .post-page { padding: 20px 26px 100px; max-width: 900px; margin: 0 auto; }
+        .legal-page { padding: 20px 26px 100px; max-width: 700px; margin: 0 auto; }
+        .legal-page .legal-text { max-height: none; }
         .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: #C8C8CE; font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 0; margin-bottom: 16px; font-family: inherit; }
         .back-btn:hover { color: #F2F2F0; }
         .item-page-grid { display: flex; gap: 40px; align-items: flex-start; }
@@ -2457,10 +2460,9 @@ export default function RopelinApp() {
       </>
       )}
 
-      {showLegal && (
-        <div className="overlay" onClick={() => setShowLegal(null)}>
-          <div className="modal legal-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowLegal(null)}><X size={14} /></button>
+      {showLegal && (() => {
+        const legalContentEl = (
+          <>
             {showLegal === "updates" && (() => {
               const AGOSTO = [
                 { Icon: Camera, type: "Nuevo", text: "Búsqueda por foto: haz una foto y te buscamos artículos parecidos" },
@@ -2631,9 +2633,25 @@ export default function RopelinApp() {
                 </div>
               </>
             )}
+          </>
+        );
+
+        const openAsPage = numCols >= 3 && (showLegal === "about" || showLegal === "updates");
+
+        return openAsPage ? (
+          <div className="legal-page">
+            <button className="back-btn" onClick={() => setShowLegal(null)}><ArrowLeft size={16} /> Volver</button>
+            {legalContentEl}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="overlay" onClick={() => setShowLegal(null)}>
+            <div className="modal legal-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="close-btn" onClick={() => setShowLegal(null)}><X size={14} /></button>
+              {legalContentEl}
+            </div>
+          </div>
+        );
+      })()}
 
       {showPost && (() => {
         const postGridEl = (
