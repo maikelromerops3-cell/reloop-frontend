@@ -451,9 +451,12 @@ export default function RopelinApp() {
   // Bloquea el scroll de la página de fondo mientras haya cualquier ventana/modal abierto,
   // para que en móvil arrastrar dentro del modal no mueva el feed de detrás.
   // El detalle de la prenda (openItem) solo cuenta como "modal" en móvil: en escritorio es la página normal, no una ventana flotante, y necesita su propio scroll.
+  const legalPageOpen = showLegal === "about" || showLegal === "updates";
+  // En escritorio, cuando se muestra el detalle de un artículo, el formulario de publicar, o Quiénes somos/Novedades como página, se oculta el feed de detrás (en vez de quedar apilado debajo)
+  const hidesFeedOnDesktop = numCols >= 3 && (openItem || showPost || legalPageOpen);
   const anyModalOpen = !!(
     (openItem && numCols < 3) || showAuth || showProfile || showChat ||
-    (showLegal && !(numCols >= 3 && (showLegal === "about" || showLegal === "updates"))) ||
+    (showLegal && !(numCols >= 3 && legalPageOpen)) ||
     showSettings || showOrders || showFavorites || showLeague || showAdminPanel || cropperState
   );
   useEffect(() => {
@@ -615,9 +618,27 @@ export default function RopelinApp() {
 
   // Abrir/cerrar el detalle de un artículo actualizando también la URL (para poder compartir el enlace)
   function viewItem(item) {
+    setShowLegal(null);
+    setShowPost(false);
     setOpenItem(item);
     setGalleryIndex(0);
     navigate(`/item/${item.id}`);
+  }
+
+  // Abre el formulario para publicar un artículo nuevo, cerrando antes cualquier otra página abierta (para que no se apilen)
+  function openPostForm() {
+    setShowLegal(null);
+    setOpenItem(null);
+    setEditingItem(null);
+    setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] });
+    setShowPost(true);
+  }
+
+  // Abre una página legal/informativa (Quiénes somos, Novedades...), cerrando antes las demás páginas
+  function openLegalPage(type) {
+    setShowPost(false);
+    setOpenItem(null);
+    setShowLegal(type);
   }
 
   useEffect(() => {
@@ -976,6 +997,8 @@ export default function RopelinApp() {
   }
 
   function startEdit(item) {
+    setShowLegal(null);
+    setOpenItem(null);
     setEditingItem(item);
     setForm({ title: item.title, category: item.category, size: item.size || "", isShoe: !!(item.size && SHOE_SIZES.includes(item.size)), price: String(item.price), description: item.description || "", condition: item.condition, images: item.images || [] });
     setShowProfile(false);
@@ -2108,7 +2131,7 @@ export default function RopelinApp() {
               @{username}
             </span>
           )}
-          <button className="btn primary hide-on-mobile-nav" onClick={() => { setEditingItem(null); setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] }); setShowPost(true); }}><Plus size={14} /> Vender</button>
+          <button className="btn primary hide-on-mobile-nav" onClick={openPostForm}><Plus size={14} /> Vender</button>
           {!loggedIn && (
             <button className="btn ghost hide-on-mobile-nav" onClick={() => setShowAuth(true)}><LogIn size={14} /> <span className="btn-label">Entrar</span></button>
           )}
@@ -2138,7 +2161,7 @@ export default function RopelinApp() {
         </div>
       </header>
 
-      {!anyModalOpen && (
+      {!anyModalOpen && !(showPost && numCols < 3) && (
       <div className="mobile-bottom-nav">
         <button onClick={() => { closeItemView(); setCategory("Para ti"); setQuery(""); }}>
           <Home size={20} />
@@ -2153,7 +2176,7 @@ export default function RopelinApp() {
         )}
         <button
           className="mobile-nav-sell"
-          onClick={() => { setEditingItem(null); setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] }); setShowPost(true); }}
+          onClick={openPostForm}
         >
           <Plus size={22} />
         </button>
@@ -2178,7 +2201,7 @@ export default function RopelinApp() {
       </div>
       )}
 
-      {(!openItem || numCols < 3) && (
+      {!hidesFeedOnDesktop && (
         <div className="hero">
           <h2>Lo que ya no usas, <span className="accent">alguien lo está buscando</span>.</h2>
           <p>Compra y vende de todo, de segunda mano. Busca, publica, negocia.</p>
@@ -2298,7 +2321,7 @@ export default function RopelinApp() {
         })}
       </div>
 
-      {(!openItem || numCols < 3) && (
+      {!hidesFeedOnDesktop && (
       <>
       {loadError && !loading && (
         <div className="empty-state">
@@ -2327,7 +2350,7 @@ export default function RopelinApp() {
           <PackageOpen size={38} color="#3A3A40" />
           <p className="empty-title">No hay prendas que coincidan</p>
           <p className="empty-sub">Prueba a cambiar los filtros, o sé el primero en publicar algo así.</p>
-          <button className="btn primary" onClick={() => { setEditingItem(null); setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] }); setShowPost(true); }}>
+          <button className="btn primary" onClick={openPostForm}>
             <Plus size={14} /> Publicar la primera
           </button>
         </div>
@@ -2421,13 +2444,13 @@ export default function RopelinApp() {
         <div className="footer-cols">
           <div className="footer-col">
             <p className="footer-col-title">Ropelin</p>
-            <button onClick={() => setShowLegal("about")}>Quiénes somos</button>
-            <button onClick={() => setShowLegal("updates")}>Novedades</button>
+            <button onClick={() => openLegalPage("about")}>Quiénes somos</button>
+            <button onClick={() => openLegalPage("updates")}>Novedades</button>
             <button onClick={openHelpCenter}>Ayuda</button>
           </div>
           <div className="footer-col">
             <p className="footer-col-title">Comprar y vender</p>
-            <button onClick={() => { setEditingItem(null); setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] }); setShowPost(true); }}>Publicar un artículo</button>
+            <button onClick={openPostForm}>Publicar un artículo</button>
             <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Moda"); setQuery(""); navigate("/"); }}>Moda</button>
             <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Electrónica"); setQuery(""); navigate("/"); }}>Electrónica</button>
             <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Hogar"); setQuery(""); navigate("/"); }}>Hogar</button>
@@ -2583,7 +2606,7 @@ export default function RopelinApp() {
                     <div className="about-block-icon"><Sparkles size={16} color="#9A9AA3" /></div>
                     <div>
                       <p className="about-block-title">¿En qué estamos trabajando?</p>
-                      <button className="about-block-link" onClick={() => setShowLegal("updates")}>Ver las Novedades →</button>
+                      <button className="about-block-link" onClick={() => openLegalPage("updates")}>Ver las Novedades →</button>
                     </div>
                   </div>
 
@@ -3267,6 +3290,8 @@ export default function RopelinApp() {
                       if (n.type === "message" || n.type === "offer") {
                         openChat(found);
                       } else {
+                        setShowLegal(null);
+                        setShowPost(false);
                         setOpenItem(found);
                       }
                     }
