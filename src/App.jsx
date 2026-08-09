@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
-import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield } from "lucide-react";
+import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye } from "lucide-react";
 import {
   fetchItems, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
@@ -11,6 +11,7 @@ import {
   fetchTransactions, createShipmentLabel, confirmReceived, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter,
+  fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
@@ -125,6 +126,7 @@ function normalizeItem(raw) {
     verified: raw.verified || false,
     featured: raw.isFeatured || (raw.featuredUntil ? new Date(raw.featuredUntil) > new Date() : false),
     featuredUntil: raw.featuredUntil || null,
+    favoritesCount: raw._count?.favoritedBy ?? raw.favoritesCount ?? 0,
   };
 }
 
@@ -284,6 +286,10 @@ export default function RopelinApp() {
   const [showPost, setShowPost] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [openItem, setOpenItem] = useState(null);
+  const [itemQuestions, setItemQuestions] = useState([]);
+  const [newQuestionText, setNewQuestionText] = useState("");
+  const [answerDrafts, setAnswerDrafts] = useState({});
+  const [sendingQuestion, setSendingQuestion] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [saved, setSaved] = useState(new Set());
   const [loggedIn, setLoggedIn] = useState(isLoggedIn());
@@ -449,8 +455,31 @@ export default function RopelinApp() {
     showSettings || showOrders || showFavorites || showLeague || showAdminPanel || cropperState
   );
   useEffect(() => {
-    document.body.style.overflow = anyModalOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    if (anyModalOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+      document.body.style.overflow = "hidden";
+    } else {
+      const savedScrollY = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.overflow = "";
+      if (savedScrollY) {
+        window.scrollTo(0, parseInt(savedScrollY || "0", 10) * -1);
+      }
+    }
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.overflow = "";
+    };
   }, [anyModalOpen]);
   const [adminSection, setAdminSection] = useState(null); // null = menú principal del panel
   const [adminTab, setAdminTab] = useState("users");
@@ -600,6 +629,52 @@ export default function RopelinApp() {
       if (metaDesc) metaDesc.setAttribute("content", "Compra y vende de segunda mano en España: ropa, electrónica, hogar, vehículos y mucho más. Publica gratis en segundos, chatea con otros usuarios y paga seguro.");
     }
   }, [openItem]);
+
+  // Carga las preguntas públicas del artículo abierto
+  useEffect(() => {
+    if (!openItem) { setItemQuestions([]); return; }
+    fetchItemQuestions(openItem.id).then(setItemQuestions).catch(() => {});
+  }, [openItem?.id]);
+
+  async function handleAskQuestion(e) {
+    e.preventDefault();
+    if (!loggedIn) { setShowAuth(true); return; }
+    if (!newQuestionText.trim()) return;
+    setSendingQuestion(true);
+    try {
+      await askItemQuestion(openItem.id, newQuestionText.trim());
+      setNewQuestionText("");
+      toast.success("Pregunta enviada");
+      fetchItemQuestions(openItem.id).then(setItemQuestions).catch(() => {});
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSendingQuestion(false);
+    }
+  }
+
+  async function handleAnswerQuestion(questionId) {
+    const answer = (answerDrafts[questionId] || "").trim();
+    if (!answer) return;
+    try {
+      await answerItemQuestion(openItem.id, questionId, answer);
+      setAnswerDrafts((prev) => ({ ...prev, [questionId]: "" }));
+      toast.success("Respuesta enviada");
+      fetchItemQuestions(openItem.id).then(setItemQuestions).catch(() => {});
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function handleDeleteQuestion(questionId) {
+    try {
+      await deleteItemQuestion(openItem.id, questionId);
+      setItemQuestions((prev) => prev.filter((q) => q.id !== questionId));
+      toast.success("Pregunta eliminada");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
 
   function closeItemView() {
     setOpenItem(null);
@@ -1109,8 +1184,9 @@ export default function RopelinApp() {
     e.preventDefault();
     if (!reportReason.trim()) return;
     try {
-      const { targetType, itemId, reportedUsername } = showReportForm;
-      await submitReport(targetType, targetType === "item" ? itemId : reportedUsername, reportReason);
+      const { targetType, itemId, reportedUsername, questionId } = showReportForm;
+      const payload = targetType === "item" ? itemId : targetType === "question" ? questionId : reportedUsername;
+      await submitReport(targetType, payload, reportReason);
       toast.success("Denuncia enviada. Gracias por avisarnos.");
       setShowReportForm(null);
       setReportReason("");
@@ -1887,6 +1963,8 @@ export default function RopelinApp() {
         .detail-body { padding: 20px 22px 24px; }
         .detail-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
         .detail-title { font-size: 18px; font-weight: 700; margin: 0; line-height: 1.25; }
+        .detail-meta-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: #6A6A73; margin: 6px 0 0; }
+        .detail-meta-row span { display: flex; align-items: center; gap: 4px; }
         .detail-modal .detail-price { margin: 0; white-space: nowrap; }
         .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 18px; }
         .info-tag { font-size: 11px; background: #121214; border: 1px solid #29292f; color: #C8C8CE; padding: 5px 11px; border-radius: 20px; }
@@ -1900,6 +1978,26 @@ export default function RopelinApp() {
         .mini-map-note { font-size: 10.5px; color: #6A6A73; text-align: center; padding: 6px 0; margin: 0; background: #121214; }
         .impact-title { font-size: 12px; font-weight: 700; margin: 0 0 3px; color: #4DE1C1; }
         .impact-sub { font-size: 11px; color: #9A9AA3; margin: 0; line-height: 1.4; }
+        .shipping-box { display: flex; gap: 10px; align-items: flex-start; background: #1A1A1E; border: 1px solid #29292f; border-radius: 14px; padding: 12px 14px; margin-bottom: 18px; }
+        .shipping-title { font-size: 12px; font-weight: 700; margin: 0 0 3px; color: #F2F2F0; }
+        .shipping-sub { font-size: 11px; color: #9A9AA3; margin: 0; line-height: 1.4; }
+        .questions-box { margin-bottom: 18px; }
+        .questions-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #F2F2F0; margin: 0 0 10px; }
+        .questions-empty { font-size: 12px; color: #6A6A73; margin: 0 0 10px; }
+        .question-item { background: #1A1A1E; border: 1px solid #29292f; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+        .question-text { font-size: 12.5px; color: #C8C8CE; margin: 0; line-height: 1.5; }
+        .question-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+        .question-mini-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .question-mini-actions button { background: none; border: none; color: #6A6A73; cursor: pointer; padding: 2px; display: flex; }
+        .question-mini-actions button:hover { color: #FF4D6D; }
+        .question-text strong { color: #F2F2F0; }
+        .answer-text { font-size: 12.5px; color: #9A9AA3; margin: 6px 0 0; line-height: 1.5; padding-top: 6px; border-top: 1px solid #29292f; }
+        .answer-text strong { color: #4DE1C1; }
+        .answer-pending { font-size: 11px; color: #6A6A73; margin: 6px 0 0; font-style: italic; }
+        .answer-form, .ask-form { display: flex; gap: 6px; margin-top: 8px; }
+        .answer-form input, .ask-form input { flex: 1; border: 1px solid #333; border-radius: 10px; padding: 8px 12px; font-size: 12.5px; background: #121214; color: #F2F2F0; font-family: inherit; }
+        .answer-form button, .ask-form button { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); border: none; border-radius: 10px; width: 34px; display: flex; align-items: center; justify-content: center; color: #121214; cursor: pointer; }
+        .answer-form button:disabled, .ask-form button:disabled { opacity: 0.6; }
         .detail-actions { display: flex; gap: 10px; }
         .detail-actions .chat-btn { flex: 1; margin: 0; }
         .buy-btn { flex: 1; border: none; border-radius: 14px; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: #121214; font-weight: 700; font-size: 13px; cursor: pointer; }
@@ -1932,6 +2030,15 @@ export default function RopelinApp() {
         .auth-modal .submit-btn { margin-top: 26px; padding: 15px; font-size: 14px; border-radius: 14px; }
         .auth-modal .toggle-link { margin-top: 16px; font-size: 12.5px; }
         .post-modal { max-width: 400px; }
+        .post-mobile-header { display: none; }
+        @media (max-width: 780px) {
+          .post-mobile-header { display: flex; align-items: center; padding: 16px 14px; border-bottom: 1px solid #29292f; position: sticky; top: 0; background: #1A1A1E; z-index: 3; }
+          .post-mobile-close { background: none; border: none; color: #F2F2F0; display: flex; padding: 4px; cursor: pointer; }
+          .post-mobile-title { flex: 1; text-align: center; margin: 0; font-size: 16px; font-weight: 700; margin-right: 26px; }
+          .post-modal .close-btn { display: none; }
+          .post-modal .auth-title, .post-modal .auth-subtitle { display: none; }
+          .post-modal { padding-top: 0; }
+        }
         @media (min-width: 780px) {
           .post-modal { max-width: 760px; }
           .post-modal-grid { display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start; }
@@ -2527,8 +2634,12 @@ export default function RopelinApp() {
       )}
 
       {showPost && (
-        <div className="overlay" onClick={() => setShowPost(false)}>
-          <div className="modal post-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="overlay detail-overlay" onClick={() => setShowPost(false)}>
+          <div className="modal post-modal detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="post-mobile-header">
+              <button className="post-mobile-close" onClick={() => setShowPost(false)}><X size={18} /></button>
+              <p className="post-mobile-title">{editingItem ? "Editar" : "Vender"}</p>
+            </div>
             <button className="close-btn" onClick={() => setShowPost(false)}><X size={14} /></button>
             <p className="auth-title">{editingItem ? "Editar prenda" : "Nueva prenda"}</p>
             <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu prenda" : "Rellena los datos y publícala en segundos"}</p>
@@ -3819,7 +3930,7 @@ export default function RopelinApp() {
             <div className="report-modal-header">
               <div className="report-modal-icon"><FileWarning size={18} /></div>
               <div>
-                <p className="auth-title" style={{ margin: 0 }}>Denunciar {showReportForm.targetType === "item" ? "artículo" : "usuario"}</p>
+                <p className="auth-title" style={{ margin: 0 }}>Denunciar {showReportForm.targetType === "item" ? "artículo" : showReportForm.targetType === "question" ? "pregunta" : "usuario"}</p>
               </div>
             </div>
             <p className="auth-subtitle" style={{ marginBottom: 14 }}>Cuéntanos qué ha pasado, lo revisará el equipo de Ropelin.</p>
@@ -4082,6 +4193,12 @@ export default function RopelinApp() {
               </div>
             </div>
 
+            <p className="detail-meta-row">
+              <span>Publicado {timeAgo(openItem.minutesAgo)}</span>
+              {typeof openItem.views === "number" && <span>· <Eye size={12} /> {openItem.views} {openItem.views === 1 ? "vista" : "vistas"}</span>}
+              {openItem.favoritesCount > 0 && <span>· <Heart size={12} /> {openItem.favoritesCount} en favoritos</span>}
+            </p>
+
             <div className="tag-row">
               <span className="info-tag">{openItem.category}</span>
               {openItem.size && <span className="info-tag">Talla {openItem.size}</span>}
@@ -4133,6 +4250,67 @@ export default function RopelinApp() {
                 <p className="impact-title">Impacto de esta compra</p>
                 <p className="impact-sub">Ahorras ~{(openItem.price * 2.1).toFixed(0)} kg de CO₂ y {(openItem.price * 90).toFixed(0)} L de agua frente a comprarlo nuevo</p>
               </div>
+            </div>
+
+            <div className="shipping-box">
+              <Truck size={16} color="#9A9AA3" />
+              <div>
+                <p className="shipping-title">Cómo se entrega</p>
+                <p className="shipping-sub">Por correo, con etiqueta de envío (~{platformSettings.shippingFee}€) o en mano si quedáis cerca — lo acordáis por chat</p>
+              </div>
+            </div>
+
+            <div className="questions-box">
+              <p className="questions-title"><MessageCircle size={14} /> Preguntas ({itemQuestions.length})</p>
+
+              {itemQuestions.length === 0 && (
+                <p className="questions-empty">Todavía no hay ninguna pregunta. ¡Sé el primero!</p>
+              )}
+
+              {itemQuestions.map((q) => (
+                <div key={q.id} className="question-item">
+                  <div className="question-header-row">
+                    <p className="question-text"><strong>@{q.author}</strong> {q.question}</p>
+                    {loggedIn && (
+                      <div className="question-mini-actions">
+                        {(openItem.seller === username || q.author === username) && (
+                          <button title="Eliminar" onClick={() => handleDeleteQuestion(q.id)}><Trash2 size={12} /></button>
+                        )}
+                        {q.author !== username && (
+                          <button title="Denunciar" onClick={() => setShowReportForm({ targetType: "question", questionId: q.id })}><FileWarning size={12} /></button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {q.answer ? (
+                    <p className="answer-text"><strong>@{openItem.seller}</strong> {q.answer}</p>
+                  ) : openItem.seller === username ? (
+                    <div className="answer-form">
+                      <input
+                        placeholder="Escribe una respuesta..."
+                        value={answerDrafts[q.id] || ""}
+                        onChange={(e) => setAnswerDrafts((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                        onKeyDown={(e) => e.key === "Enter" && handleAnswerQuestion(q.id)}
+                      />
+                      <button onClick={() => handleAnswerQuestion(q.id)}><Send size={13} /></button>
+                    </div>
+                  ) : (
+                    <p className="answer-pending">Sin responder todavía</p>
+                  )}
+                </div>
+              ))}
+
+              {openItem.seller !== username && (
+                <form className="ask-form" onSubmit={handleAskQuestion}>
+                  <input
+                    placeholder={loggedIn ? "Pregunta algo sobre este artículo..." : "Inicia sesión para preguntar"}
+                    value={newQuestionText}
+                    onChange={(e) => setNewQuestionText(e.target.value)}
+                    onFocus={() => !loggedIn && setShowAuth(true)}
+                  />
+                  <button type="submit" disabled={sendingQuestion}><Send size={13} /></button>
+                </form>
+              )}
             </div>
 
             <div className="detail-actions">

@@ -185,6 +185,41 @@ export async function subscribeNewsletter(email) {
   return res.json();
 }
 
+export async function fetchItemQuestions(itemId) {
+  const res = await fetch(`${API_URL}/items/${itemId}/questions`);
+  if (!res.ok) throw new Error("No se pudieron cargar las preguntas");
+  return res.json();
+}
+
+export async function askItemQuestion(itemId, question) {
+  const res = await fetch(`${API_URL}/items/${itemId}/questions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ question }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la pregunta");
+  return res.json();
+}
+
+export async function answerItemQuestion(itemId, questionId, answer) {
+  const res = await fetch(`${API_URL}/items/${itemId}/questions/${questionId}/answer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ answer }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la respuesta");
+  return res.json();
+}
+
+export async function deleteItemQuestion(itemId, questionId) {
+  const res = await fetch(`${API_URL}/items/${itemId}/questions/${questionId}`, {
+    method: "DELETE",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo borrar la pregunta");
+  return res.json();
+}
+
 export async function fetchMyFollowing() {
   const res = await fetch(`${API_URL}/users/me/following`, { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error("No se pudo cargar a quién sigues");
@@ -388,7 +423,10 @@ export async function fetchAdminTimeseries() {
 }
 
 export async function submitReport(targetType, payload, reason) {
-  const body = targetType === "item" ? { targetType, itemId: payload, reason } : { targetType, reportedUsername: payload, reason };
+  const body =
+    targetType === "item" ? { targetType, itemId: payload, reason } :
+    targetType === "question" ? { targetType, questionId: payload, reason } :
+    { targetType, reportedUsername: payload, reason };
   const res = await fetch(`${API_URL}/reports`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
