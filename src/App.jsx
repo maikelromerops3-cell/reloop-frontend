@@ -453,7 +453,7 @@ export default function RopelinApp() {
   // El detalle de la prenda (openItem) solo cuenta como "modal" en móvil: en escritorio es la página normal, no una ventana flotante, y necesita su propio scroll.
   const legalPageOpen = showLegal === "about" || showLegal === "updates";
   // En escritorio, cuando se muestra el detalle de un artículo, el formulario de publicar, o Quiénes somos/Novedades como página, se oculta el feed de detrás (en vez de quedar apilado debajo)
-  const hidesFeedOnDesktop = numCols >= 3 && (openItem || legalPageOpen);
+  const hidesFeedOnDesktop = numCols >= 3 && openItem;
   const anyModalOpen = !!(
     (openItem && numCols < 3) || showAuth || showProfile || showChat ||
     (showLegal && !(numCols >= 3 && legalPageOpen)) ||
@@ -2321,168 +2321,6 @@ export default function RopelinApp() {
         })}
       </div>
 
-      {!hidesFeedOnDesktop && (
-      <>
-      {loadError && !loading && (
-        <div className="empty-state">
-          <RefreshCw size={32} color="#FF4D6D" />
-          <p className="empty-title">{loadError}</p>
-          <button className="btn primary" onClick={loadAllItems}><RefreshCw size={14} /> Reintentar</button>
-        </div>
-      )}
-      {loading && (
-        <div className="two-col">
-          {Array.from({ length: numCols }).map((_, col) => (
-            <div className="col" key={col}>
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="skeleton-card">
-                  <div className="skeleton-media shimmer" />
-                  <div className="skeleton-line shimmer" style={{ width: "70%" }} />
-                  <div className="skeleton-line shimmer" style={{ width: "40%" }} />
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-      {!loading && !loadError && items.length === 0 && (
-        <div className="empty-state">
-          <PackageOpen size={38} color="#3A3A40" />
-          <p className="empty-title">No hay prendas que coincidan</p>
-          <p className="empty-sub">Prueba a cambiar los filtros, o sé el primero en publicar algo así.</p>
-          <button className="btn primary" onClick={openPostForm}>
-            <Plus size={14} /> Publicar la primera
-          </button>
-        </div>
-      )}
-      {!loading && (photoSearchResults !== null ? photoSearchResults : items).length > 0 && (() => {
-        const displayItems = photoSearchResults !== null ? photoSearchResults : items;
-        return (
-        <>
-        <div className="two-col">
-          {Array.from({ length: Math.min(numCols, displayItems.length) }).map((_, col) => {
-            const effectiveCols = Math.min(numCols, displayItems.length);
-            const visibleItems = displayItems.slice(0, effectiveCols * feedRowsShown);
-            return (
-              <div className="col" key={col}>
-                {visibleItems.filter((_, i) => i % effectiveCols === col).map((item) => {
-                  const realIndex = displayItems.indexOf(item);
-                  return (
-                    <ItemCard key={item.id} item={item} index={realIndex} onOpen={viewItem} saved={saved.has(item.id)} toggleSave={toggleSave} />
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-        {displayItems.length > numCols * feedRowsShown && (
-          <div className="load-more-row">
-            <RefreshCw size={16} className="spin" style={{ color: "#6A6A73" }} />
-          </div>
-        )}
-        {category === "Para ti" && !query && allItems.length > 0 && (
-          <div className="community-impact">
-            <Leaf size={18} color="#4DE1C1" />
-            <p>
-              Entre toda la comunidad ya se han ahorrado{" "}
-              <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 2.1, 0)).toLocaleString("es-ES")} kg de CO₂</strong>
-              {" "}y{" "}
-              <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 90, 0)).toLocaleString("es-ES")} L de agua</strong>
-              {" "}frente a comprar todo nuevo
-            </p>
-          </div>
-        )}
-        {category === "Para ti" && !query && (
-          <div className="newsletter-outer">
-            <div className="newsletter-band">
-              <div className="newsletter-text">
-                <p className="newsletter-title">¡Suscríbete a nuestro boletín!</p>
-                <p className="newsletter-sub">No vuelvas a perderte ninguna oferta.</p>
-              </div>
-              {newsletterSubscribed ? (
-                <p className="newsletter-thanks"><CheckCircle size={16} color="#4DE1C1" /> ¡Ya estás suscrito!</p>
-              ) : (
-                <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
-                  <input
-                    type="email"
-                    placeholder="Introduce tu correo electrónico"
-                    value={newsletterEmail}
-                    onChange={(e) => setNewsletterEmail(e.target.value)}
-                  />
-                  <button type="submit" className="btn primary">Suscribirme</button>
-                </form>
-              )}
-            </div>
-          </div>
-        )}
-        </>
-        );
-      })()}
-
-      <footer className="site-footer-rich">
-        <div className="footer-inner">
-        <div className="footer-top-row">
-          <p className="footer-brand-line">ROPELIN — COMPRA Y VENDE DE SEGUNDA MANO.</p>
-          {(platformSettings.instagramUrl || platformSettings.tiktokUrl || platformSettings.facebookUrl || platformSettings.twitterUrl) && (
-            <div className="footer-social-row">
-              <span className="footer-social-label">SÍGUENOS</span>
-              {platformSettings.facebookUrl && (
-                <a href={platformSettings.facebookUrl} target="_blank" rel="noopener noreferrer"><Facebook size={15} /></a>
-              )}
-              {platformSettings.instagramUrl && (
-                <a href={platformSettings.instagramUrl} target="_blank" rel="noopener noreferrer"><Instagram size={15} /></a>
-              )}
-              {platformSettings.tiktokUrl && (
-                <a href={platformSettings.tiktokUrl} target="_blank" rel="noopener noreferrer"><TikTokIcon size={15} /></a>
-              )}
-              {platformSettings.twitterUrl && (
-                <a href={platformSettings.twitterUrl} target="_blank" rel="noopener noreferrer"><Twitter size={15} /></a>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="footer-cols">
-          <div className="footer-col">
-            <p className="footer-col-title">Ropelin</p>
-            <button onClick={() => openLegalPage("about")}>Quiénes somos</button>
-            <button onClick={() => openLegalPage("updates")}>Novedades</button>
-            <button onClick={openHelpCenter}>Ayuda</button>
-          </div>
-          <div className="footer-col">
-            <p className="footer-col-title">Comprar y vender</p>
-            <button onClick={openPostForm}>Publicar un artículo</button>
-            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Moda"); setQuery(""); navigate("/"); }}>Moda</button>
-            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Electrónica"); setQuery(""); navigate("/"); }}>Electrónica</button>
-            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Hogar"); setQuery(""); navigate("/"); }}>Hogar</button>
-            <button className="footer-link-accent" onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Todo"); setQuery(""); navigate("/"); }}>Ver todas →</button>
-          </div>
-          <div className="footer-col">
-            <p className="footer-col-title">Legal</p>
-            <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
-            <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
-            <button onClick={() => setShowLegal("cookies")}>Cookies</button>
-          </div>
-          <div className="footer-col">
-            <p className="footer-col-title">Contacto</p>
-            <a href="mailto:hola@ropelin.com" className="footer-link-plain">hola@ropelin.com</a>
-            <button onClick={openHelpCenter}>Centro de ayuda</button>
-          </div>
-        </div>
-        <div className="footer-bottom-bar">
-          <span>© Ropelin {new Date().getFullYear()}</span>
-          <span>·</span>
-          <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
-          <span>·</span>
-          <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
-          <span>·</span>
-          <button onClick={() => setShowLegal("cookies")}>Cookies</button>
-          <span className="footer-trust-badge">🔒 Pagos seguros con <strong>stripe</strong></span>
-        </div>
-        </div>
-      </footer>
-      </>
-      )}
-
       {showLegal && (() => {
         const legalContentEl = (
           <>
@@ -2812,6 +2650,169 @@ export default function RopelinApp() {
           </div>
         );
       })()}
+
+      {!hidesFeedOnDesktop && (
+      <>
+      {loadError && !loading && (
+        <div className="empty-state">
+          <RefreshCw size={32} color="#FF4D6D" />
+          <p className="empty-title">{loadError}</p>
+          <button className="btn primary" onClick={loadAllItems}><RefreshCw size={14} /> Reintentar</button>
+        </div>
+      )}
+      {loading && (
+        <div className="two-col">
+          {Array.from({ length: numCols }).map((_, col) => (
+            <div className="col" key={col}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="skeleton-card">
+                  <div className="skeleton-media shimmer" />
+                  <div className="skeleton-line shimmer" style={{ width: "70%" }} />
+                  <div className="skeleton-line shimmer" style={{ width: "40%" }} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+      {!loading && !loadError && items.length === 0 && (
+        <div className="empty-state">
+          <PackageOpen size={38} color="#3A3A40" />
+          <p className="empty-title">No hay prendas que coincidan</p>
+          <p className="empty-sub">Prueba a cambiar los filtros, o sé el primero en publicar algo así.</p>
+          <button className="btn primary" onClick={openPostForm}>
+            <Plus size={14} /> Publicar la primera
+          </button>
+        </div>
+      )}
+      {!loading && (photoSearchResults !== null ? photoSearchResults : items).length > 0 && (() => {
+        const displayItems = photoSearchResults !== null ? photoSearchResults : items;
+        return (
+        <>
+        <div className="two-col">
+          {Array.from({ length: Math.min(numCols, displayItems.length) }).map((_, col) => {
+            const effectiveCols = Math.min(numCols, displayItems.length);
+            const visibleItems = displayItems.slice(0, effectiveCols * feedRowsShown);
+            return (
+              <div className="col" key={col}>
+                {visibleItems.filter((_, i) => i % effectiveCols === col).map((item) => {
+                  const realIndex = displayItems.indexOf(item);
+                  return (
+                    <ItemCard key={item.id} item={item} index={realIndex} onOpen={viewItem} saved={saved.has(item.id)} toggleSave={toggleSave} />
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+        {displayItems.length > numCols * feedRowsShown && (
+          <div className="load-more-row">
+            <RefreshCw size={16} className="spin" style={{ color: "#6A6A73" }} />
+          </div>
+        )}
+        {category === "Para ti" && !query && allItems.length > 0 && (
+          <div className="community-impact">
+            <Leaf size={18} color="#4DE1C1" />
+            <p>
+              Entre toda la comunidad ya se han ahorrado{" "}
+              <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 2.1, 0)).toLocaleString("es-ES")} kg de CO₂</strong>
+              {" "}y{" "}
+              <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 90, 0)).toLocaleString("es-ES")} L de agua</strong>
+              {" "}frente a comprar todo nuevo
+            </p>
+          </div>
+        )}
+        {category === "Para ti" && !query && (
+          <div className="newsletter-outer">
+            <div className="newsletter-band">
+              <div className="newsletter-text">
+                <p className="newsletter-title">¡Suscríbete a nuestro boletín!</p>
+                <p className="newsletter-sub">No vuelvas a perderte ninguna oferta.</p>
+              </div>
+              {newsletterSubscribed ? (
+                <p className="newsletter-thanks"><CheckCircle size={16} color="#4DE1C1" /> ¡Ya estás suscrito!</p>
+              ) : (
+                <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
+                  <input
+                    type="email"
+                    placeholder="Introduce tu correo electrónico"
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
+                  />
+                  <button type="submit" className="btn primary">Suscribirme</button>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+        </>
+        );
+      })()}
+
+      <footer className="site-footer-rich">
+        <div className="footer-inner">
+        <div className="footer-top-row">
+          <p className="footer-brand-line">ROPELIN — COMPRA Y VENDE DE SEGUNDA MANO.</p>
+          {(platformSettings.instagramUrl || platformSettings.tiktokUrl || platformSettings.facebookUrl || platformSettings.twitterUrl) && (
+            <div className="footer-social-row">
+              <span className="footer-social-label">SÍGUENOS</span>
+              {platformSettings.facebookUrl && (
+                <a href={platformSettings.facebookUrl} target="_blank" rel="noopener noreferrer"><Facebook size={15} /></a>
+              )}
+              {platformSettings.instagramUrl && (
+                <a href={platformSettings.instagramUrl} target="_blank" rel="noopener noreferrer"><Instagram size={15} /></a>
+              )}
+              {platformSettings.tiktokUrl && (
+                <a href={platformSettings.tiktokUrl} target="_blank" rel="noopener noreferrer"><TikTokIcon size={15} /></a>
+              )}
+              {platformSettings.twitterUrl && (
+                <a href={platformSettings.twitterUrl} target="_blank" rel="noopener noreferrer"><Twitter size={15} /></a>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="footer-cols">
+          <div className="footer-col">
+            <p className="footer-col-title">Ropelin</p>
+            <button onClick={() => openLegalPage("about")}>Quiénes somos</button>
+            <button onClick={() => openLegalPage("updates")}>Novedades</button>
+            <button onClick={openHelpCenter}>Ayuda</button>
+          </div>
+          <div className="footer-col">
+            <p className="footer-col-title">Comprar y vender</p>
+            <button onClick={openPostForm}>Publicar un artículo</button>
+            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Moda"); setQuery(""); navigate("/"); }}>Moda</button>
+            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Electrónica"); setQuery(""); navigate("/"); }}>Electrónica</button>
+            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Hogar"); setQuery(""); navigate("/"); }}>Hogar</button>
+            <button className="footer-link-accent" onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Todo"); setQuery(""); navigate("/"); }}>Ver todas →</button>
+          </div>
+          <div className="footer-col">
+            <p className="footer-col-title">Legal</p>
+            <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
+            <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
+            <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+          </div>
+          <div className="footer-col">
+            <p className="footer-col-title">Contacto</p>
+            <a href="mailto:hola@ropelin.com" className="footer-link-plain">hola@ropelin.com</a>
+            <button onClick={openHelpCenter}>Centro de ayuda</button>
+          </div>
+        </div>
+        <div className="footer-bottom-bar">
+          <span>© Ropelin {new Date().getFullYear()}</span>
+          <span>·</span>
+          <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
+          <span>·</span>
+          <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
+          <span>·</span>
+          <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+          <span className="footer-trust-badge">🔒 Pagos seguros con <strong>stripe</strong></span>
+        </div>
+        </div>
+      </footer>
+      </>
+      )}
+
 
       {showForgotPassword && (
         <div className="overlay" onClick={() => { setShowForgotPassword(false); setForgotSent(false); setForgotError(null); }}>
