@@ -454,8 +454,8 @@ export default function RopelinApp() {
   const legalPageOpen = showLegal === "about" || showLegal === "updates";
   // En escritorio, cuando se muestra el detalle de un artículo, el formulario de publicar, o Quiénes somos/Novedades como página, se oculta el feed de detrás (en vez de quedar apilado debajo)
   const hidesFeedOnDesktop = numCols >= 3 && openItem;
-  // En "Quiénes somos" se ocultan las tarjetas de artículos, pero el bloque de impacto y el boletín se quedan visibles
-  const hidesFeedCardsOnDesktop = numCols >= 3 && showLegal === "about";
+  // En Vender, Novedades y Quiénes somos se ocultan las tarjetas de artículos, pero el bloque de impacto y el boletín se quedan visibles
+  const hidesFeedCardsOnDesktop = numCols >= 3 && (showPost || legalPageOpen);
   const anyModalOpen = !!(
     (openItem && numCols < 3) || showAuth || showProfile || showChat ||
     (showLegal && !(numCols >= 3 && legalPageOpen)) ||
