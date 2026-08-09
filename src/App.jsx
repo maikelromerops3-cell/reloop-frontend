@@ -2320,6 +2320,18 @@ export default function RopelinApp() {
           return (
             <button key={c} className={"cat-circle" + (category === c ? " active" : "")} onClick={() => { setCategory(c); if (openItem) closeItemView(); }}>
 
+              <span
+                className="cat-icon-wrap"
+                style={category === c ? {} : { borderColor: accent + "33", background: accent + "14", color: accent }}
+              >
+                <Icon size={18} />
+              </span>
+              <span>{c}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {showHelpCenter && (() => {
         const helpContentEl = (
           <>
@@ -2408,17 +2420,6 @@ export default function RopelinApp() {
           </div>
         );
       })()}
-              <span
-                className="cat-icon-wrap"
-                style={category === c ? {} : { borderColor: accent + "33", background: accent + "14", color: accent }}
-              >
-                <Icon size={18} />
-              </span>
-              <span>{c}</span>
-            </button>
-          );
-        })}
-      </div>
 
       {showLegal && (() => {
         const legalContentEl = (
