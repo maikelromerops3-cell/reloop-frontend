@@ -449,9 +449,10 @@ export default function RopelinApp() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // Bloquea el scroll de la página de fondo mientras haya cualquier ventana/modal abierto,
-  // para que en móvil arrastrar dentro del modal no mueva el feed de detrás
+  // para que en móvil arrastrar dentro del modal no mueva el feed de detrás.
+  // El detalle de la prenda (openItem) solo cuenta como "modal" en móvil: en escritorio es la página normal, no una ventana flotante, y necesita su propio scroll.
   const anyModalOpen = !!(
-    openItem || showAuth || showPost || showProfile || showChat || showLegal ||
+    (openItem && numCols < 3) || showAuth || showPost || showProfile || showChat || showLegal ||
     showSettings || showOrders || showFavorites || showLeague || showAdminPanel || cropperState
   );
   useEffect(() => {
@@ -4258,59 +4259,6 @@ export default function RopelinApp() {
                 <p className="shipping-title">Cómo se entrega</p>
                 <p className="shipping-sub">Por correo, con etiqueta de envío (~{platformSettings.shippingFee}€) o en mano si quedáis cerca — lo acordáis por chat</p>
               </div>
-            </div>
-
-            <div className="questions-box">
-              <p className="questions-title"><MessageCircle size={14} /> Preguntas ({itemQuestions.length})</p>
-
-              {itemQuestions.length === 0 && (
-                <p className="questions-empty">Todavía no hay ninguna pregunta. ¡Sé el primero!</p>
-              )}
-
-              {itemQuestions.map((q) => (
-                <div key={q.id} className="question-item">
-                  <div className="question-header-row">
-                    <p className="question-text"><strong>@{q.author}</strong> {q.question}</p>
-                    {loggedIn && (
-                      <div className="question-mini-actions">
-                        {(openItem.seller === username || q.author === username) && (
-                          <button title="Eliminar" onClick={() => handleDeleteQuestion(q.id)}><Trash2 size={12} /></button>
-                        )}
-                        {q.author !== username && (
-                          <button title="Denunciar" onClick={() => setShowReportForm({ targetType: "question", questionId: q.id })}><FileWarning size={12} /></button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  {q.answer ? (
-                    <p className="answer-text"><strong>@{openItem.seller}</strong> {q.answer}</p>
-                  ) : openItem.seller === username ? (
-                    <div className="answer-form">
-                      <input
-                        placeholder="Escribe una respuesta..."
-                        value={answerDrafts[q.id] || ""}
-                        onChange={(e) => setAnswerDrafts((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                        onKeyDown={(e) => e.key === "Enter" && handleAnswerQuestion(q.id)}
-                      />
-                      <button onClick={() => handleAnswerQuestion(q.id)}><Send size={13} /></button>
-                    </div>
-                  ) : (
-                    <p className="answer-pending">Sin responder todavía</p>
-                  )}
-                </div>
-              ))}
-
-              {openItem.seller !== username && (
-                <form className="ask-form" onSubmit={handleAskQuestion}>
-                  <input
-                    placeholder={loggedIn ? "Pregunta algo sobre este artículo..." : "Inicia sesión para preguntar"}
-                    value={newQuestionText}
-                    onChange={(e) => setNewQuestionText(e.target.value)}
-                    onFocus={() => !loggedIn && setShowAuth(true)}
-                  />
-                  <button type="submit" disabled={sendingQuestion}><Send size={13} /></button>
-                </form>
-              )}
             </div>
 
             <div className="detail-actions">
