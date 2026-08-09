@@ -451,14 +451,15 @@ export default function RopelinApp() {
   // Bloquea el scroll de la página de fondo mientras haya cualquier ventana/modal abierto,
   // para que en móvil arrastrar dentro del modal no mueva el feed de detrás.
   // El detalle de la prenda (openItem) solo cuenta como "modal" en móvil: en escritorio es la página normal, no una ventana flotante, y necesita su propio scroll.
-  const legalPageOpen = showLegal === "about" || showLegal === "updates";
+  const legalPageOpen = !!showLegal;
   // En escritorio, cuando se muestra el detalle de un artículo, el formulario de publicar, o Quiénes somos/Novedades como página, se oculta el feed de detrás (en vez de quedar apilado debajo)
   const hidesFeedOnDesktop = numCols >= 3 && openItem;
-  // En Vender, Novedades y Quiénes somos se ocultan las tarjetas de artículos, pero el bloque de impacto y el boletín se quedan visibles
-  const hidesFeedCardsOnDesktop = numCols >= 3 && (showPost || legalPageOpen);
+  // En Vender, Novedades, Quiénes somos, el apartado legal y la Ayuda se ocultan las tarjetas de artículos, pero el bloque de impacto y el boletín se quedan visibles
+  const hidesFeedCardsOnDesktop = numCols >= 3 && (showPost || legalPageOpen || showHelpCenter);
   const anyModalOpen = !!(
     (openItem && numCols < 3) || showAuth || showProfile || showChat ||
     (showLegal && !(numCols >= 3 && legalPageOpen)) ||
+    (showHelpCenter && numCols < 3) ||
     showSettings || showOrders || showFavorites || showLeague || showAdminPanel || cropperState
   );
   useEffect(() => {
@@ -622,6 +623,7 @@ export default function RopelinApp() {
   function viewItem(item) {
     setShowLegal(null);
     setShowPost(false);
+    setShowHelpCenter(false);
     setOpenItem(item);
     setGalleryIndex(0);
     navigate(`/item/${item.id}`);
@@ -631,6 +633,7 @@ export default function RopelinApp() {
   function openPostForm() {
     setShowLegal(null);
     setOpenItem(null);
+    setShowHelpCenter(false);
     setEditingItem(null);
     setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] });
     setShowPost(true);
@@ -640,6 +643,7 @@ export default function RopelinApp() {
   function openLegalPage(type) {
     setShowPost(false);
     setOpenItem(null);
+    setShowHelpCenter(false);
     setShowLegal(type);
   }
 
@@ -1001,6 +1005,7 @@ export default function RopelinApp() {
   function startEdit(item) {
     setShowLegal(null);
     setOpenItem(null);
+    setShowHelpCenter(false);
     setEditingItem(item);
     setForm({ title: item.title, category: item.category, size: item.size || "", isShoe: !!(item.size && SHOE_SIZES.includes(item.size)), price: String(item.price), description: item.description || "", condition: item.condition, images: item.images || [] });
     setShowProfile(false);
@@ -1223,6 +1228,9 @@ export default function RopelinApp() {
   }
 
   async function openHelpCenter() {
+    setShowLegal(null);
+    setOpenItem(null);
+    setShowPost(false);
     setShowHelpCenter(true);
     setHelpTab("faq");
     if (loggedIn) {
@@ -2311,6 +2319,95 @@ export default function RopelinApp() {
           const accent = CATEGORY_COLORS[c] || "#9A9AA3";
           return (
             <button key={c} className={"cat-circle" + (category === c ? " active" : "")} onClick={() => { setCategory(c); if (openItem) closeItemView(); }}>
+
+      {showHelpCenter && (() => {
+        const helpContentEl = (
+          <>
+            <div className="league-header">
+              <MessageCircle size={20} color="#4DE1C1" />
+              <p className="auth-title" style={{ margin: 0 }}>Centro de ayuda</p>
+            </div>
+
+            <div className="tabs profile-tabs">
+              <button className={"tab" + (helpTab === "faq" ? " active" : "")} onClick={() => setHelpTab("faq")}>Preguntas frecuentes</button>
+              <button className={"tab" + (helpTab === "contact" ? " active" : "")} onClick={() => setHelpTab("contact")}>Contactar</button>
+              {loggedIn && (
+                <button className={"tab" + (helpTab === "mine" ? " active" : "")} onClick={() => setHelpTab("mine")}>Mis mensajes</button>
+              )}
+            </div>
+
+            {helpTab === "faq" && (
+              <div className="faq-list">
+                {buildFaqItems(platformSettings).map((item, i) => (
+                  <details key={i} className="faq-item">
+                    <summary>{item.q}</summary>
+                    <p>{item.a}</p>
+                  </details>
+                ))}
+              </div>
+            )}
+
+            {helpTab === "contact" && (
+              loggedIn ? (
+                <form onSubmit={submitSupportForm}>
+                  <label>Asunto</label>
+                  <input
+                    className="input-plain"
+                    placeholder="¿Sobre qué necesitas ayuda?"
+                    value={supportSubject}
+                    onChange={(e) => setSupportSubject(e.target.value)}
+                    required
+                  />
+                  <label>Mensaje</label>
+                  <textarea
+                    className="report-textarea"
+                    placeholder="Cuéntanos con detalle qué ha pasado..."
+                    value={supportMessage}
+                    onChange={(e) => setSupportMessage(e.target.value)}
+                    rows={4}
+                    required
+                  />
+                  <button type="submit" className="btn primary admin-refund-btn">Enviar mensaje</button>
+                </form>
+              ) : (
+                <p className="empty-tab">Inicia sesión para poder escribirnos.</p>
+              )
+            )}
+
+            {helpTab === "mine" && (
+              mySupportMessages.length === 0
+                ? <p className="empty-tab">Aún no has enviado ningún mensaje de soporte.</p>
+                : <div className="admin-user-list">
+                    {mySupportMessages.map((m) => (
+                      <div key={m.id} className={"admin-dispute-row" + (m.status === "resolved" ? " reviewed" : "")}>
+                        <p className="admin-user-name">
+                          {m.subject}
+                          {m.status === "resolved" ? <span className="admin-role-badge">Respondido</span> : <span className="admin-role-badge" style={{ background: "#FFC24D" }}>Pendiente</span>}
+                        </p>
+                        <p className="admin-user-meta">{new Date(m.createdAt).toLocaleDateString("es-ES")}</p>
+                        <p className="admin-dispute-reason">{m.message}</p>
+                        {m.adminReply && <p className="admin-dispute-reason" style={{ color: "#4DE1C1" }}>Respuesta de Ropelin: {m.adminReply}</p>}
+                      </div>
+                    ))}
+                  </div>
+            )}
+          </>
+        );
+
+        return numCols >= 3 ? (
+          <div className="legal-page">
+            <button className="back-btn" onClick={() => setShowHelpCenter(false)}><ArrowLeft size={16} /> Volver</button>
+            {helpContentEl}
+          </div>
+        ) : (
+          <div className="overlay" onClick={() => setShowHelpCenter(false)}>
+            <div className="modal admin-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="close-btn" onClick={() => setShowHelpCenter(false)}><X size={14} /></button>
+              {helpContentEl}
+            </div>
+          </div>
+        );
+      })()}
               <span
                 className="cat-icon-wrap"
                 style={category === c ? {} : { borderColor: accent + "33", background: accent + "14", color: accent }}
@@ -2499,7 +2596,7 @@ export default function RopelinApp() {
           </>
         );
 
-        const openAsPage = numCols >= 3 && (showLegal === "about" || showLegal === "updates");
+        const openAsPage = numCols >= 3;
 
         return openAsPage ? (
           <div className="legal-page">
@@ -4012,81 +4109,6 @@ export default function RopelinApp() {
         </div>
       )}
 
-      {showHelpCenter && (
-        <div className="overlay" onClick={() => setShowHelpCenter(false)}>
-          <div className="modal admin-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowHelpCenter(false)}><X size={14} /></button>
-            <div className="league-header">
-              <MessageCircle size={20} color="#4DE1C1" />
-              <p className="auth-title" style={{ margin: 0 }}>Centro de ayuda</p>
-            </div>
-
-            <div className="tabs profile-tabs">
-              <button className={"tab" + (helpTab === "faq" ? " active" : "")} onClick={() => setHelpTab("faq")}>Preguntas frecuentes</button>
-              <button className={"tab" + (helpTab === "contact" ? " active" : "")} onClick={() => setHelpTab("contact")}>Contactar</button>
-              {loggedIn && (
-                <button className={"tab" + (helpTab === "mine" ? " active" : "")} onClick={() => setHelpTab("mine")}>Mis mensajes</button>
-              )}
-            </div>
-
-            {helpTab === "faq" && (
-              <div className="faq-list">
-                {buildFaqItems(platformSettings).map((item, i) => (
-                  <details key={i} className="faq-item">
-                    <summary>{item.q}</summary>
-                    <p>{item.a}</p>
-                  </details>
-                ))}
-              </div>
-            )}
-
-            {helpTab === "contact" && (
-              loggedIn ? (
-                <form onSubmit={submitSupportForm}>
-                  <label>Asunto</label>
-                  <input
-                    className="input-plain"
-                    placeholder="¿Sobre qué necesitas ayuda?"
-                    value={supportSubject}
-                    onChange={(e) => setSupportSubject(e.target.value)}
-                    required
-                  />
-                  <label>Mensaje</label>
-                  <textarea
-                    className="report-textarea"
-                    placeholder="Cuéntanos con detalle qué ha pasado..."
-                    value={supportMessage}
-                    onChange={(e) => setSupportMessage(e.target.value)}
-                    rows={4}
-                    required
-                  />
-                  <button type="submit" className="btn primary admin-refund-btn">Enviar mensaje</button>
-                </form>
-              ) : (
-                <p className="empty-tab">Inicia sesión para poder escribirnos.</p>
-              )
-            )}
-
-            {helpTab === "mine" && (
-              mySupportMessages.length === 0
-                ? <p className="empty-tab">Aún no has enviado ningún mensaje de soporte.</p>
-                : <div className="admin-user-list">
-                    {mySupportMessages.map((m) => (
-                      <div key={m.id} className={"admin-dispute-row" + (m.status === "resolved" ? " reviewed" : "")}>
-                        <p className="admin-user-name">
-                          {m.subject}
-                          {m.status === "resolved" ? <span className="admin-role-badge">Respondido</span> : <span className="admin-role-badge" style={{ background: "#FFC24D" }}>Pendiente</span>}
-                        </p>
-                        <p className="admin-user-meta">{new Date(m.createdAt).toLocaleDateString("es-ES")}</p>
-                        <p className="admin-dispute-reason">{m.message}</p>
-                        {m.adminReply && <p className="admin-dispute-reason" style={{ color: "#4DE1C1" }}>Respuesta de Ropelin: {m.adminReply}</p>}
-                      </div>
-                    ))}
-                  </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {showChat && chatItem && (
         <div className="overlay" onClick={() => setShowChat(false)}>
