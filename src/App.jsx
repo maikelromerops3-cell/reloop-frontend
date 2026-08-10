@@ -1484,17 +1484,17 @@ export default function RopelinApp() {
       />
       <style>{`
         :root {
-          --bg: #121214; --card: #1A1A1E; --card-alt: #17171b; --surface: #26262c; --surface2: #1F1F24;
+          --bg: #121214; --bg-translucent: #121214ee; --card: #1A1A1E; --card-alt: #17171b; --surface: #26262c; --surface2: #1F1F24;
           --border: #29292f; --input-border: #333; --text: #F2F2F0; --body: #C8C8CE; --sub: #9A9AA3; --faint: #6A6A73;
         }
         [data-theme="light"] {
-          --bg: #F7F7F8; --card: #FFFFFF; --card-alt: #F2F2F3; --surface: #ECECEF; --surface2: #EFEFF1;
+          --bg: #F7F7F8; --bg-translucent: #F7F7F8ee; --card: #FFFFFF; --card-alt: #F2F2F3; --surface: #ECECEF; --surface2: #EFEFF1;
           --border: #E2E2E6; --input-border: #D6D6DA; --text: #121214; --body: #3A3A40; --sub: #6A6A73; --faint: #9A9AA3;
         }
         * { box-sizing: border-box; }
         html, body { overflow-x: hidden; margin: 0; background: var(--bg); }
         .app { min-height: 100vh; max-width: 100vw; overflow-x: hidden; background: var(--bg); color: var(--text); font-family: 'Helvetica Neue', Arial, sans-serif; }
-        header.top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; padding: 16px 20px; position: sticky; top: 0; background: #121214ee; backdrop-filter: blur(6px); z-index: 5; }
+        header.top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; padding: 16px 20px; position: sticky; top: 0; background: var(--bg-translucent); backdrop-filter: blur(6px); z-index: 5; }
         .brand { display: flex; align-items: center; gap: 8px; }
         .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #FF4D6D, #8C7CFF); display: flex; align-items: center; justify-content: center; }
         .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
@@ -1958,7 +1958,7 @@ export default function RopelinApp() {
         .cropper-actions { display: flex; gap: 10px; margin-top: 14px; }
         .cropper-actions .btn { flex: 1; justify-content: center; }
         .overlay-top { z-index: 15; }
-        .modal { background: var(--card); border: 1px solid var(--border); border-radius: 22px; max-width: 400px; width: 100%; padding: 26px; position: relative; max-height: 88vh; overflow-y: auto; }
+        .modal { background: var(--card); border: 1px solid var(--border); border-radius: 22px; max-width: 400px; width: 100%; padding: 26px; position: relative; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         .modal h3 { font-size: 19px; font-weight: 700; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
         .close-btn { position: absolute; top: 16px; right: 16px; background: var(--border); border: none; border-radius: 50%; width: 28px; height: 28px; color: #fff; cursor: pointer; z-index: 5; }
         label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; color: var(--sub); }
