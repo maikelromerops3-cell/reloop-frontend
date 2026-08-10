@@ -1608,7 +1608,7 @@ export default function RopelinApp() {
         .cat-circle.active .cat-icon-wrap.forYou { border-color: #FF4D6D; }
         .cat-circle:hover .cat-icon-wrap { border-color: #4A4A52; }
         .search-box { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--input-border); border-radius: 20px; padding: 10px 16px; flex: 1; min-width: 200px; }
-        .search-box input { border: none; outline: none; background: transparent; color: #fff; font-size: 13px; width: 100%; font-family: inherit; }
+        .search-box input { border: none; outline: none; background: transparent; color: var(--text); font-size: 13px; width: 100%; font-family: inherit; }
         .chip { border: 1px solid var(--input-border); background: var(--surface2); color: var(--body); border-radius: 20px; padding: 8px 14px; font-size: 12px; cursor: pointer; font-family: inherit; }
         .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
         select.chip { appearance: none; }
@@ -1960,7 +1960,7 @@ export default function RopelinApp() {
         .overlay-top { z-index: 15; }
         .modal { background: var(--card); border: 1px solid var(--border); border-radius: 22px; max-width: 400px; width: 100%; padding: 26px; position: relative; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         .modal h3 { font-size: 19px; font-weight: 700; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
-        .close-btn { position: absolute; top: 16px; right: 16px; background: var(--border); border: none; border-radius: 50%; width: 28px; height: 28px; color: #fff; cursor: pointer; z-index: 5; }
+        .close-btn { position: absolute; top: 16px; right: 16px; background: var(--border); border: none; border-radius: 50%; width: 28px; height: 28px; color: var(--text); cursor: pointer; z-index: 5; }
         label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; color: var(--sub); }
         input, select { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; }
         .post-textarea { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 4px; }
@@ -1998,7 +1998,7 @@ export default function RopelinApp() {
         .newsletter-form { display: flex; gap: 10px; flex-wrap: wrap; }
         .newsletter-form input { width: 260px; border: none; border-radius: 12px; padding: 13px 16px; font-size: 13px; background: #ffffffee; color: var(--bg); font-family: inherit; }
         .newsletter-form input::placeholder { color: var(--faint); }
-        .newsletter-form .btn.primary { background: var(--bg); color: #fff; border: none; padding: 13px 22px; border-radius: 12px; font-weight: 700; font-size: 13px; }
+        .newsletter-form .btn.primary { background: #121214; color: #fff; border: none; padding: 13px 22px; border-radius: 12px; font-weight: 700; font-size: 13px; }
         .newsletter-thanks { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--bg); font-weight: 700; }
         @media (max-width: 640px) {
           .newsletter-band { padding: 30px 20px; }
