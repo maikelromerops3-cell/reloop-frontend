@@ -11,7 +11,7 @@ import {
   fetchTransactions, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
-  fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer, markItemSold,
+  fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer, markItemSold, notifySaleBuyer, fetchItemConversations,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
@@ -284,6 +284,9 @@ export default function RopelinApp() {
   const [showAuth, setShowAuth] = useState(false);
   const [openItem, setOpenItem] = useState(null);
   const [itemQuestions, setItemQuestions] = useState([]);
+  const [pickingBuyerFor, setPickingBuyerFor] = useState(null); // { itemId } | null
+  const [buyerCandidates, setBuyerCandidates] = useState([]);
+  const [manualBuyerName, setManualBuyerName] = useState("");
   const [sellerReviews, setSellerReviews] = useState(null);
   const [newQuestionText, setNewQuestionText] = useState("");
   const [answerDrafts, setAnswerDrafts] = useState({});
@@ -409,6 +412,23 @@ export default function RopelinApp() {
       setOpenItem((prev) => prev ? { ...prev, status: updated.status } : prev);
       setAllItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, status: updated.status } : i)));
       toast.success("Marcado como vendido");
+
+      const candidates = await fetchItemConversations(itemId).catch(() => []);
+      setBuyerCandidates(candidates);
+      setManualBuyerName("");
+      setPickingBuyerFor({ itemId });
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function confirmBuyerAndReview(itemId, buyerUsername) {
+    if (!buyerUsername.trim()) { setPickingBuyerFor(null); return; }
+    try {
+      await notifySaleBuyer(itemId, buyerUsername.trim());
+      toast.success(`Avisado @${buyerUsername.trim()} para que también te valore`);
+      setPickingBuyerFor(null);
+      setReviewingTx({ id: null, otherUsername: buyerUsername.trim() });
     } catch (err) {
       toast.error(err.message);
     }
@@ -3747,6 +3767,41 @@ export default function RopelinApp() {
               <p style={{ fontSize: 11, color: "#6A6A73", marginTop: 10 }}>Revisaremos tu caso y, si procede, se te devolverá el importe a través de Stripe.</p>
               <button className="submit-btn" type="submit">Enviar solicitud</button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {pickingBuyerFor && (
+        <div className="overlay" onClick={() => setPickingBuyerFor(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-btn" onClick={() => setPickingBuyerFor(null)}><X size={14} /></button>
+            <p className="auth-title">¿A quién se lo vendiste?</p>
+            <p className="auth-subtitle" style={{ marginBottom: 16 }}>Así le avisamos y podéis valoraros mutuamente</p>
+
+            {buyerCandidates.length > 0 && (
+              <>
+                <p className="post-section-label" style={{ marginTop: 0 }}>Ha hablado contigo por chat de esta prenda</p>
+                <div className="pill-group" style={{ marginBottom: 16 }}>
+                  {buyerCandidates.map((u) => (
+                    <button key={u} type="button" className="pill" onClick={() => confirmBuyerAndReview(pickingBuyerFor.itemId, u)}>@{u}</button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <p className="post-section-label" style={{ marginTop: 0 }}>O escribe su usuario a mano</p>
+            <div className="input-icon" style={{ marginBottom: 16 }}>
+              <User size={14} />
+              <input
+                placeholder="nombre_de_usuario"
+                value={manualBuyerName}
+                onChange={(e) => setManualBuyerName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && confirmBuyerAndReview(pickingBuyerFor.itemId, manualBuyerName)}
+              />
+            </div>
+
+            <button className="submit-btn" onClick={() => confirmBuyerAndReview(pickingBuyerFor.itemId, manualBuyerName)}>Avisarle y valorar</button>
+            <button className="chat-btn" style={{ width: "100%", marginTop: 8 }} onClick={() => setPickingBuyerFor(null)}>Prefiero no hacerlo ahora</button>
           </div>
         </div>
       )}

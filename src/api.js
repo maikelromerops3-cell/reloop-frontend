@@ -229,6 +229,22 @@ export async function markItemSold(itemId) {
   return res.json();
 }
 
+export async function fetchItemConversations(itemId) {
+  const res = await fetch(`${API_URL}/items/${itemId}/conversations`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error("No se pudieron cargar las conversaciones");
+  return res.json();
+}
+
+export async function notifySaleBuyer(itemId, buyerUsername) {
+  const res = await fetch(`${API_URL}/items/${itemId}/notify-buyer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ buyerUsername }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo avisar al comprador");
+  return res.json();
+}
+
 export async function respondToOffer(itemId, messageId, action, counterAmount) {
   const res = await fetch(`${API_URL}/messages/${itemId}/offer/${messageId}/respond`, {
     method: "POST",
