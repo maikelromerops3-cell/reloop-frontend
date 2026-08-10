@@ -9,10 +9,10 @@ import {
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
-  fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount, sendPhoneCode, verifyPhoneCode,
+  fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount, sendPhoneCode, verifyPhoneCode, resendVerification,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
   fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer, markItemSold, notifySaleBuyer, fetchItemConversations,
-  forgotPassword, resetPassword, verifyEmail, resendVerification,
+  forgotPassword, resetPassword, verifyEmail,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
   disputeTransaction,
@@ -214,6 +214,8 @@ export default function RopelinApp() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [myPhoneVerified, setMyPhoneVerified] = useState(false);
+  const [myEmailVerified, setMyEmailVerified] = useState(true);
+  const [resendingVerification, setResendingVerification] = useState(false);
   const [phoneInput, setPhoneInput] = useState("");
   const [phoneCodeInput, setPhoneCodeInput] = useState("");
   const [phoneStep, setPhoneStep] = useState("idle"); // "idle" | "code_sent"
@@ -345,7 +347,10 @@ export default function RopelinApp() {
   useEffect(() => {
     if (showSettings && loggedIn) {
       fetchStripeStatus().then(setStripeStatus).catch(() => {});
-      fetchProfile(username).then((data) => setMyPhoneVerified(!!data.phoneVerified)).catch(() => {});
+      fetchProfile(username).then((data) => {
+        setMyPhoneVerified(!!data.phoneVerified);
+        setMyEmailVerified(data.emailVerified !== false);
+      }).catch(() => {});
       setPhoneStep("idle");
       setPhoneInput("");
       setPhoneCodeInput("");
@@ -479,6 +484,7 @@ export default function RopelinApp() {
         if (data.coverUrl) { setMyCoverUrl(data.coverUrl); localStorage.setItem("reloop_cover", data.coverUrl); }
         if (data.bio) setMyBio(data.bio);
         setMyPhoneVerified(!!data.phoneVerified);
+        setMyEmailVerified(data.emailVerified !== false);
       }).catch(() => {});
       return;
     }
@@ -1159,6 +1165,23 @@ export default function RopelinApp() {
       window.location.href = url; // redirige a la pasarela de pago de Stripe
     } catch (err) {
       setCheckoutError(err.message);
+    }
+  }
+
+  async function handleResendVerification() {
+    setResendingVerification(true);
+    try {
+      const res = await resendVerification();
+      if (res.alreadyVerified) {
+        setMyEmailVerified(true);
+        toast.success("Tu email ya estaba verificado");
+      } else {
+        toast.success("Te hemos reenviado el correo de verificación");
+      }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setResendingVerification(false);
     }
   }
 
@@ -1864,6 +1887,10 @@ export default function RopelinApp() {
         .location-current { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin: 0; }
         .location-hint { font-size: 11px; color: var(--sub); margin: 4px 0 0; }
         .stripe-box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 16px 0; }
+        .email-unverified-banner { background: #FFC24D14; border: 1px solid #FFC24D33; border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; }
+        .email-unverified-banner p { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #FFC24D; font-weight: 600; margin: 0 0 8px; }
+        .email-unverified-banner button { width: 100%; border: none; border-radius: 10px; background: #FFC24D; color: var(--bg); padding: 9px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
+        .email-unverified-banner button:disabled { opacity: 0.6; cursor: default; }
         .stripe-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; margin: 0 0 8px; }
         .stripe-status { font-size: 12px; color: var(--sub); margin: 0 0 10px; line-height: 1.4; }
         .stripe-status.ok { display: flex; align-items: center; gap: 6px; color: #4DE1C1; margin: 0; }
@@ -3947,6 +3974,15 @@ export default function RopelinApp() {
           <div className="modal settings-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={() => setShowSettings(false)}><X size={14} /></button>
             <p className="auth-title" style={{ marginBottom: 16 }}>Ajustes de cuenta</p>
+
+            {!myEmailVerified && (
+              <div className="email-unverified-banner">
+                <p><FileWarning size={14} /> Tu email todavía no está verificado</p>
+                <button onClick={handleResendVerification} disabled={resendingVerification}>
+                  {resendingVerification ? "Enviando..." : "Reenviar correo de verificación"}
+                </button>
+              </div>
+            )}
 
             <label>Email</label>
             <div className="input-icon"><Mail size={14} /><input defaultValue={`${username}@email.com`} /></div>
