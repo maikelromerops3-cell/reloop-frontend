@@ -1645,7 +1645,7 @@ export default function RopelinApp() {
         .price-filter input[type=range] { width: 90px; accent-color: #FF4D6D; }
         .follow-btn { display: flex; align-items: center; gap: 5px; border: 1px solid var(--input-border); background: var(--bg); color: var(--body); border-radius: 12px; padding: 7px 11px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
         .follow-btn.on { background: linear-gradient(135deg, #4DE1C1, #4DA8FF); color: var(--bg); border-color: transparent; }
-        .offer-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid #FFC24D55; background: #FFC24D15; color: #FFC24D; border-radius: 14px; padding: 11px; font-weight: 600; font-size: 12px; cursor: pointer; font-family: inherit; }
+        .offer-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1.5px solid #FFC24D; background: #FFC24D22; color: #FFC24D; border-radius: 14px; padding: 11px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
         .offer-modal { max-width: 340px; }
         .offer-sent { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 0; font-weight: 700; }
         .league-btn { position: relative; }
@@ -1931,11 +1931,11 @@ export default function RopelinApp() {
         .chat-bubble.offer-bubble { font-weight: 800; border-color: #FFC24D; }
         .chat-bubble.seller.offer-bubble { background: #FFC24D14; color: #FFC24D; }
         .offer-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
-        .offer-btn { border: none; border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
-        .offer-btn.accept { background: #4DE1C1; color: var(--bg); }
-        .offer-btn.reject { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
-        .offer-btn.counter { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
-        .offer-btn:disabled { opacity: 0.6; cursor: default; }
+        .offer-resp-btn { border: none; border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .offer-resp-btn.accept { background: #4DE1C1; color: var(--bg); }
+        .offer-resp-btn.reject { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
+        .offer-resp-btn.counter { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
+        .offer-resp-btn:disabled { opacity: 0.6; cursor: default; }
         .offer-counter-row { display: flex; gap: 6px; width: 100%; margin-top: 4px; }
         .offer-counter-row input { flex: 1; min-width: 0; border: 1px solid var(--input-border); border-radius: 10px; padding: 6px 10px; font-size: 12px; background: var(--bg); color: var(--text); font-family: inherit; }
         .offer-status-tag { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; }
@@ -1987,7 +1987,7 @@ export default function RopelinApp() {
         .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 0; margin-bottom: 16px; font-family: inherit; }
         .back-btn:hover { color: var(--text); }
         .item-page-grid { display: flex; gap: 40px; align-items: flex-start; }
-        .item-page-gallery { flex: 1.1; min-width: 0; }
+        .item-page-gallery { flex: 1.1; min-width: 0; max-width: 620px; }
         .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 20px auto 0; max-width: 700px; font-size: 12.5px; color: var(--body); line-height: 1.5; }
         .community-impact svg { flex-shrink: 0; }
         .community-impact strong { color: #4DE1C1; font-weight: 700; }
@@ -2064,6 +2064,7 @@ export default function RopelinApp() {
         .detail-title { font-size: 18px; font-weight: 700; margin: 0; line-height: 1.25; }
         .detail-meta-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--faint); margin: 6px 0 0; }
         .detail-meta-row span { display: flex; align-items: center; gap: 4px; }
+        .detail-section-label { font-size: 12px; font-weight: 700; color: var(--text); margin: 14px 0 4px; }
         .detail-modal .detail-price { margin: 0; white-space: nowrap; }
         .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 18px; }
         .info-tag { font-size: 11px; background: var(--bg); border: 1px solid var(--border); color: var(--body); padding: 5px 11px; border-radius: 20px; }
@@ -2483,7 +2484,7 @@ export default function RopelinApp() {
 
             <p className="detail-meta-row">
               <span>Publicado {timeAgo(openItem.minutesAgo)}</span>
-              {typeof openItem.views === "number" && <span>· <Eye size={12} /> {openItem.views} {openItem.views === 1 ? "vista" : "vistas"}</span>}
+              {typeof openItem.views === "number" && openItem.views > 0 && <span>· <Eye size={12} /> {openItem.views} {openItem.views === 1 ? "vista" : "vistas"}</span>}
               {openItem.favoritesCount > 0 && <span>· <Heart size={12} /> {openItem.favoritesCount} en favoritos</span>}
             </p>
 
@@ -2494,7 +2495,10 @@ export default function RopelinApp() {
             </div>
 
             {openItem.description && (
-              <p className="detail-description">{openItem.description}</p>
+              <>
+                <p className="detail-section-label">Descripción</p>
+                <p className="detail-description">{openItem.description}</p>
+              </>
             )}
 
             <div className="seller-card">
@@ -4430,15 +4434,15 @@ export default function RopelinApp() {
                       <div className="offer-actions">
                         {m.offerStatus === "pending" && !mine && (
                           <>
-                            <button className="offer-btn accept" disabled={respondingOfferId === m.id} onClick={() => handleOfferAction(chatItem.id, m.id, "accept")}>Aceptar</button>
-                            <button className="offer-btn reject" disabled={respondingOfferId === m.id} onClick={() => handleOfferAction(chatItem.id, m.id, "reject")}>Rechazar</button>
+                            <button className="offer-resp-btn accept" disabled={respondingOfferId === m.id} onClick={() => handleOfferAction(chatItem.id, m.id, "accept")}>Aceptar</button>
+                            <button className="offer-resp-btn reject" disabled={respondingOfferId === m.id} onClick={() => handleOfferAction(chatItem.id, m.id, "reject")}>Rechazar</button>
                             <div className="offer-counter-row">
                               <input
                                 type="number" min="1" placeholder="Contraoferta €"
                                 value={counterDrafts[m.id] || ""}
                                 onChange={(e) => setCounterDrafts((prev) => ({ ...prev, [m.id]: e.target.value }))}
                               />
-                              <button className="offer-btn counter" disabled={respondingOfferId === m.id} onClick={() => handleOfferAction(chatItem.id, m.id, "counter")}>Contraofertar</button>
+                              <button className="offer-resp-btn counter" disabled={respondingOfferId === m.id} onClick={() => handleOfferAction(chatItem.id, m.id, "counter")}>Contraofertar</button>
                             </div>
                           </>
                         )}
@@ -4449,7 +4453,7 @@ export default function RopelinApp() {
                           <span className="offer-status-tag accepted"><CheckCircle size={12} /> Aceptada</span>
                         )}
                         {m.offerStatus === "accepted" && chatItem.seller !== username && (
-                          <button className="offer-btn accept" onClick={() => payAcceptedOffer(chatItem.id)}>Pagar {Number(m.offerAmount).toFixed(2)}€</button>
+                          <button className="offer-resp-btn accept" onClick={() => payAcceptedOffer(chatItem.id)}>Pagar {Number(m.offerAmount).toFixed(2)}€</button>
                         )}
                         {m.offerStatus === "rejected" && (
                           <span className="offer-status-tag rejected">Rechazada</span>
