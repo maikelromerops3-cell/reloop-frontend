@@ -10,7 +10,7 @@ import {
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount,
-  fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter,
+  fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
   fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
@@ -250,33 +250,25 @@ export default function RopelinApp() {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [notifications, setNotifications] = useState([]);
-  const LEADERBOARD = [
-    { rank: 1, username: "denia.k", city: "Sevilla", points: 1240 },
-    { rank: 2, username: "marina_v", city: "Madrid", points: 1180 },
-    { rank: 3, username: "nico_thrift", city: "Barcelona", points: 990 },
-    { rank: 4, username: "clara.rt", city: "Valencia", points: 860 },
-    { rank: 5, username: "pau_vintage", city: "Bilbao", points: 810 },
-    { rank: 6, username: "irene.ok", city: "Zaragoza", points: 770 },
-    { rank: 7, username: "marcos_rl", city: "Málaga", points: 740 },
-    { rank: 8, username: "sofia.wear", city: "Murcia", points: 705 },
-    { rank: 9, username: "davidcloset", city: "Alicante", points: 680 },
-    { rank: 10, username: "lucia_re", city: "Vigo", points: 650 },
-    { rank: 11, username: "hugo.mkt", city: "Gijón", points: 610 },
-    { rank: 12, username: "carla_v2", city: "Granada", points: 585 },
-    { rank: 13, username: "adrian.tx", city: "Córdoba", points: 560 },
-    { rank: 14, username: "noa_shop", city: "Valladolid", points: 540 },
-    { rank: 15, username: "diego.rl", city: "San Sebastián", points: 515 },
-    { rank: 16, username: "vera_thrift", city: "Palma", points: 490 },
-    { rank: 17, username: "alex_rw", city: "Santander", points: 470 },
-    { rank: 18, username: "julia.mk", city: "Tarragona", points: 450 },
-    { rank: 19, username: "sergio_v", city: "A Coruña", points: 430 },
-    { rank: 20, username: "elena.re", city: "Castellón", points: 410 },
-  ];
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [leagueLoading, setLeagueLoading] = useState(false);
 
   function leagueBenefit(rank) {
     if (rank <= 3) return { label: "Envío gratis", className: "tier-gold" };
     if (rank <= 10) return { label: "-50% envío", className: "tier-silver" };
     return { label: "-25% envío", className: "tier-bronze" };
+  }
+
+  async function openLeague() {
+    setShowLeague(true);
+    setLeagueLoading(true);
+    try {
+      setLeaderboard(await fetchLeague());
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLeagueLoading(false);
+    }
   }
   const [chatItem, setChatItem] = useState(null);
   const [chatThreads, setChatThreads] = useState({});
@@ -2231,7 +2223,7 @@ export default function RopelinApp() {
                   {loggedIn && (
                     <button onClick={() => { setShowMoreMenu(false); setShowSettings(true); }}><Settings size={15} /> Ajustes</button>
                   )}
-                  <button onClick={() => { setShowMoreMenu(false); setShowLeague(true); }}><Trophy size={15} /> Liga</button>
+                  <button onClick={() => { setShowMoreMenu(false); openLeague(); }}><Trophy size={15} /> Liga</button>
                   {isModerator && (
                     <button onClick={() => { setShowMoreMenu(false); openAdminPanel(); }}><ShieldCheck size={15} /> Admin</button>
                   )}
@@ -3843,8 +3835,12 @@ export default function RopelinApp() {
             <p className="auth-subtitle" style={{ marginBottom: 18 }}>Gana puntos vendiendo y recibiendo buenas valoraciones</p>
 
             <p className="profile-section-title">Ranking esta semana</p>
+            {leagueLoading && <p className="empty-tab">Cargando ranking...</p>}
+            {!leagueLoading && leaderboard.length === 0 && (
+              <p className="empty-tab">Todavía no hay suficientes ventas o reseñas para formar un ranking. ¡Sé el primero en aparecer aquí!</p>
+            )}
             <div className="leaderboard">
-              {LEADERBOARD.map((u) => {
+              {leaderboard.map((u) => {
                 const benefit = leagueBenefit(u.rank);
                 return (
                   <div

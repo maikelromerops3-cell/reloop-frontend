@@ -236,6 +236,12 @@ export async function fetchMyFollowing() {
   return res.json();
 }
 
+export async function fetchLeague() {
+  const res = await fetch(`${API_URL}/users/league`);
+  if (!res.ok) throw new Error("No se pudo cargar el ranking");
+  return res.json();
+}
+
 export async function followUser(username) {
   const res = await fetch(`${API_URL}/users/${username}/follow`, {
     method: "POST",
