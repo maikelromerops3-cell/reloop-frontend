@@ -11,7 +11,7 @@ import {
   fetchTransactions, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
-  fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer,
+  fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer, markItemSold,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
@@ -397,6 +397,18 @@ export default function RopelinApp() {
       await completeInPerson(transactionId);
       toast.success("Entrega en persona confirmada");
       loadOrders();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function handleMarkSold(itemId) {
+    if (!window.confirm("¿Marcar este artículo como vendido? Ya no aparecerá disponible en la web.")) return;
+    try {
+      const updated = await markItemSold(itemId);
+      setOpenItem((prev) => prev ? { ...prev, status: updated.status } : prev);
+      setAllItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, status: updated.status } : i)));
+      toast.success("Marcado como vendido");
     } catch (err) {
       toast.error(err.message);
     }
@@ -2127,7 +2139,8 @@ export default function RopelinApp() {
         .answer-form input, .ask-form input { flex: 1; border: 1px solid var(--input-border); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; background: var(--bg); color: var(--text); font-family: inherit; }
         .answer-form button, .ask-form button { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); border: none; border-radius: 10px; width: 34px; display: flex; align-items: center; justify-content: center; color: var(--bg); cursor: pointer; }
         .answer-form button:disabled, .ask-form button:disabled { opacity: 0.6; }
-        .detail-actions { display: flex; gap: 10px; }
+        .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .mark-sold-btn { flex-basis: 100%; }
         .detail-actions .chat-btn { flex: 1; margin: 0; }
         .buy-btn { flex: 1; border: none; border-radius: 14px; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); font-weight: 700; font-size: 13px; cursor: pointer; }
         .chat-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: 1px solid var(--input-border); border-radius: 14px; background: transparent; color: var(--text); padding: 12px; font-weight: 600; font-size: 13px; cursor: pointer; }
@@ -2610,10 +2623,15 @@ export default function RopelinApp() {
               {openItem.seller === username ? (
                 <>
                   <button className="chat-btn" onClick={() => { startEdit(openItem); }}><Pencil size={15} /> Editar</button>
-                  {openItem.featured ? (
+                  {openItem.status === "sold" ? (
+                    <button className="buy-btn" disabled style={{ opacity: 0.6 }}><CheckCircle size={15} /> Vendido</button>
+                  ) : openItem.featured ? (
                     <button className="buy-btn" disabled style={{ opacity: 0.6 }}><TrendingUp size={15} /> Ya destacado</button>
                   ) : (
                     <button className="offer-btn" onClick={() => handleBoost(openItem.id)}><TrendingUp size={15} /> {`Destacar por ${platformSettings.boostPrice}€`}</button>
+                  )}
+                  {openItem.status !== "sold" && (
+                    <button className="chat-btn mark-sold-btn" onClick={() => handleMarkSold(openItem.id)}><CheckCircle size={15} /> Marcar como vendido</button>
                   )}
                 </>
               ) : (

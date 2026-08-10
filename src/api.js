@@ -220,6 +220,15 @@ export async function deleteItemQuestion(itemId, questionId) {
   return res.json();
 }
 
+export async function markItemSold(itemId) {
+  const res = await fetch(`${API_URL}/items/${itemId}/mark-sold`, {
+    method: "PATCH",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo marcar como vendido");
+  return res.json();
+}
+
 export async function respondToOffer(itemId, messageId, action, counterAmount) {
   const res = await fetch(`${API_URL}/messages/${itemId}/offer/${messageId}/respond`, {
     method: "POST",
