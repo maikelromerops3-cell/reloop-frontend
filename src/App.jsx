@@ -288,6 +288,7 @@ export default function RopelinApp() {
   const [showAuth, setShowAuth] = useState(false);
   const [openItem, setOpenItem] = useState(null);
   const [itemQuestions, setItemQuestions] = useState([]);
+  const [sellerReviews, setSellerReviews] = useState(null);
   const [newQuestionText, setNewQuestionText] = useState("");
   const [answerDrafts, setAnswerDrafts] = useState({});
   const [sendingQuestion, setSendingQuestion] = useState(false);
@@ -668,6 +669,12 @@ export default function RopelinApp() {
   useEffect(() => {
     if (!openItem) { setItemQuestions([]); return; }
     fetchItemQuestions(openItem.id).then(setItemQuestions).catch(() => {});
+  }, [openItem?.id]);
+
+  // Carga las reseñas del vendedor del artículo abierto
+  useEffect(() => {
+    if (!openItem) { setSellerReviews(null); return; }
+    fetchReviews(openItem.seller).then(setSellerReviews).catch(() => {});
   }, [openItem?.id]);
 
   async function handleAskQuestion(e) {
@@ -1986,7 +1993,7 @@ export default function RopelinApp() {
         .legal-page .legal-text { max-height: none; }
         .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 0; margin-bottom: 16px; font-family: inherit; }
         .back-btn:hover { color: var(--text); }
-        .item-page-grid { display: flex; gap: 40px; align-items: flex-start; }
+        .item-page-grid { display: flex; gap: 40px; align-items: flex-start; justify-content: center; }
         .item-page-gallery { flex: 1.1; min-width: 0; max-width: 620px; }
         .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 20px auto 0; max-width: 700px; font-size: 12.5px; color: var(--body); line-height: 1.5; }
         .community-impact svg { flex-shrink: 0; }
@@ -2037,9 +2044,9 @@ export default function RopelinApp() {
         }
         .related-full { margin-top: 30px; }
         .related-full .mini-row .mini-card { flex: 0 0 180px; }
-        .item-page-info { flex: 1; min-width: 0; max-width: 440px; }
+        .item-page-info { flex: 1; min-width: 0; max-width: 480px; }
         @media (min-width: 1500px) {
-          .item-page-info { max-width: 500px; }
+          .item-page-info { max-width: 560px; }
         }
         @media (min-width: 781px) {
           .item-page-info { background: var(--card-alt); border: 1px solid #24242a; border-radius: 22px; padding: 26px 28px; }
@@ -2081,6 +2088,8 @@ export default function RopelinApp() {
         .shipping-box { display: flex; gap: 10px; align-items: flex-start; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-bottom: 18px; }
         .shipping-title { font-size: 12px; font-weight: 700; margin: 0 0 3px; color: var(--text); }
         .shipping-sub { font-size: 11px; color: var(--sub); margin: 0; line-height: 1.4; }
+        .seller-reviews-box { margin-bottom: 18px; }
+        .seller-reviews-more { display: block; margin-top: 8px; }
         .questions-box { margin-bottom: 18px; }
         .questions-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--text); margin: 0 0 10px; }
         .questions-empty { font-size: 12px; color: var(--faint); margin: 0 0 10px; }
@@ -2551,6 +2560,31 @@ export default function RopelinApp() {
                 <p className="shipping-sub">Por correo, con etiqueta de envío (~{platformSettings.shippingFee}€) o en mano si quedáis cerca — lo acordáis por chat</p>
               </div>
             </div>
+
+            {sellerReviews && sellerReviews.reviews.length > 0 && (
+              <div className="seller-reviews-box">
+                <p className="detail-section-label">Reseñas de @{openItem.seller} ({sellerReviews.total})</p>
+                <div className="reviews-list">
+                  {sellerReviews.reviews.slice(0, 3).map((r) => (
+                    <div key={r.id} className="review-row">
+                      <div className="review-row-top">
+                        <span className="review-author">@{r.authorUsername}</span>
+                        <span className="review-stars">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} size={11} fill={i < r.rating ? "#FFC24D" : "none"} color="#FFC24D" />
+                          ))}
+                        </span>
+                      </div>
+                      {r.comment && <p className="review-comment">{r.comment}</p>}
+                      <span className="review-date">{new Date(r.createdAt).toLocaleDateString("es-ES")}</span>
+                    </div>
+                  ))}
+                </div>
+                {sellerReviews.total > 3 && (
+                  <button className="about-block-link seller-reviews-more" onClick={() => openProfile(openItem.seller)}>Ver las {sellerReviews.total} reseñas →</button>
+                )}
+              </div>
+            )}
 
             <div className="detail-actions">
               {openItem.seller === username ? (
