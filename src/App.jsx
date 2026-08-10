@@ -8,7 +8,7 @@ import {
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
-  fetchTransactions, createShipmentLabel, confirmReceived, submitReview, fetchReviews,
+  fetchTransactions, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
   fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer,
@@ -260,6 +260,10 @@ export default function RopelinApp() {
   }
 
   async function openLeague() {
+    setShowLegal(null);
+    setOpenItem(null);
+    setShowPost(false);
+    setShowHelpCenter(false);
     setShowLeague(true);
     setLeagueLoading(true);
     try {
@@ -388,6 +392,16 @@ export default function RopelinApp() {
     }
   }
 
+  async function handleCompleteInPerson(transactionId) {
+    try {
+      await completeInPerson(transactionId);
+      toast.success("Entrega en persona confirmada");
+      loadOrders();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
   async function handleSubmitReview(e) {
     e.preventDefault();
     try {
@@ -454,12 +468,13 @@ export default function RopelinApp() {
   // En escritorio, cuando se muestra el detalle de un artículo, el formulario de publicar, o Quiénes somos/Novedades como página, se oculta el feed de detrás (en vez de quedar apilado debajo)
   const hidesFeedOnDesktop = numCols >= 3 && openItem;
   // En Vender, Novedades, Quiénes somos, el apartado legal y la Ayuda se ocultan las tarjetas de artículos, pero el bloque de impacto y el boletín se quedan visibles
-  const hidesFeedCardsOnDesktop = numCols >= 3 && (showPost || legalPageOpen || showHelpCenter);
+  const hidesFeedCardsOnDesktop = numCols >= 3 && (showPost || legalPageOpen || showHelpCenter || showLeague);
   const anyModalOpen = !!(
     (openItem && numCols < 3) || showAuth || showProfile || showChat ||
     (showLegal && !(numCols >= 3 && legalPageOpen)) ||
     (showHelpCenter && numCols < 3) ||
-    showSettings || showOrders || showFavorites || showLeague || showAdminPanel || cropperState
+    (showLeague && numCols < 3) ||
+    showSettings || showOrders || showFavorites || showAdminPanel || cropperState
   );
   useEffect(() => {
     if (anyModalOpen) {
@@ -622,6 +637,7 @@ export default function RopelinApp() {
     setShowLegal(null);
     setShowPost(false);
     setShowHelpCenter(false);
+    setShowLeague(false);
     setOpenItem(item);
     setGalleryIndex(0);
     navigate(`/item/${item.id}`);
@@ -632,6 +648,7 @@ export default function RopelinApp() {
     setShowLegal(null);
     setOpenItem(null);
     setShowHelpCenter(false);
+    setShowLeague(false);
     setEditingItem(null);
     setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] });
     setShowPost(true);
@@ -642,6 +659,7 @@ export default function RopelinApp() {
     setShowPost(false);
     setOpenItem(null);
     setShowHelpCenter(false);
+    setShowLeague(false);
     setShowLegal(type);
   }
 
@@ -1010,6 +1028,7 @@ export default function RopelinApp() {
     setShowLegal(null);
     setOpenItem(null);
     setShowHelpCenter(false);
+    setShowLeague(false);
     setEditingItem(item);
     setForm({ title: item.title, category: item.category, size: item.size || "", isShoe: !!(item.size && SHOE_SIZES.includes(item.size)), price: String(item.price), description: item.description || "", condition: item.condition, images: item.images || [] });
     setShowProfile(false);
@@ -1271,6 +1290,7 @@ export default function RopelinApp() {
     setShowLegal(null);
     setOpenItem(null);
     setShowPost(false);
+    setShowLeague(false);
     setShowHelpCenter(true);
     setHelpTab("faq");
     if (loggedIn) {
@@ -1730,6 +1750,12 @@ export default function RopelinApp() {
         .admin-icon-action:hover { background: var(--input-border); color: var(--text); }
         .admin-icon-action.danger:hover { background: #FF4D6D22; color: #FF4D6D; }
         .league-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .league-explainer { background: var(--card-alt); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; margin-bottom: 20px; }
+        .league-explainer-title { font-size: 13px; font-weight: 700; color: var(--text); margin: 0 0 8px; }
+        .league-explainer ul { margin: 0 0 10px; padding-left: 18px; }
+        .league-explainer li { font-size: 12.5px; color: var(--body); line-height: 1.6; }
+        .league-explainer li strong { color: #FFC24D; }
+        .league-explainer-note { font-size: 11.5px; color: var(--faint); margin: 0; line-height: 1.5; }
         .leaderboard { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; max-height: 360px; overflow-y: auto; padding-right: 4px; }
         .lb-row { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; }
         .lb-row.first { border-color: #FFC24D55; background: #FFC24D0d; }
@@ -1784,7 +1810,9 @@ export default function RopelinApp() {
         .order-step.done { color: #4DE1C1; }
         .order-step-line { flex: 1; height: 2px; background: var(--border); margin: 0 4px 14px; }
         .order-step-line.done { background: #4DE1C1; }
-        .order-action-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border: none; border-radius: 12px; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); padding: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
+        .order-action-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border: none; border-radius: 12px; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); padding: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; margin-top: 6px; }
+        .order-action-btn.secondary { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
+        .order-delivery-tag { font-size: 12px; font-weight: 600; color: var(--body); margin: 6px 0; }
         .order-hint { font-size: 11px; color: var(--faint); margin: 0 0 8px; }
         .dispute-link { font-size: 11px; color: var(--faint); text-decoration: underline; cursor: pointer; margin: 8px 0 0; text-align: center; }
         .dispute-link:hover { color: #FF4D6D; }
@@ -2634,6 +2662,72 @@ export default function RopelinApp() {
               <button className="close-btn dark-close-left" onClick={closeItemView}><X size={14} /></button>
               {galleryEl}
               <div className="detail-body">{infoEl}{relatedEl}</div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {showLeague && (() => {
+        const leagueContentEl = (
+          <>
+            <div className="league-header">
+              <Trophy size={20} color="#FFC24D" />
+              <p className="auth-title" style={{ margin: 0 }}>Liga de vendedores</p>
+            </div>
+            <p className="auth-subtitle" style={{ marginBottom: 18 }}>Gana puntos vendiendo y recibiendo buenas valoraciones</p>
+
+            <div className="league-explainer">
+              <p className="league-explainer-title">¿Cómo funciona el ranking?</p>
+              <ul>
+                <li><strong>+100 puntos</strong> por cada venta completada</li>
+                <li><strong>+15 puntos</strong> por cada reseña que recibas</li>
+                <li>Un pequeño extra según tu nota media de valoraciones</li>
+              </ul>
+              <p className="league-explainer-note">Es un ranking global de toda la plataforma, calculado en tiempo real — no hace falta hacer nada especial, solo vender bien y con buen trato.</p>
+            </div>
+
+            <p className="profile-section-title">Ranking esta semana</p>
+            {leagueLoading && <p className="empty-tab">Cargando ranking...</p>}
+            {!leagueLoading && leaderboard.length === 0 && (
+              <p className="empty-tab">Todavía no hay suficientes ventas o reseñas para formar un ranking. ¡Sé el primero en aparecer aquí!</p>
+            )}
+            <div className="leaderboard">
+              {leaderboard.map((u) => {
+                const benefit = leagueBenefit(u.rank);
+                return (
+                  <div
+                    key={u.username}
+                    className={"lb-row" + (u.rank === 1 ? " first" : "")}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => { setShowLeague(false); openProfile(u.username); }}
+                  >
+                    <span className="lb-rank">#{u.rank}</span>
+                    <div className="mini-avatar" style={{ background: PALETTE[u.rank % PALETTE.length] }}>{u.username[0].toUpperCase()}</div>
+                    <div className="lb-info">
+                      <p className="lb-name">@{u.username}</p>
+                      <p className="lb-city"><MapPin size={10} /> {u.city}</p>
+                    </div>
+                    <div className="lb-right">
+                      <span className="lb-points">{u.points} pts</span>
+                      <span className={"lb-benefit " + benefit.className}>{benefit.label}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        );
+
+        return numCols >= 3 ? (
+          <div className="legal-page">
+            <button className="back-btn" onClick={() => setShowLeague(false)}><ArrowLeft size={16} /> Volver</button>
+            {leagueContentEl}
+          </div>
+        ) : (
+          <div className="overlay" onClick={() => setShowLeague(false)}>
+            <div className="modal league-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="close-btn" onClick={() => setShowLeague(false)}><X size={14} /></button>
+              {leagueContentEl}
             </div>
           </div>
         );
@@ -3544,8 +3638,13 @@ export default function RopelinApp() {
                     {tx.shipment && tx.shipment.trackingCode && (
                       <p className="order-hint">Nº de seguimiento: {tx.shipment.trackingCode}</p>
                     )}
-                    {!tx.shipment && (
-                      <p className="order-hint">Esperando a que @{tx.seller.username} genere el envío...</p>
+                    {!tx.shipment && tx.status === "paid" && (
+                      <>
+                        <p className="order-hint">Esperando a que @{tx.seller.username} genere el envío, o quedad en persona</p>
+                        <button className="order-action-btn secondary" onClick={() => handleCompleteInPerson(tx.id)}>
+                          Ya lo he recibido en persona
+                        </button>
+                      </>
                     )}
                     {tx.shipment && tx.status !== "completed" && tx.status !== "disputed" && (
                       <button className="order-action-btn" onClick={() => handleConfirmReceived(tx.id)}>
@@ -3553,9 +3652,12 @@ export default function RopelinApp() {
                       </button>
                     )}
                     {tx.status === "completed" && (
-                      <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.seller.username })}>
-                        <Star size={13} /> Valorar a @{tx.seller.username}
-                      </button>
+                      <>
+                        <p className="order-delivery-tag">{tx.deliveryMethod === "in_person" ? "📍 Entregado en persona" : "📦 Entregado por correo"}</p>
+                        <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.seller.username })}>
+                          <Star size={13} /> Valorar a @{tx.seller.username}
+                        </button>
+                      </>
                     )}
                     {tx.status === "disputed" && (
                       <p className="order-hint" style={{ color: "#FF4D6D" }}>Reembolso solicitado, en revisión.</p>
@@ -3587,17 +3689,23 @@ export default function RopelinApp() {
                     </div>
 
                     {!tx.shipment && tx.status === "paid" && (
-                      <button className="order-action-btn" onClick={() => handleGenerateLabel(tx.id)}>
-                        <Truck size={13} /> Generar etiqueta de envío
-                      </button>
+                      <>
+                        <button className="order-action-btn" onClick={() => handleGenerateLabel(tx.id)}>
+                          <Truck size={13} /> Generar etiqueta de envío
+                        </button>
+                        <p className="order-hint">O si quedáis en persona, que @{tx.buyer.username} lo confirme desde su lado</p>
+                      </>
                     )}
                     {tx.shipment && tx.shipment.trackingCode && (
                       <p className="order-hint">Nº de seguimiento: {tx.shipment.trackingCode}</p>
                     )}
                     {tx.status === "completed" && (
-                      <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.buyer.username })}>
-                        <Star size={13} /> Valorar a @{tx.buyer.username}
-                      </button>
+                      <>
+                        <p className="order-delivery-tag">{tx.deliveryMethod === "in_person" ? "📍 Entregado en persona" : "📦 Entregado por correo"}</p>
+                        <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.buyer.username })}>
+                          <Star size={13} /> Valorar a @{tx.buyer.username}
+                        </button>
+                      </>
                     )}
                   </div>
                 ))}
@@ -3824,48 +3932,6 @@ export default function RopelinApp() {
         </div>
       )}
 
-      {showLeague && (
-        <div className="overlay" onClick={() => setShowLeague(false)}>
-          <div className="modal league-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowLeague(false)}><X size={14} /></button>
-            <div className="league-header">
-              <Trophy size={20} color="#FFC24D" />
-              <p className="auth-title" style={{ margin: 0 }}>Liga de vendedores</p>
-            </div>
-            <p className="auth-subtitle" style={{ marginBottom: 18 }}>Gana puntos vendiendo y recibiendo buenas valoraciones</p>
-
-            <p className="profile-section-title">Ranking esta semana</p>
-            {leagueLoading && <p className="empty-tab">Cargando ranking...</p>}
-            {!leagueLoading && leaderboard.length === 0 && (
-              <p className="empty-tab">Todavía no hay suficientes ventas o reseñas para formar un ranking. ¡Sé el primero en aparecer aquí!</p>
-            )}
-            <div className="leaderboard">
-              {leaderboard.map((u) => {
-                const benefit = leagueBenefit(u.rank);
-                return (
-                  <div
-                    key={u.username}
-                    className={"lb-row" + (u.rank === 1 ? " first" : "")}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => { setShowLeague(false); openProfile(u.username); }}
-                  >
-                    <span className="lb-rank">#{u.rank}</span>
-                    <div className="mini-avatar" style={{ background: PALETTE[u.rank % PALETTE.length] }}>{u.username[0].toUpperCase()}</div>
-                    <div className="lb-info">
-                      <p className="lb-name">@{u.username}</p>
-                      <p className="lb-city"><MapPin size={10} /> {u.city}</p>
-                    </div>
-                    <div className="lb-right">
-                      <span className="lb-points">{u.points} pts</span>
-                      <span className={"lb-benefit " + benefit.className}>{benefit.label}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {showAdminPanel && (
         <div className="overlay" onClick={() => setShowAdminPanel(false)}>

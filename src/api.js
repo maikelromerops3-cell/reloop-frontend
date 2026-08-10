@@ -330,6 +330,15 @@ export async function confirmReceived(transactionId) {
   return res.json();
 }
 
+export async function completeInPerson(transactionId) {
+  const res = await fetch(`${API_URL}/transactions/${transactionId}/complete-in-person`, {
+    method: "PATCH",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo confirmar la entrega en persona");
+  return res.json();
+}
+
 export async function submitReview(targetUsername, rating, comment) {
   const res = await fetch(`${API_URL}/reviews`, {
     method: "POST",
