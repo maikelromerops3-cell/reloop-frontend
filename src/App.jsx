@@ -2932,6 +2932,12 @@ export default function RopelinApp() {
           <>
             {showLegal === "updates" && (() => {
               const AGOSTO = [
+                { Icon: Sun, type: "Nuevo", text: "Modo claro y oscuro, con el botón en la cabecera" },
+                { Icon: HandCoins, type: "Nuevo", text: "Ofertas negociables: acepta, rechaza o haz una contraoferta directamente en el chat" },
+                { Icon: CheckCircle, type: "Nuevo", text: "Marcar un artículo como vendido aunque la venta se haya hecho fuera de la web" },
+                { Icon: Trophy, type: "Mejora", text: "Liga de vendedores con ranking real, calculado por ventas y reseñas" },
+                { Icon: Star, type: "Nuevo", text: "Reseñas del vendedor visibles directamente en el detalle de cada artículo" },
+                { Icon: CheckCircle, type: "Nuevo", text: "Verificación de teléfono por SMS, para dar más confianza al comprar y vender" },
                 { Icon: Camera, type: "Nuevo", text: "Búsqueda por foto: haz una foto y te buscamos artículos parecidos" },
                 { Icon: Tag, type: "Nuevo", text: "Nuevas categorías: Vehículos, Libros y música, Belleza, Bebé e infantil, Jardín y herramientas, Instrumentos musicales" },
                 { Icon: UserPlus, type: "Nuevo", text: "Ahora puedes seguir a otros vendedores y te avisamos cuando publiquen algo nuevo" },
