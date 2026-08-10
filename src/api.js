@@ -674,3 +674,25 @@ export async function disputeTransaction(transactionId, reason) {
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo abrir la disputa");
   return res.json();
 }
+
+// --- Verificación de teléfono ---
+
+export async function sendPhoneCode(phone) {
+  const res = await fetch(`${API_URL}/auth/phone/send-code`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ phone }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar el código");
+  return res.json();
+}
+
+export async function verifyPhoneCode(code) {
+  const res = await fetch(`${API_URL}/auth/phone/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ code }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo verificar el código");
+  return res.json();
+}

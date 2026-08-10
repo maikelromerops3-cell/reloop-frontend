@@ -9,7 +9,7 @@ import {
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
-  fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount,
+  fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount, sendPhoneCode, verifyPhoneCode,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
   fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer, markItemSold, notifySaleBuyer, fetchItemConversations,
   forgotPassword, resetPassword, verifyEmail, resendVerification,
@@ -117,6 +117,7 @@ function normalizeItem(raw) {
     ...raw,
     price: Number(raw.price),
     seller: raw.seller?.username || raw.seller || raw.sellerId,
+    sellerPhoneVerified: raw.seller?.phoneVerified || false,
     photo: raw.images && raw.images.length ? raw.images[0] : `https://picsum.photos/seed/${raw.id}/500/500`,
     minutesAgo,
     city: raw.seller?.city || null,
@@ -212,6 +213,11 @@ export default function RopelinApp() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [myPhoneVerified, setMyPhoneVerified] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneCodeInput, setPhoneCodeInput] = useState("");
+  const [phoneStep, setPhoneStep] = useState("idle"); // "idle" | "code_sent"
+  const [phoneBusy, setPhoneBusy] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -339,6 +345,10 @@ export default function RopelinApp() {
   useEffect(() => {
     if (showSettings && loggedIn) {
       fetchStripeStatus().then(setStripeStatus).catch(() => {});
+      fetchProfile(username).then((data) => setMyPhoneVerified(!!data.phoneVerified)).catch(() => {});
+      setPhoneStep("idle");
+      setPhoneInput("");
+      setPhoneCodeInput("");
     }
   }, [showSettings, loggedIn]);
 
@@ -468,6 +478,7 @@ export default function RopelinApp() {
         if (data.avatarUrl) { setMyAvatarUrl(data.avatarUrl); localStorage.setItem("reloop_avatar", data.avatarUrl); }
         if (data.coverUrl) { setMyCoverUrl(data.coverUrl); localStorage.setItem("reloop_cover", data.coverUrl); }
         if (data.bio) setMyBio(data.bio);
+        setMyPhoneVerified(!!data.phoneVerified);
       }).catch(() => {});
       return;
     }
@@ -1148,6 +1159,35 @@ export default function RopelinApp() {
       window.location.href = url; // redirige a la pasarela de pago de Stripe
     } catch (err) {
       setCheckoutError(err.message);
+    }
+  }
+
+  async function handleSendPhoneCode() {
+    if (!phoneInput.trim()) { toast.error("Escribe tu número de teléfono"); return; }
+    setPhoneBusy(true);
+    try {
+      await sendPhoneCode(phoneInput.trim());
+      toast.success("Código enviado por SMS");
+      setPhoneStep("code_sent");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setPhoneBusy(false);
+    }
+  }
+
+  async function handleVerifyPhoneCode() {
+    if (!phoneCodeInput.trim()) { toast.error("Escribe el código que te ha llegado"); return; }
+    setPhoneBusy(true);
+    try {
+      await verifyPhoneCode(phoneCodeInput.trim());
+      toast.success("¡Teléfono verificado!");
+      setMyPhoneVerified(true);
+      setPhoneStep("idle");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setPhoneBusy(false);
     }
   }
 
@@ -2583,7 +2623,7 @@ export default function RopelinApp() {
                 </p>
                 <div className="seller-mini-verify">
                   <span className="verify-chip done"><CheckCircle size={10} /> Email</span>
-                  <span className="verify-chip done"><CheckCircle size={10} /> Teléfono</span>
+                  {openItem.sellerPhoneVerified && <span className="verify-chip done"><CheckCircle size={10} /> Teléfono</span>}
                 </div>
               </div>
               <button className={"follow-btn" + (following.has(openItem.seller) ? " on" : "")} onClick={() => toggleFollow(openItem.seller)}>
@@ -3520,8 +3560,9 @@ export default function RopelinApp() {
                 <div className="profile-details">
                   <div className="verify-row">
                     <span className="verify-chip done"><CheckCircle size={11} /> Email</span>
-                    <span className="verify-chip done"><CheckCircle size={11} /> Teléfono</span>
-                    <span className="verify-chip"><CheckCircle size={11} /> DNI</span>
+                    {(isOwnProfile ? myPhoneVerified : otherProfileData?.phoneVerified) && (
+                      <span className="verify-chip done"><CheckCircle size={11} /> Teléfono</span>
+                    )}
                   </div>
 
                   {(isOwnProfile ? myLocation?.city : otherProfileData?.city) && (
@@ -3938,6 +3979,34 @@ export default function RopelinApp() {
               <button className="btn ghost" onClick={detectMyLocation} disabled={locatingMe}>
                 {locatingMe ? "Detectando..." : myLocation ? "Actualizar" : "Detectar"}
               </button>
+            </div>
+
+            <div className="stripe-box">
+              <p className="stripe-title"><CheckCircle size={14} /> Verificar teléfono</p>
+              {myPhoneVerified ? (
+                <p className="stripe-status ok"><CheckCircle size={13} /> Teléfono verificado</p>
+              ) : phoneStep === "idle" ? (
+                <>
+                  <p className="stripe-status">Verifica tu número para dar más confianza al comprar y vender.</p>
+                  <div className="input-icon" style={{ marginBottom: 10 }}>
+                    <input placeholder="+34 600 000 000" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} />
+                  </div>
+                  <button className="stripe-connect-btn" onClick={handleSendPhoneCode} disabled={phoneBusy}>
+                    {phoneBusy ? "Enviando..." : "Enviar código por SMS"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="stripe-status">Te hemos mandado un código de 6 dígitos a {phoneInput}.</p>
+                  <div className="input-icon" style={{ marginBottom: 10 }}>
+                    <input placeholder="123456" value={phoneCodeInput} onChange={(e) => setPhoneCodeInput(e.target.value)} maxLength={6} />
+                  </div>
+                  <button className="stripe-connect-btn" onClick={handleVerifyPhoneCode} disabled={phoneBusy}>
+                    {phoneBusy ? "Comprobando..." : "Verificar código"}
+                  </button>
+                  <button className="dispute-link" style={{ display: "block", marginTop: 8 }} onClick={() => setPhoneStep("idle")}>¿No te ha llegado? Volver a intentarlo</button>
+                </>
+              )}
             </div>
 
             <div className="stripe-box">
