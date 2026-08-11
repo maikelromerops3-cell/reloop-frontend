@@ -2290,7 +2290,7 @@ export default function RopelinApp() {
         .price-input { max-width: 140px; }
         .euro-prefix { color: var(--faint); font-weight: 700; font-size: 14px; }
         .post-preview-card { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--bg); margin-top: 18px; }
-        .post-preview-media { height: 140px; background: var(--card); display: flex; align-items: center; justify-content: center; color: var(--faint); background-size: cover; background-position: center; }
+        .post-preview-media { height: 140px; background: var(--card); display: flex; align-items: center; justify-content: center; color: var(--faint); background-size: contain; background-repeat: no-repeat; background-position: center; }
         .post-preview-body { padding: 10px 12px; }
         .post-preview-price { color: #4DE1C1; font-weight: 700; font-size: 14px; margin: 0; }
         .post-preview-title { font-size: 12.5px; color: var(--body); margin: 3px 0 0; }
