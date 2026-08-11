@@ -340,13 +340,15 @@ export default function RopelinApp() {
   }, []);
 
   useEffect(() => {
-    if (showSettings && loggedIn) {
+    if ((showSettings || showPost || showProfile) && loggedIn) {
       fetchStripeStatus().then(setStripeStatus).catch(() => {});
+    }
+    if (showSettings && loggedIn) {
       fetchProfile(username).then((data) => {
         setMyEmailVerified(data.emailVerified !== false);
       }).catch(() => {});
     }
-  }, [showSettings, loggedIn]);
+  }, [showSettings, showPost, loggedIn]);
 
   useEffect(() => {
     if (showNotifs && loggedIn) {
@@ -1458,6 +1460,9 @@ export default function RopelinApp() {
       toast.success(`¡Bienvenido, @${data.user.username}!`);
       if (data.needsCity) {
         toast("Añade tu ciudad desde tu perfil para ver la distancia a otros artículos", { icon: "📍", duration: 6000 });
+        setTimeout(() => {
+          toast("Conecta Stripe desde tu perfil cuando quieras vender, para poder cobrar", { icon: "💳", duration: 6000 });
+        }, 1800);
       }
     } catch (err) {
       toast.error(err.message?.includes("pattern") ? "No se pudo completar el inicio de sesión con Google. Inténtalo de nuevo." : err.message);
@@ -1489,6 +1494,11 @@ export default function RopelinApp() {
       setShowAuth(false);
       setAuthForm({ email: "", password: "", username: "", city: "" });
       toast.success(authMode === "login" ? `¡Bienvenido, @${result.username}!` : "¡Cuenta creada!");
+      if (authMode === "register") {
+        setTimeout(() => {
+          toast("Conecta Stripe desde tu perfil cuando quieras vender, para poder cobrar", { icon: "💳", duration: 6000 });
+        }, 1200);
+      }
     } catch (err) {
       setAuthError(err.message);
     }
@@ -1853,6 +1863,10 @@ export default function RopelinApp() {
         .location-current { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin: 0; }
         .location-hint { font-size: 11px; color: var(--sub); margin: 4px 0 0; }
         .stripe-box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 16px 0; }
+        .stripe-post-reminder { display: flex; align-items: center; gap: 12px; background: #FFC24D14; border: 1px solid #FFC24D33; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; flex-wrap: wrap; }
+        .stripe-post-reminder-title { font-size: 13px; font-weight: 700; color: #FFC24D; margin: 0 0 3px; }
+        .stripe-post-reminder-text { font-size: 12px; color: var(--body); margin: 0; line-height: 1.4; }
+        .stripe-post-reminder button { flex-shrink: 0; margin-left: auto; background: #FFC24D; color: var(--bg); border: none; border-radius: 10px; padding: 9px 16px; font-weight: 700; font-size: 12.5px; cursor: pointer; font-family: inherit; }
         .email-unverified-banner { background: #FFC24D14; border: 1px solid #FFC24D33; border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; }
         .email-unverified-banner p { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #FFC24D; font-weight: 600; margin: 0 0 8px; }
         .email-unverified-banner button { width: 100%; border: none; border-radius: 10px; background: #FFC24D; color: var(--bg); padding: 9px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
@@ -3204,11 +3218,23 @@ export default function RopelinApp() {
           </div>
         );
 
+        const stripeReminderEl = loggedIn && stripeStatus && !stripeStatus.onboarded && (
+          <div className="stripe-post-reminder">
+            <HandCoins size={18} color="#FFC24D" />
+            <div>
+              <p className="stripe-post-reminder-title">Conecta tu cuenta para poder cobrar</p>
+              <p className="stripe-post-reminder-text">Puedes publicar igualmente, pero necesitarás conectar Stripe antes de que alguien pueda comprarte algo.</p>
+            </div>
+            <button onClick={handleConnectStripe}>Conectar ahora</button>
+          </div>
+        );
+
         return numCols >= 3 ? (
           <div className="post-page">
             <button className="back-btn" onClick={() => setShowPost(false)}><ArrowLeft size={16} /> Volver</button>
             <p className="auth-title">{editingItem ? "Editar prenda" : "Nueva prenda"}</p>
             <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu prenda" : "Rellena los datos y publícala en segundos"}</p>
+            {stripeReminderEl}
             {postGridEl}
           </div>
         ) : (
@@ -3221,6 +3247,7 @@ export default function RopelinApp() {
               <button className="close-btn" onClick={() => setShowPost(false)}><X size={14} /></button>
               <p className="auth-title">{editingItem ? "Editar prenda" : "Nueva prenda"}</p>
               <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu prenda" : "Rellena los datos y publícala en segundos"}</p>
+              {stripeReminderEl}
               {postGridEl}
             </div>
           </div>
@@ -3609,6 +3636,17 @@ export default function RopelinApp() {
                   </div>
                 )}
               </div>
+
+              {isOwnProfile && loggedIn && stripeStatus && !stripeStatus.onboarded && (
+                <div className="stripe-post-reminder">
+                  <HandCoins size={18} color="#FFC24D" />
+                  <div>
+                    <p className="stripe-post-reminder-title">Conecta tu cuenta para poder cobrar</p>
+                    <p className="stripe-post-reminder-text">Nadie podrá comprarte nada hasta que conectes Stripe. Solo se hace una vez.</p>
+                  </div>
+                  <button onClick={handleConnectStripe}>Conectar ahora</button>
+                </div>
+              )}
 
               <div className="tabs profile-tabs">
                 <button className={"tab" + (profileTab === "venta" ? " active" : "")} onClick={() => setProfileTab("venta")}>En venta</button>
