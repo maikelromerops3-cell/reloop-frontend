@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ropelin</string>
+    <string name="title_activity_main">Ropelin</string>
+    <string name="package_name">com.ropelin.app</string>
+    <string name="custom_url_scheme">com.ropelin.app</string>
+</resources>
