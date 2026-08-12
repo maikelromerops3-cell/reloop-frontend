@@ -282,6 +282,7 @@ export default function RopelinApp() {
     setOpenItem(null);
     setShowPost(false);
     setShowHelpCenter(false);
+    setShowProfile(false);
     setShowLeague(true);
     setLeagueLoading(true);
     try {
@@ -366,7 +367,7 @@ export default function RopelinApp() {
     if ((showSettings || showPost || showProfile) && loggedIn) {
       fetchStripeStatus().then(setStripeStatus).catch(() => {});
     }
-    if (showSettings && loggedIn) {
+    if ((showSettings || showProfile) && loggedIn) {
       fetchProfile(username).then((data) => {
         setMyEmailVerified(data.emailVerified !== false);
         setShippingStreetInput(data.shippingStreet || "");
@@ -374,7 +375,7 @@ export default function RopelinApp() {
         setShippingPhoneInput(data.shippingPhone || "");
       }).catch(() => {});
     }
-  }, [showSettings, showPost, loggedIn]);
+  }, [showSettings, showPost, showProfile, loggedIn]);
 
   useEffect(() => {
     if (loggedIn) {
@@ -513,12 +514,18 @@ export default function RopelinApp() {
   const [avatarColor] = useState(PALETTE[Math.floor(Math.random() * PALETTE.length)]);
   const [showProfile, setShowProfile] = useState(false);
   const [profileTab, setProfileTab] = useState("venta");
+  const [profileSettingsSubTab, setProfileSettingsSubTab] = useState("perfil");
   const [viewingProfile, setViewingProfile] = useState(null); // username que se está viendo (null = el tuyo)
   const [otherProfileData, setOtherProfileData] = useState(null);
   const [otherProfileLoading, setOtherProfileLoading] = useState(false);
 
   function openProfile(uname) {
     const targetUsername = uname || username;
+    setShowLegal(null);
+    setOpenItem(null);
+    setShowPost(false);
+    setShowHelpCenter(false);
+    setShowLeague(false);
     setProfileReviews(null);
     fetchReviews(targetUsername).then(setProfileReviews).catch(() => {});
 
@@ -565,9 +572,9 @@ export default function RopelinApp() {
   // En escritorio, cuando se muestra el detalle de un artículo, el formulario de publicar, o Quiénes somos/Novedades como página, se oculta el feed de detrás (en vez de quedar apilado debajo)
   const hidesFeedOnDesktop = numCols >= 3 && openItem;
   // En Vender, Novedades, Quiénes somos, el apartado legal y la Ayuda se ocultan las tarjetas de artículos, pero el bloque de impacto y el boletín se quedan visibles
-  const hidesFeedCardsOnDesktop = numCols >= 3 && (showPost || legalPageOpen || showHelpCenter || showLeague);
+  const hidesFeedCardsOnDesktop = numCols >= 3 && (showPost || legalPageOpen || showHelpCenter || showLeague || showProfile);
   const anyModalOpen = !!(
-    (openItem && numCols < 3) || showAuth || showProfile || showChat ||
+    (openItem && numCols < 3) || showAuth || (showProfile && numCols < 3) || showChat ||
     (showLegal && !(numCols >= 3 && legalPageOpen)) ||
     (showHelpCenter && numCols < 3) ||
     (showLeague && numCols < 3) ||
@@ -735,6 +742,7 @@ export default function RopelinApp() {
     setShowPost(false);
     setShowHelpCenter(false);
     setShowLeague(false);
+    setShowProfile(false);
     setOpenItem(item);
     setGalleryIndex(0);
     navigate(`/item/${item.id}`);
@@ -754,6 +762,7 @@ export default function RopelinApp() {
     setOpenItem(null);
     setShowHelpCenter(false);
     setShowLeague(false);
+    setShowProfile(false);
     setEditingItem(null);
     setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] });
     setShowPost(true);
@@ -765,6 +774,7 @@ export default function RopelinApp() {
     setOpenItem(null);
     setShowHelpCenter(false);
     setShowLeague(false);
+    setShowProfile(false);
     setShowLegal(type);
   }
 
@@ -1482,6 +1492,7 @@ export default function RopelinApp() {
     setOpenItem(null);
     setShowPost(false);
     setShowLeague(false);
+    setShowProfile(false);
     setShowHelpCenter(true);
     setHelpTab("faq");
     if (loggedIn) {
@@ -2679,6 +2690,372 @@ export default function RopelinApp() {
         </div>
       )}
 
+      {showProfile && (() => {
+        const profileUsername = viewingProfile || username;
+        const isOwnProfile = !viewingProfile;
+        const profileItems = isOwnProfile ? allItems.filter((i) => i.seller === username) : (otherProfileData?.items || []);
+        const profileSold = isOwnProfile ? soldItems : (otherProfileData?.soldItems || []);
+        const profileRating = profileReviews?.average ? profileReviews.average.toFixed(1) : null;
+        const profileContentEl = (
+          <>
+            <div className="profile-banner" style={{ background: myCoverUrl && isOwnProfile ? undefined : `linear-gradient(135deg, ${PALETTE[profileUsername.length % PALETTE.length]}, #1A1A1E)`, backgroundImage: myCoverUrl && isOwnProfile ? `url(${myCoverUrl})` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
+              <div className="banner-texture" />
+              {isOwnProfile && (
+                <>
+                  <input type="file" accept="image/*" id="cover-upload-input" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "cover"); e.target.value = ""; }} />
+                  <button className="cover-btn" onClick={() => document.getElementById("cover-upload-input").click()}><ImagePlus size={13} /> Cambiar portada</button>
+                </>
+              )}
+              <button className="share-profile-btn"><Share2 size={14} /></button>
+            </div>
+
+            {otherProfileLoading ? (
+              <div className="profile-content"><p className="empty-tab">Cargando perfil...</p></div>
+            ) : (
+            <div className="profile-content">
+              <div
+                className="profile-avatar-lg"
+                style={
+                  isOwnProfile && myAvatarUrl
+                    ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover", backgroundPosition: "center", cursor: "pointer" }
+                    : { background: PALETTE[profileUsername.length % PALETTE.length], cursor: isOwnProfile ? "pointer" : "default" }
+                }
+                onClick={() => isOwnProfile && document.getElementById("avatar-upload-input").click()}
+                role={isOwnProfile ? "button" : undefined}
+                title={isOwnProfile ? "Cambiar foto de perfil" : undefined}
+              >
+                {!(isOwnProfile && myAvatarUrl) && profileUsername[0]?.toUpperCase()}
+              </div>
+              {isOwnProfile && (
+                <input type="file" accept="image/*" id="avatar-upload-input" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "avatar"); e.target.value = ""; }} />
+              )}
+              <p className="profile-name">
+                @{profileUsername}
+                {(isOwnProfile ? myProfileExtra.badges : otherProfileData?.badges || []).length > 0 && (
+                  <span className="milestone-badges">
+                    {(isOwnProfile ? myProfileExtra.badges : otherProfileData?.badges || []).map((b) => (
+                      <span className="mstone" key={b} title={b}><Trophy size={11} /></span>
+                    ))}
+                  </span>
+                )}
+              </p>
+              <p className="profile-sub">
+                {profileRating ? <><Star size={12} fill="#FFC24D" color="#FFC24D" /> {profileRating} ({profileReviews.total})</> : "Sin valoraciones todavía"} · miembro desde 2026
+              </p>
+              {(() => {
+                const avgSaleDays = isOwnProfile ? myProfileExtra.avgSaleDays : otherProfileData?.avgSaleDays;
+                return avgSaleDays !== null && avgSaleDays !== undefined && (
+                  <p className="profile-sub" style={{ marginTop: 2 }}>
+                    <Zap size={12} /> Vende de media en {avgSaleDays} {avgSaleDays === 1 ? "día" : "días"}
+                  </p>
+                );
+              })()}
+
+              <div className="profile-quick-actions">
+                {isOwnProfile ? (
+                  <button className="edit-profile-btn" onClick={openEditProfile}>Editar perfil</button>
+                ) : (
+                  <button className={"follow-btn" + (following.has(profileUsername) ? " on" : "")} onClick={() => toggleFollow(profileUsername)}>
+                    {following.has(profileUsername) ? <UserCheck size={13} /> : <UserPlus size={13} />}
+                    {following.has(profileUsername) ? "Siguiendo" : "Seguir"}
+                  </button>
+                )}
+                <button className="details-toggle" onClick={() => setShowProfileDetails(!showProfileDetails)}>
+                  {showProfileDetails ? "Ocultar detalles" : "Ver más detalles"}
+                </button>
+              </div>
+
+              {!isOwnProfile && (
+                <button className="report-flag-btn" style={{ marginBottom: 10 }} onClick={() => setShowReportForm({ targetType: "user", reportedUsername: profileUsername })}>
+                  <FileWarning size={12} /> Denunciar a @{profileUsername}
+                </button>
+              )}
+
+              {showProfileDetails && (
+                <div className="profile-details">
+                  <div className="verify-row">
+                    <span className="verify-chip done"><CheckCircle size={11} /> Email</span>
+                  </div>
+
+                  {(isOwnProfile ? myLocation?.city : otherProfileData?.city) && (
+                    <p className="profile-city-line"><MapPin size={12} /> {isOwnProfile ? myLocation?.city : otherProfileData?.city}</p>
+                  )}
+
+                  {profileReviews && profileReviews.reviews.length > 0 && (
+                    <>
+                      <p className="profile-section-title">Reseñas ({profileReviews.total})</p>
+                      <div className="reviews-list">
+                        {profileReviews.reviews.map((r) => (
+                          <div key={r.id} className="review-row">
+                            <div className="review-row-top">
+                              <span className="review-author">@{r.authorUsername}</span>
+                              <span className="review-stars">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star key={i} size={11} fill={i < r.rating ? "#FFC24D" : "none"} color="#FFC24D" />
+                                ))}
+                              </span>
+                            </div>
+                            {r.comment && <p className="review-comment">{r.comment}</p>}
+                            <span className="review-date">{new Date(r.createdAt).toLocaleDateString("es-ES")}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {profileReviews && profileReviews.reviews.length === 0 && (
+                    <p className="empty-tab">Aún no tiene ninguna reseña.</p>
+                  )}
+                </div>
+              )}
+
+              <div className="stats-row">
+                <div className="stat-box">
+                  <Tag size={13} color="#9A9AA3" />
+                  <strong>{profileItems.length}</strong>
+                  <span>En venta</span>
+                </div>
+                <div className="stat-box">
+                  <CheckCircle size={13} color="#9A9AA3" />
+                  <strong>{profileSold.length}</strong>
+                  <span>Vendidos</span>
+                </div>
+                {isOwnProfile && (
+                  <div className="stat-box">
+                    <Heart size={13} color="#9A9AA3" />
+                    <strong>{saved.size}</strong>
+                    <span>Favoritos</span>
+                  </div>
+                )}
+              </div>
+
+              {isOwnProfile && loggedIn && stripeStatus && !stripeStatus.onboarded && (
+                <div className="stripe-post-reminder">
+                  <HandCoins size={18} color="#FFC24D" />
+                  <div>
+                    <p className="stripe-post-reminder-title">Conecta tu cuenta para poder cobrar</p>
+                    <p className="stripe-post-reminder-text">Nadie podrá comprarte nada hasta que conectes Stripe (cuenta bancaria y algún dato de identidad). Solo se hace una vez.</p>
+                  </div>
+                  <button onClick={handleConnectStripe}>Conectar ahora</button>
+                </div>
+              )}
+
+              <div className="tabs profile-tabs">
+                <button className={"tab" + (profileTab === "venta" ? " active" : "")} onClick={() => setProfileTab("venta")}>En venta</button>
+                <button className={"tab" + (profileTab === "vendidos" ? " active" : "")} onClick={() => setProfileTab("vendidos")}>Vendidos</button>
+                {isOwnProfile && (
+                  <button className={"tab" + (profileTab === "favoritos" ? " active" : "")} onClick={() => setProfileTab("favoritos")}>Favoritos</button>
+                )}
+                {isOwnProfile && (
+                  <button className={"tab" + (profileTab === "ajustes" ? " active" : "")} onClick={() => setProfileTab("ajustes")}><Settings size={13} /> Ajustes</button>
+                )}
+              </div>
+
+              {profileTab === "venta" && (
+                profileItems.length === 0
+                  ? <p className="empty-tab">{isOwnProfile ? "Aún no tienes prendas publicadas." : "Este vendedor no tiene prendas en venta ahora mismo."}</p>
+                  : <div className="mini-grid">
+                      {profileItems.map((i, idx) => (
+                        <div key={i.id} className="mini-card own-card" onClick={() => { setShowProfile(false); viewItem(i); }}>
+                          <div className="mini-swatch" style={miniSwatchStyle(i, idx)}>
+                            {i.featured && <span className="mini-featured-badge">Destacado</span>}
+                          </div>
+                          <p className="mini-title">{i.title}</p>
+                          <p className="mini-price">{i.price}€</p>
+                          {isOwnProfile && (
+                            <div className="own-actions">
+                              {!i.featured && (
+                                <button title={`Destacar por ${platformSettings.boostPrice}€`} onClick={(e) => { e.stopPropagation(); handleBoost(i.id); }}><TrendingUp size={12} /></button>
+                              )}
+                              <button onClick={(e) => { e.stopPropagation(); startEdit(i); }}><Pencil size={12} /></button>
+                              <button onClick={(e) => { e.stopPropagation(); deleteOwnItem(i.id); }}><Trash2 size={12} /></button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+              )}
+
+              {profileTab === "vendidos" && (
+                profileSold.length === 0
+                  ? <p className="empty-tab">Aún no hay ventas completadas.</p>
+                  : <div className="mini-grid">
+                      {profileSold.map((s, idx) => (
+                        <div key={s.id} className="mini-card sold">
+                          <div className="mini-swatch" style={miniSwatchStyle(s, idx)} />
+                          <p className="mini-title">{s.title}</p>
+                          <p className="mini-price">{s.price}€</p>
+                        </div>
+                      ))}
+                    </div>
+              )}
+
+              {profileTab === "favoritos" && isOwnProfile && (
+                saved.size === 0
+                  ? <p className="empty-tab">Aún no has guardado ninguna prenda.</p>
+                  : <div className="mini-grid">
+                      {allItems.filter((i) => saved.has(i.id)).map((i, idx) => (
+                        <div key={i.id} className="mini-card">
+                          <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
+                          <p className="mini-title">{i.title}</p>
+                          <p className="mini-price">{i.price}€</p>
+                        </div>
+                      ))}
+                    </div>
+              )}
+
+              {profileTab === "ajustes" && isOwnProfile && (
+                <div className="profile-settings-tab">
+                  <div className="tabs profile-tabs" style={{ marginBottom: 18 }}>
+                    <button className={"tab" + (profileSettingsSubTab === "perfil" ? " active" : "")} onClick={() => setProfileSettingsSubTab("perfil")}>Perfil</button>
+                    <button className={"tab" + (profileSettingsSubTab === "envios" ? " active" : "")} onClick={() => setProfileSettingsSubTab("envios")}>Envíos</button>
+                    <button className={"tab" + (profileSettingsSubTab === "contrasena" ? " active" : "")} onClick={() => setProfileSettingsSubTab("contrasena")}>Contraseña</button>
+                    <button className={"tab" + (profileSettingsSubTab === "pagos" ? " active" : "")} onClick={() => setProfileSettingsSubTab("pagos")}>Pagos</button>
+                  </div>
+
+                  {profileSettingsSubTab === "perfil" && (
+                    <>
+                      <button className="edit-profile-btn" style={{ marginBottom: 18 }} onClick={openEditProfile}><Pencil size={13} /> Editar foto, portada y biografía</button>
+
+                      <label>Mi ubicación</label>
+                      <div className="location-box">
+                        <div>
+                          <p className="location-current">
+                            <MapPin size={13} />
+                            {myLocation ? (myLocation.city || "Ubicación guardada") : "Sin ubicación guardada"}
+                          </p>
+                          <p className="location-hint">Se usa para mostrarte prendas cerca de ti y quedar en persona sin envío.</p>
+                        </div>
+                        <button className="btn ghost" onClick={detectMyLocation} disabled={locatingMe}>
+                          {locatingMe ? "Detectando..." : myLocation ? "Actualizar" : "Detectar"}
+                        </button>
+                      </div>
+
+                      <p className="settings-toggle-row">
+                        <span>Notificaciones de mensajes</span>
+                        <input type="checkbox" defaultChecked />
+                      </p>
+                      <p className="settings-toggle-row">
+                        <span>Notificaciones de ofertas</span>
+                        <input type="checkbox" defaultChecked />
+                      </p>
+                      <p className="settings-toggle-row">
+                        <span>Bajadas de precio en favoritos</span>
+                        <input type="checkbox" defaultChecked />
+                      </p>
+
+                      <button className="logout-btn" style={{ marginTop: 18 }} onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); setShowProfile(false); toast("Sesión cerrada"); }}>Cerrar sesión</button>
+
+                      <div className="danger-zone">
+                        <p className="danger-zone-title">Zona de peligro</p>
+                        {!showDeleteAccount ? (
+                          <button className="danger-zone-btn" onClick={() => setShowDeleteAccount(true)}>Eliminar mi cuenta</button>
+                        ) : (
+                          <div className="delete-confirm-box">
+                            <p className="delete-confirm-text">
+                              Esto es permanente. Se borrarán tus favoritos, notificaciones y artículos aún no vendidos.
+                              Para confirmar, escribe tu nombre de usuario (<strong>{username}</strong>) abajo:
+                            </p>
+                            <input
+                              className="delete-confirm-input"
+                              value={deleteConfirmText}
+                              onChange={(e) => setDeleteConfirmText(e.target.value)}
+                              placeholder={username}
+                            />
+                            <div className="delete-confirm-actions">
+                              <button className="btn ghost" onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}>Cancelar</button>
+                              <button className="danger-zone-btn" disabled={deletingAccount} onClick={handleDeleteAccount}>
+                                {deletingAccount ? "Eliminando..." : "Eliminar cuenta definitivamente"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {profileSettingsSubTab === "envios" && (
+                    <div className="stripe-box" style={{ margin: 0 }}>
+                      <p className="stripe-title"><Truck size={14} /> Dirección de envío (como vendedor)</p>
+                      <p className="stripe-status">Se usa para generar las etiquetas de envío cuando te compren algo por correo.</p>
+                      <label>Calle y número</label>
+                      <div className="input-icon"><input value={shippingStreetInput} onChange={(e) => setShippingStreetInput(e.target.value)} placeholder="Calle Ejemplo, 12, 3ºB" /></div>
+                      <label>Código postal</label>
+                      <div className="input-icon"><input value={shippingPostalInput} onChange={(e) => setShippingPostalInput(e.target.value)} placeholder="28001" /></div>
+                      <label>Teléfono de contacto</label>
+                      <div className="input-icon"><input value={shippingPhoneInput} onChange={(e) => setShippingPhoneInput(e.target.value)} placeholder="+34 600 000 000" /></div>
+                      <button className="stripe-connect-btn" onClick={handleSaveShippingAddress} disabled={savingShippingAddress}>
+                        {savingShippingAddress ? "Guardando..." : "Guardar dirección de envío"}
+                      </button>
+                    </div>
+                  )}
+
+                  {profileSettingsSubTab === "contrasena" && (
+                    <>
+                      {!myEmailVerified && (
+                        <div className="email-unverified-banner">
+                          <p><FileWarning size={14} /> Tu email todavía no está verificado</p>
+                          <button onClick={handleResendVerification} disabled={resendingVerification}>
+                            {resendingVerification ? "Enviando..." : "Reenviar correo de verificación"}
+                          </button>
+                        </div>
+                      )}
+
+                      <label>Nuevo email</label>
+                      <div className="input-icon"><Mail size={14} /><input placeholder={`Actual: ${username}`} value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)} /></div>
+                      {newEmailInput.trim() && (
+                        <div className="input-icon"><Lock size={14} /><input type="password" placeholder="Tu contraseña actual, para confirmar" value={emailChangePassword} onChange={(e) => setEmailChangePassword(e.target.value)} /></div>
+                      )}
+
+                      <label>Nueva contraseña</label>
+                      <div className="input-icon"><Lock size={14} /><input type="password" placeholder="••••••••" value={newPasswordInput} onChange={(e) => setNewPasswordInput(e.target.value)} /></div>
+                      {newPasswordInput.trim() && (
+                        <div className="input-icon"><Lock size={14} /><input type="password" placeholder="Tu contraseña actual" value={currentPasswordInput} onChange={(e) => setCurrentPasswordInput(e.target.value)} /></div>
+                      )}
+
+                      <button className="submit-btn" onClick={handleSaveAccountSettings} disabled={savingAccountSettings}>
+                        {savingAccountSettings ? "Guardando..." : "Guardar cambios"}
+                      </button>
+                    </>
+                  )}
+
+                  {profileSettingsSubTab === "pagos" && (
+                    <div className="stripe-box" style={{ margin: 0 }}>
+                      <p className="stripe-title"><HandCoins size={14} /> Cobros como vendedor</p>
+                      {stripeStatus?.onboarded ? (
+                        <p className="stripe-status ok"><CheckCircle size={13} /> Cuenta activa, ya puedes recibir pagos</p>
+                      ) : (
+                        <>
+                          <p className="stripe-status">Activa Stripe para poder cobrar tus ventas directamente en tu cuenta bancaria.</p>
+                          <p className="stripe-status-note">Te llevará a Stripe — te pedirá tu cuenta bancaria y algún dato de identidad. Es normal, lo exige la ley para poder pagarte, y solo se hace una vez.</p>
+                          <button className="stripe-connect-btn" onClick={handleConnectStripe}>Conectar con Stripe</button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            )}
+          </>
+        );
+
+        return numCols >= 3 ? (
+          <div className="legal-page">
+            <button className="back-btn" onClick={closeProfileView}><ArrowLeft size={16} /> Volver</button>
+            <div className="profile-modal detail-modal" style={{ maxWidth: "none", padding: 0, background: "none", border: "none" }}>
+              {profileContentEl}
+            </div>
+          </div>
+        ) : (
+          <div className="overlay detail-overlay" onClick={closeProfileView}>
+            <div className="modal profile-modal detail-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="close-btn dark-close" onClick={closeProfileView}><X size={14} /></button>
+              {profileContentEl}
+            </div>
+          </div>
+        );
+      })()}
+
       {openItem && (() => {
         const isDesktop = numCols >= 3;
 
@@ -3688,224 +4065,6 @@ export default function RopelinApp() {
         </div>
       )}
 
-      {showProfile && (() => {
-        const profileUsername = viewingProfile || username;
-        const isOwnProfile = !viewingProfile;
-        const profileItems = isOwnProfile ? allItems.filter((i) => i.seller === username) : (otherProfileData?.items || []);
-        const profileSold = isOwnProfile ? soldItems : (otherProfileData?.soldItems || []);
-        const profileRating = profileReviews?.average ? profileReviews.average.toFixed(1) : null;
-        return (
-        <div className="overlay detail-overlay" onClick={closeProfileView}>
-          <div className="modal profile-modal detail-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn dark-close" onClick={closeProfileView}><X size={14} /></button>
-
-            <div className="profile-banner" style={{ background: myCoverUrl && isOwnProfile ? undefined : `linear-gradient(135deg, ${PALETTE[profileUsername.length % PALETTE.length]}, #1A1A1E)`, backgroundImage: myCoverUrl && isOwnProfile ? `url(${myCoverUrl})` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
-              <div className="banner-texture" />
-              {isOwnProfile && (
-                <>
-                  <input type="file" accept="image/*" id="cover-upload-input" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "cover"); e.target.value = ""; }} />
-                  <button className="cover-btn" onClick={() => document.getElementById("cover-upload-input").click()}><ImagePlus size={13} /> Cambiar portada</button>
-                </>
-              )}
-              <button className="share-profile-btn"><Share2 size={14} /></button>
-            </div>
-
-            {otherProfileLoading ? (
-              <div className="profile-content"><p className="empty-tab">Cargando perfil...</p></div>
-            ) : (
-            <div className="profile-content">
-              <div
-                className="profile-avatar-lg"
-                style={
-                  isOwnProfile && myAvatarUrl
-                    ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover", backgroundPosition: "center", cursor: "pointer" }
-                    : { background: PALETTE[profileUsername.length % PALETTE.length], cursor: isOwnProfile ? "pointer" : "default" }
-                }
-                onClick={() => isOwnProfile && document.getElementById("avatar-upload-input").click()}
-                role={isOwnProfile ? "button" : undefined}
-                title={isOwnProfile ? "Cambiar foto de perfil" : undefined}
-              >
-                {!(isOwnProfile && myAvatarUrl) && profileUsername[0]?.toUpperCase()}
-              </div>
-              {isOwnProfile && (
-                <input type="file" accept="image/*" id="avatar-upload-input" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "avatar"); e.target.value = ""; }} />
-              )}
-              <p className="profile-name">
-                @{profileUsername}
-                {(isOwnProfile ? myProfileExtra.badges : otherProfileData?.badges || []).length > 0 && (
-                  <span className="milestone-badges">
-                    {(isOwnProfile ? myProfileExtra.badges : otherProfileData?.badges || []).map((b) => (
-                      <span className="mstone" key={b} title={b}><Trophy size={11} /></span>
-                    ))}
-                  </span>
-                )}
-              </p>
-              <p className="profile-sub">
-                {profileRating ? <><Star size={12} fill="#FFC24D" color="#FFC24D" /> {profileRating} ({profileReviews.total})</> : "Sin valoraciones todavía"} · miembro desde 2026
-              </p>
-              {(() => {
-                const avgSaleDays = isOwnProfile ? myProfileExtra.avgSaleDays : otherProfileData?.avgSaleDays;
-                return avgSaleDays !== null && avgSaleDays !== undefined && (
-                  <p className="profile-sub" style={{ marginTop: 2 }}>
-                    <Zap size={12} /> Vende de media en {avgSaleDays} {avgSaleDays === 1 ? "día" : "días"}
-                  </p>
-                );
-              })()}
-
-              <div className="profile-quick-actions">
-                {isOwnProfile ? (
-                  <button className="edit-profile-btn" onClick={openEditProfile}>Editar perfil</button>
-                ) : (
-                  <button className={"follow-btn" + (following.has(profileUsername) ? " on" : "")} onClick={() => toggleFollow(profileUsername)}>
-                    {following.has(profileUsername) ? <UserCheck size={13} /> : <UserPlus size={13} />}
-                    {following.has(profileUsername) ? "Siguiendo" : "Seguir"}
-                  </button>
-                )}
-                <button className="details-toggle" onClick={() => setShowProfileDetails(!showProfileDetails)}>
-                  {showProfileDetails ? "Ocultar detalles" : "Ver más detalles"}
-                </button>
-              </div>
-
-              {!isOwnProfile && (
-                <button className="report-flag-btn" style={{ marginBottom: 10 }} onClick={() => setShowReportForm({ targetType: "user", reportedUsername: profileUsername })}>
-                  <FileWarning size={12} /> Denunciar a @{profileUsername}
-                </button>
-              )}
-
-              {showProfileDetails && (
-                <div className="profile-details">
-                  <div className="verify-row">
-                    <span className="verify-chip done"><CheckCircle size={11} /> Email</span>
-                  </div>
-
-                  {(isOwnProfile ? myLocation?.city : otherProfileData?.city) && (
-                    <p className="profile-city-line"><MapPin size={12} /> {isOwnProfile ? myLocation?.city : otherProfileData?.city}</p>
-                  )}
-
-                  {profileReviews && profileReviews.reviews.length > 0 && (
-                    <>
-                      <p className="profile-section-title">Reseñas ({profileReviews.total})</p>
-                      <div className="reviews-list">
-                        {profileReviews.reviews.map((r) => (
-                          <div key={r.id} className="review-row">
-                            <div className="review-row-top">
-                              <span className="review-author">@{r.authorUsername}</span>
-                              <span className="review-stars">
-                                {Array.from({ length: 5 }).map((_, i) => (
-                                  <Star key={i} size={11} fill={i < r.rating ? "#FFC24D" : "none"} color="#FFC24D" />
-                                ))}
-                              </span>
-                            </div>
-                            {r.comment && <p className="review-comment">{r.comment}</p>}
-                            <span className="review-date">{new Date(r.createdAt).toLocaleDateString("es-ES")}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {profileReviews && profileReviews.reviews.length === 0 && (
-                    <p className="empty-tab">Aún no tiene ninguna reseña.</p>
-                  )}
-                </div>
-              )}
-
-              <div className="stats-row">
-                <div className="stat-box">
-                  <Tag size={13} color="#9A9AA3" />
-                  <strong>{profileItems.length}</strong>
-                  <span>En venta</span>
-                </div>
-                <div className="stat-box">
-                  <CheckCircle size={13} color="#9A9AA3" />
-                  <strong>{profileSold.length}</strong>
-                  <span>Vendidos</span>
-                </div>
-                {isOwnProfile && (
-                  <div className="stat-box">
-                    <Heart size={13} color="#9A9AA3" />
-                    <strong>{saved.size}</strong>
-                    <span>Favoritos</span>
-                  </div>
-                )}
-              </div>
-
-              {isOwnProfile && loggedIn && stripeStatus && !stripeStatus.onboarded && (
-                <div className="stripe-post-reminder">
-                  <HandCoins size={18} color="#FFC24D" />
-                  <div>
-                    <p className="stripe-post-reminder-title">Conecta tu cuenta para poder cobrar</p>
-                    <p className="stripe-post-reminder-text">Nadie podrá comprarte nada hasta que conectes Stripe (cuenta bancaria y algún dato de identidad). Solo se hace una vez.</p>
-                  </div>
-                  <button onClick={handleConnectStripe}>Conectar ahora</button>
-                </div>
-              )}
-
-              <div className="tabs profile-tabs">
-                <button className={"tab" + (profileTab === "venta" ? " active" : "")} onClick={() => setProfileTab("venta")}>En venta</button>
-                <button className={"tab" + (profileTab === "vendidos" ? " active" : "")} onClick={() => setProfileTab("vendidos")}>Vendidos</button>
-                {isOwnProfile && (
-                  <button className={"tab" + (profileTab === "favoritos" ? " active" : "")} onClick={() => setProfileTab("favoritos")}>Favoritos</button>
-                )}
-              </div>
-
-              {profileTab === "venta" && (
-                profileItems.length === 0
-                  ? <p className="empty-tab">{isOwnProfile ? "Aún no tienes prendas publicadas." : "Este vendedor no tiene prendas en venta ahora mismo."}</p>
-                  : <div className="mini-grid">
-                      {profileItems.map((i, idx) => (
-                        <div key={i.id} className="mini-card own-card" onClick={() => { setShowProfile(false); viewItem(i); }}>
-                          <div className="mini-swatch" style={miniSwatchStyle(i, idx)}>
-                            {i.featured && <span className="mini-featured-badge">Destacado</span>}
-                          </div>
-                          <p className="mini-title">{i.title}</p>
-                          <p className="mini-price">{i.price}€</p>
-                          {isOwnProfile && (
-                            <div className="own-actions">
-                              {!i.featured && (
-                                <button title={`Destacar por ${platformSettings.boostPrice}€`} onClick={(e) => { e.stopPropagation(); handleBoost(i.id); }}><TrendingUp size={12} /></button>
-                              )}
-                              <button onClick={(e) => { e.stopPropagation(); startEdit(i); }}><Pencil size={12} /></button>
-                              <button onClick={(e) => { e.stopPropagation(); deleteOwnItem(i.id); }}><Trash2 size={12} /></button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-              )}
-
-              {profileTab === "vendidos" && (
-                profileSold.length === 0
-                  ? <p className="empty-tab">Aún no hay ventas completadas.</p>
-                  : <div className="mini-grid">
-                      {profileSold.map((s, idx) => (
-                        <div key={s.id} className="mini-card sold">
-                          <div className="mini-swatch" style={miniSwatchStyle(s, idx)} />
-                          <p className="mini-title">{s.title}</p>
-                          <p className="mini-price">{s.price}€</p>
-                        </div>
-                      ))}
-                    </div>
-              )}
-
-              {profileTab === "favoritos" && isOwnProfile && (
-                saved.size === 0
-                  ? <p className="empty-tab">Aún no has guardado ninguna prenda.</p>
-                  : <div className="mini-grid">
-                      {allItems.filter((i) => saved.has(i.id)).map((i, idx) => (
-                        <div key={i.id} className="mini-card">
-                          <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
-                          <p className="mini-title">{i.title}</p>
-                          <p className="mini-price">{i.price}€</p>
-                        </div>
-                      ))}
-                    </div>
-              )}
-            </div>
-            )}
-          </div>
-        </div>
-        );
-      })()}
 
       {showOrders && (
         <div className="overlay" onClick={() => setShowOrders(false)}>
