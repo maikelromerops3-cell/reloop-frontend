@@ -1777,14 +1777,14 @@ export default function RopelinApp() {
         .profile-desktop-flex { display: flex; flex-direction: column; gap: 20px; }
         .profile-desktop-content { min-width: 0; }
         @media (min-width: 780px) {
-          .profile-desktop-flex.has-sidebar { flex-direction: row; align-items: flex-start; gap: 48px; }
-          .profile-desktop-flex.has-sidebar .profile-sidebar-menu { flex: 0 0 220px; position: sticky; top: 20px; }
-          .profile-desktop-flex.has-sidebar .profile-desktop-content { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 32px 36px; }
+          .profile-desktop-flex.has-sidebar { flex-direction: row; align-items: flex-start; }
+          .profile-desktop-flex.has-sidebar .profile-sidebar-menu { flex: 0 0 200px; position: sticky; top: 20px; }
+          .profile-desktop-flex.has-sidebar .profile-desktop-content { flex: 1; }
         }
-        .profile-sidebar-menu { display: flex; flex-direction: column; padding-top: 8px; }
-        .profile-sidebar-item { width: 100%; background: none; border: none; padding: 10px 0; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500; color: var(--sub); text-align: left; }
-        .profile-sidebar-item:hover { color: var(--text); }
-        .profile-sidebar-item.active { color: var(--text); font-weight: 700; }
+        .profile-sidebar-menu { display: flex; flex-direction: column; }
+        .profile-sidebar-item { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; border-radius: 12px; padding: 11px 12px; margin-bottom: 4px; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--body); text-align: left; }
+        .profile-sidebar-item:hover { background: var(--card); }
+        .profile-sidebar-item.active { background: var(--card); color: var(--text); border: 1px solid var(--border); }
         .profile-menu-section-title { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--faint); font-weight: 700; margin: 18px 0 8px; }
         .profile-menu-section-title:first-child { margin-top: 0; }
         .profile-menu-row { display: flex; align-items: center; gap: 12px; width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 13px 14px; margin-bottom: 8px; cursor: pointer; font-family: inherit; color: var(--text); }
@@ -2849,26 +2849,26 @@ export default function RopelinApp() {
                 numCols >= 3 ? (
                   <div className="profile-sidebar-menu">
                     <button className={"profile-sidebar-item" + ((profileMenuView || "venta") === "venta" ? " active" : "")} onClick={() => setProfileMenuView("venta")}>
-                      En venta
+                      <Tag size={16} /> En venta
                     </button>
                     <button className={"profile-sidebar-item" + (profileMenuView === "vendidos" ? " active" : "")} onClick={() => setProfileMenuView("vendidos")}>
-                      Vendidos
+                      <CheckCircle size={16} /> Vendidos
                     </button>
                     <button className={"profile-sidebar-item" + (profileMenuView === "favoritos" ? " active" : "")} onClick={() => setProfileMenuView("favoritos")}>
-                      Favoritos
+                      <Heart size={16} /> Favoritos
                     </button>
                     <p className="profile-menu-section-title">Cuenta</p>
                     <button className={"profile-sidebar-item" + (profileMenuView === "perfil" ? " active" : "")} onClick={() => setProfileMenuView("perfil")}>
-                      Perfil
+                      <User size={16} /> Perfil
                     </button>
                     <button className={"profile-sidebar-item" + (profileMenuView === "envios" ? " active" : "")} onClick={() => setProfileMenuView("envios")}>
-                      Envíos
+                      <Truck size={16} /> Envíos
                     </button>
                     <button className={"profile-sidebar-item" + (profileMenuView === "contrasena" ? " active" : "")} onClick={() => setProfileMenuView("contrasena")}>
-                      Contraseña
+                      <Lock size={16} /> Contraseña
                     </button>
                     <button className={"profile-sidebar-item" + (profileMenuView === "pagos" ? " active" : "")} onClick={() => setProfileMenuView("pagos")}>
-                      Pagos
+                      <HandCoins size={16} /> Pagos
                     </button>
                   </div>
                 ) :
