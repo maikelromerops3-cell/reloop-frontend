@@ -2267,6 +2267,10 @@ export default function RopelinApp() {
         }
         .post-page { padding: 20px 26px 100px; max-width: 900px; margin: 0 auto; }
         .legal-page { padding: 20px 26px 100px; max-width: 700px; margin: 0 auto; }
+        .legal-page.profile-page-wide { max-width: 1100px; }
+        @media (min-width: 1500px) {
+          .legal-page.profile-page-wide { max-width: 1300px; }
+        }
         .legal-page .legal-text { max-height: none; }
         .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 0; margin-bottom: 16px; font-family: inherit; }
         .back-btn:hover { color: var(--text); }
@@ -3152,7 +3156,7 @@ export default function RopelinApp() {
         );
 
         return numCols >= 3 ? (
-          <div className="legal-page">
+          <div className="legal-page profile-page-wide">
             <button className="back-btn" onClick={closeProfileView}><ArrowLeft size={16} /> Volver</button>
             <div className="profile-modal detail-modal" style={{ maxWidth: "none", padding: 0, background: "none", border: "none" }}>
               {profileContentEl}
