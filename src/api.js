@@ -628,6 +628,26 @@ export async function resendVerification() {
   return res.json();
 }
 
+export async function changePassword(currentPassword, newPassword) {
+  const res = await fetch(`${API_URL}/auth/me/password`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cambiar la contraseña");
+  return res.json();
+}
+
+export async function changeEmail(newEmail, password) {
+  const res = await fetch(`${API_URL}/auth/me/email`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ newEmail, password }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cambiar el email");
+  return res.json();
+}
+
 // --- Chat real ---
 
 export async function fetchChatMessages(itemId) {
@@ -675,24 +695,29 @@ export async function disputeTransaction(transactionId, reason) {
   return res.json();
 }
 
-// --- Verificación de teléfono ---
+// --- Búsquedas guardadas ---
 
-export async function sendPhoneCode(phone) {
-  const res = await fetch(`${API_URL}/auth/phone/send-code`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ phone }),
-  });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar el código");
+export async function fetchSavedSearches() {
+  const res = await fetch(`${API_URL}/saved-searches`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error("No se pudieron cargar tus búsquedas guardadas");
   return res.json();
 }
 
-export async function verifyPhoneCode(code) {
-  const res = await fetch(`${API_URL}/auth/phone/verify`, {
+export async function saveSearch(query, category) {
+  const res = await fetch(`${API_URL}/saved-searches`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ code }),
+    body: JSON.stringify({ query, category }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo verificar el código");
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la búsqueda");
+  return res.json();
+}
+
+export async function deleteSavedSearch(id) {
+  const res = await fetch(`${API_URL}/saved-searches/${id}`, {
+    method: "DELETE",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo borrar la búsqueda");
   return res.json();
 }

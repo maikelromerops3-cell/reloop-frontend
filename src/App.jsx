@@ -9,7 +9,8 @@ import {
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
-  fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification,
+  fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
+  fetchSavedSearches, saveSearch, deleteSavedSearch,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
   fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer, markItemSold, notifySaleBuyer, fetchItemConversations,
   forgotPassword, resetPassword, verifyEmail,
@@ -195,6 +196,10 @@ export default function RopelinApp() {
   const [distanceFilter, setDistanceFilter] = useState("");
   const [sortBy, setSortBy] = useState("recent");
   const [showFilters, setShowFilters] = useState(false);
+  const [savedSearches, setSavedSearches] = useState([]);
+  const [recentlyViewed, setRecentlyViewed] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("reloop_recently_viewed") || "[]"); } catch { return []; }
+  });
   const [myLocation, setMyLocation] = useState(() => {
     try {
       const saved = localStorage.getItem("reloop_location");
@@ -213,7 +218,13 @@ export default function RopelinApp() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [myEmailVerified, setMyEmailVerified] = useState(true);
+  const [myProfileExtra, setMyProfileExtra] = useState({ badges: [], avgSaleDays: null });
   const [resendingVerification, setResendingVerification] = useState(false);
+  const [newEmailInput, setNewEmailInput] = useState("");
+  const [emailChangePassword, setEmailChangePassword] = useState("");
+  const [currentPasswordInput, setCurrentPasswordInput] = useState("");
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [savingAccountSettings, setSavingAccountSettings] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [confirmingMarkSold, setConfirmingMarkSold] = useState(null); // itemId | null
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -340,6 +351,14 @@ export default function RopelinApp() {
   }, []);
 
   useEffect(() => {
+    if (loggedIn) {
+      fetchSavedSearches().then(setSavedSearches).catch(() => {});
+    } else {
+      setSavedSearches([]);
+    }
+  }, [loggedIn]);
+
+  useEffect(() => {
     if ((showSettings || showPost || showProfile) && loggedIn) {
       fetchStripeStatus().then(setStripeStatus).catch(() => {});
     }
@@ -382,6 +401,13 @@ export default function RopelinApp() {
   useEffect(() => {
     if (showOrders) loadOrders();
   }, [showOrders, loadOrders]);
+
+  useEffect(() => {
+    if (loggedIn) loadOrders();
+  }, [loggedIn, loadOrders]);
+
+  // Ventas pagadas por el comprador a las que todavía no se les ha generado el envío
+  const pendingShipmentsCount = orders.sales.filter((tx) => tx.status === "paid" && !tx.shipment).length;
 
   async function handleGenerateLabel(transactionId) {
     try {
@@ -482,6 +508,7 @@ export default function RopelinApp() {
         if (data.coverUrl) { setMyCoverUrl(data.coverUrl); localStorage.setItem("reloop_cover", data.coverUrl); }
         if (data.bio) setMyBio(data.bio);
         setMyEmailVerified(data.emailVerified !== false);
+        setMyProfileExtra({ badges: data.badges || [], avgSaleDays: data.avgSaleDays });
       }).catch(() => {});
       return;
     }
@@ -687,6 +714,14 @@ export default function RopelinApp() {
     setOpenItem(item);
     setGalleryIndex(0);
     navigate(`/item/${item.id}`);
+
+    try {
+      const stored = JSON.parse(localStorage.getItem("reloop_recently_viewed") || "[]");
+      const trimmed = { id: item.id, title: item.title, price: item.price, photo: item.photo };
+      const next = [trimmed, ...stored.filter((i) => i.id !== item.id)].slice(0, 10);
+      localStorage.setItem("reloop_recently_viewed", JSON.stringify(next));
+      setRecentlyViewed(next);
+    } catch {}
   }
 
   // Abre el formulario para publicar un artículo nuevo, cerrando antes cualquier otra página abierta (para que no se apilen)
@@ -1165,6 +1200,26 @@ export default function RopelinApp() {
     }
   }
 
+  async function handleSaveCurrentSearch() {
+    if (!loggedIn) { setShowAuth(true); return; }
+    try {
+      const saved = await saveSearch(query || null, category !== "Para ti" && category !== "Todo" ? category : null);
+      setSavedSearches((prev) => [saved, ...prev]);
+      toast.success("Búsqueda guardada, te avisaremos si sale algo así");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function handleDeleteSavedSearch(id) {
+    try {
+      await deleteSavedSearch(id);
+      setSavedSearches((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
   async function handleResendVerification() {
     setResendingVerification(true);
     try {
@@ -1179,6 +1234,35 @@ export default function RopelinApp() {
       toast.error(err.message);
     } finally {
       setResendingVerification(false);
+    }
+  }
+
+  async function handleSaveAccountSettings() {
+    if (!newEmailInput.trim() && !newPasswordInput.trim()) {
+      setShowSettings(false);
+      return;
+    }
+    setSavingAccountSettings(true);
+    try {
+      if (newEmailInput.trim()) {
+        if (!emailChangePassword) { toast.error("Escribe tu contraseña actual para cambiar el email"); setSavingAccountSettings(false); return; }
+        await changeEmail(newEmailInput.trim(), emailChangePassword);
+        toast.success("Email actualizado. Revisa tu bandeja para confirmarlo");
+        setMyEmailVerified(false);
+      }
+      if (newPasswordInput.trim()) {
+        if (!currentPasswordInput) { toast.error("Escribe tu contraseña actual para cambiarla"); setSavingAccountSettings(false); return; }
+        await changePassword(currentPasswordInput, newPasswordInput.trim());
+        toast.success("Contraseña actualizada");
+      }
+      setNewEmailInput("");
+      setEmailChangePassword("");
+      setCurrentPasswordInput("");
+      setNewPasswordInput("");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSavingAccountSettings(false);
     }
   }
 
@@ -1686,7 +1770,12 @@ export default function RopelinApp() {
         .filter-price-inputs { display: flex; align-items: center; gap: 6px; }
         .filter-price-inputs input { width: 68px; background: var(--bg); border: 1px solid var(--input-border); color: var(--text); border-radius: 10px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
         .filter-price-inputs span { color: var(--faint); }
-        .filter-clear-btn { background: none; border: none; color: #FF4D6D; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; align-self: flex-start; }
+        .filter-clear-btn { background: none; border: none; color: #FF4D6D; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; align-self: flex-start; display: flex; align-items: center; gap: 6px; }
+        .saved-searches-list { display: flex; flex-direction: column; gap: 6px; }
+        .saved-search-chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; }
+        .saved-search-chip span { font-size: 12px; color: var(--body); cursor: pointer; }
+        .saved-search-chip button { background: none; border: none; color: var(--faint); cursor: pointer; display: flex; padding: 2px; }
+        .recently-viewed-row { padding: 0 26px; margin-bottom: 24px; }
         .filter-location-prompt { display: flex; align-items: center; gap: 6px; background: #4DE1C114; border: 1px solid #4DE1C133; color: #4DE1C1; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: 10px; cursor: pointer; font-family: inherit; }
         .cat-scroll { display: flex; gap: 8px; padding: 14px 26px 6px; overflow-x: auto; scrollbar-width: none; }
         .cat-scroll::-webkit-scrollbar { display: none; }
@@ -1873,6 +1962,7 @@ export default function RopelinApp() {
         .email-unverified-banner button:disabled { opacity: 0.6; cursor: default; }
         .stripe-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; margin: 0 0 8px; }
         .stripe-status { font-size: 12px; color: var(--sub); margin: 0 0 10px; line-height: 1.4; }
+        .stripe-status-note { font-size: 11px; color: var(--faint); margin: -4px 0 12px; line-height: 1.4; }
         .stripe-status.ok { display: flex; align-items: center; gap: 6px; color: #4DE1C1; margin: 0; }
         .stripe-connect-btn { width: 100%; border: none; border-radius: 12px; background: linear-gradient(135deg, #635BFF, #4A42E8); color: #fff; padding: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
         .orders-modal { max-width: 400px; }
@@ -2073,6 +2163,7 @@ export default function RopelinApp() {
         .submit-btn { margin-top: 20px; width: 100%; border: none; border-radius: 14px; padding: 13px; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); font-weight: 700; font-size: 13px; cursor: pointer; }
         .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .detail-price { font-size: 30px; font-weight: 800; margin: 10px 0 14px; }
+        .detail-price-old { font-size: 16px; font-weight: 600; color: var(--faint); text-decoration: line-through; margin-right: 8px; -webkit-text-fill-color: var(--faint); }
         .seller-row { font-size: 13px; color: var(--sub); margin-bottom: 18px; }
         .detail-modal { max-width: 400px; padding: 0; }
         @media (max-width: 780px) {
@@ -2293,6 +2384,7 @@ export default function RopelinApp() {
           {loggedIn && (
             <button className="icon-btn" onClick={() => setShowOrders(true)}>
               <Package size={16} />
+              {pendingShipmentsCount > 0 && <span className="notif-dot">{pendingShipmentsCount}</span>}
             </button>
           )}
           {loggedIn && (
@@ -2480,6 +2572,26 @@ export default function RopelinApp() {
               Quitar filtros
             </button>
           )}
+
+          {loggedIn && (query || (category !== "Para ti" && category !== "Todo")) && (
+            <button className="filter-clear-btn" style={{ background: "var(--surface)", color: "var(--body)" }} onClick={handleSaveCurrentSearch}>
+              <Heart size={13} /> Guardar esta búsqueda
+            </button>
+          )}
+
+          {loggedIn && savedSearches.length > 0 && (
+            <div className="saved-searches-list">
+              <p className="filter-panel-row label" style={{ fontSize: 12, fontWeight: 600, color: "var(--faint)", margin: 0 }}>Tus búsquedas guardadas</p>
+              {savedSearches.map((s) => (
+                <div key={s.id} className="saved-search-chip">
+                  <span onClick={() => { setQuery(s.query || ""); setCategory(s.category || "Todo"); }}>
+                    {s.query || s.category || "Todos"}{s.query && s.category ? ` en ${s.category}` : ""}
+                  </span>
+                  <button onClick={() => handleDeleteSavedSearch(s.id)}><X size={11} /></button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -2586,7 +2698,12 @@ export default function RopelinApp() {
             <div className="detail-top">
               <h3 className="detail-title">{openItem.title}</h3>
               <div>
-                <p className="detail-price">{openItem.price}€</p>
+                <p className="detail-price">
+                  {openItem.originalPrice && Number(openItem.originalPrice) > openItem.price && (
+                    <span className="detail-price-old">{Number(openItem.originalPrice)}€</span>
+                  )}
+                  {openItem.price}€
+                </p>
                 {openItem.price < 25 && <p className="trend-tag"><TrendingDown size={11} /> Por debajo de la media</p>}
               </div>
             </div>
@@ -2700,6 +2817,8 @@ export default function RopelinApp() {
                     <button className="chat-btn mark-sold-btn" onClick={() => handleMarkSold(openItem.id)}><CheckCircle size={15} /> Marcar como vendido</button>
                   )}
                 </>
+              ) : openItem.status === "sold" ? (
+                <button className="buy-btn" disabled style={{ opacity: 0.6, flex: 1 }}><CheckCircle size={15} /> Este artículo ya se ha vendido</button>
               ) : (
                 <>
                   <button className="chat-btn" onClick={() => openChat(openItem)}><MessageCircle size={15} /> Contactar</button>
@@ -3223,7 +3342,7 @@ export default function RopelinApp() {
             <HandCoins size={18} color="#FFC24D" />
             <div>
               <p className="stripe-post-reminder-title">Conecta tu cuenta para poder cobrar</p>
-              <p className="stripe-post-reminder-text">Puedes publicar igualmente, pero necesitarás conectar Stripe antes de que alguien pueda comprarte algo.</p>
+              <p className="stripe-post-reminder-text">Puedes publicar igualmente, pero necesitarás conectar Stripe (cuenta bancaria y algún dato de identidad, solo una vez) antes de que alguien pueda comprarte algo.</p>
             </div>
             <button onClick={handleConnectStripe}>Conectar ahora</button>
           </div>
@@ -3320,6 +3439,20 @@ export default function RopelinApp() {
       )}
       {!hidesFeedOnDesktop && (
         <>
+        {recentlyViewed.length > 0 && category === "Para ti" && !query && (
+          <div className="recently-viewed-row">
+            <p className="profile-section-title" style={{ marginBottom: 10 }}>Visto recientemente</p>
+            <div className="mini-row">
+              {recentlyViewed.map((i) => (
+                <div key={i.id} className="mini-card" onClick={() => { const found = allItems.find((it) => it.id === i.id); if (found) viewItem(found); }}>
+                  <div className="mini-swatch" style={{ backgroundImage: `url(${i.photo})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                  <p className="mini-title">{i.title}</p>
+                  <p className="mini-price">{i.price}€</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {category === "Para ti" && !query && allItems.length > 0 && (
           <div className="community-impact">
             <Leaf size={18} color="#4DE1C1" />
@@ -3552,13 +3685,25 @@ export default function RopelinApp() {
               )}
               <p className="profile-name">
                 @{profileUsername}
-                <span className="milestone-badges">
-                  <span className="mstone" title="10 ventas"><Trophy size={11} /></span>
-                </span>
+                {(isOwnProfile ? myProfileExtra.badges : otherProfileData?.badges || []).length > 0 && (
+                  <span className="milestone-badges">
+                    {(isOwnProfile ? myProfileExtra.badges : otherProfileData?.badges || []).map((b) => (
+                      <span className="mstone" key={b} title={b}><Trophy size={11} /></span>
+                    ))}
+                  </span>
+                )}
               </p>
               <p className="profile-sub">
                 {profileRating ? <><Star size={12} fill="#FFC24D" color="#FFC24D" /> {profileRating} ({profileReviews.total})</> : "Sin valoraciones todavía"} · miembro desde 2026
               </p>
+              {(() => {
+                const avgSaleDays = isOwnProfile ? myProfileExtra.avgSaleDays : otherProfileData?.avgSaleDays;
+                return avgSaleDays !== null && avgSaleDays !== undefined && (
+                  <p className="profile-sub" style={{ marginTop: 2 }}>
+                    <Zap size={12} /> Vende de media en {avgSaleDays} {avgSaleDays === 1 ? "día" : "días"}
+                  </p>
+                );
+              })()}
 
               <div className="profile-quick-actions">
                 {isOwnProfile ? (
@@ -3642,7 +3787,7 @@ export default function RopelinApp() {
                   <HandCoins size={18} color="#FFC24D" />
                   <div>
                     <p className="stripe-post-reminder-title">Conecta tu cuenta para poder cobrar</p>
-                    <p className="stripe-post-reminder-text">Nadie podrá comprarte nada hasta que conectes Stripe. Solo se hace una vez.</p>
+                    <p className="stripe-post-reminder-text">Nadie podrá comprarte nada hasta que conectes Stripe (cuenta bancaria y algún dato de identidad). Solo se hace una vez.</p>
                   </div>
                   <button onClick={handleConnectStripe}>Conectar ahora</button>
                 </div>
@@ -3964,6 +4109,10 @@ export default function RopelinApp() {
                 onClick={() => {
                   if (!n.link) return;
                   setShowNotifs(false);
+                  if (n.link === "/pedidos") {
+                    setShowOrders(true);
+                    return;
+                  }
                   const match = n.link.match(/\/item\/(.+)/);
                   if (match) {
                     const found = allItems.find((i) => i.id === match[1]);
@@ -4005,11 +4154,17 @@ export default function RopelinApp() {
               </div>
             )}
 
-            <label>Email</label>
-            <div className="input-icon"><Mail size={14} /><input defaultValue={`${username}@email.com`} /></div>
+            <label>Nuevo email</label>
+            <div className="input-icon"><Mail size={14} /><input placeholder={`Actual: ${username}`} value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)} /></div>
+            {newEmailInput.trim() && (
+              <div className="input-icon"><Lock size={14} /><input type="password" placeholder="Tu contraseña actual, para confirmar" value={emailChangePassword} onChange={(e) => setEmailChangePassword(e.target.value)} /></div>
+            )}
 
             <label>Nueva contraseña</label>
-            <div className="input-icon"><Lock size={14} /><input type="password" placeholder="••••••••" /></div>
+            <div className="input-icon"><Lock size={14} /><input type="password" placeholder="••••••••" value={newPasswordInput} onChange={(e) => setNewPasswordInput(e.target.value)} /></div>
+            {newPasswordInput.trim() && (
+              <div className="input-icon"><Lock size={14} /><input type="password" placeholder="Tu contraseña actual" value={currentPasswordInput} onChange={(e) => setCurrentPasswordInput(e.target.value)} /></div>
+            )}
 
             <p className="settings-toggle-row">
               <span>Notificaciones de mensajes</span>
@@ -4045,12 +4200,15 @@ export default function RopelinApp() {
               ) : (
                 <>
                   <p className="stripe-status">Activa Stripe para poder cobrar tus ventas directamente en tu cuenta bancaria.</p>
+                  <p className="stripe-status-note">Te llevará a Stripe — te pedirá tu cuenta bancaria y algún dato de identidad. Es normal, lo exige la ley para poder pagarte, y solo se hace una vez.</p>
                   <button className="stripe-connect-btn" onClick={handleConnectStripe}>Conectar con Stripe</button>
                 </>
               )}
             </div>
 
-            <button className="submit-btn">Guardar cambios</button>
+            <button className="submit-btn" onClick={handleSaveAccountSettings} disabled={savingAccountSettings}>
+              {savingAccountSettings ? "Guardando..." : "Guardar cambios"}
+            </button>
             <button className="logout-btn" onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); setShowSettings(false); toast("Sesión cerrada"); }}>Cerrar sesión</button>
 
             <div className="danger-zone">
