@@ -1775,7 +1775,7 @@ export default function RopelinApp() {
         .saved-search-chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; }
         .saved-search-chip span { font-size: 12px; color: var(--body); cursor: pointer; }
         .saved-search-chip button { background: none; border: none; color: var(--faint); cursor: pointer; display: flex; padding: 2px; }
-        .recently-viewed-row { padding: 0 26px; margin-bottom: 22px; }
+        .recently-viewed-row { padding: 0 26px; margin: 0 auto 22px; max-width: 600px; text-align: center; }
         .recently-viewed-label { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--faint); font-weight: 700; margin: 0 0 10px; }
         .recently-viewed-strip { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; }
         .recently-viewed-strip::-webkit-scrollbar { display: none; }
