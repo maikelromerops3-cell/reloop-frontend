@@ -367,7 +367,7 @@ export default function RopelinApp() {
     if ((showSettings || showPost || showProfile) && loggedIn) {
       fetchStripeStatus().then(setStripeStatus).catch(() => {});
     }
-    if (showSettings && loggedIn) {
+    if ((showSettings || showProfile) && loggedIn) {
       fetchProfile(username).then((data) => {
         setMyEmailVerified(data.emailVerified !== false);
         setShippingStreetInput(data.shippingStreet || "");
@@ -375,7 +375,7 @@ export default function RopelinApp() {
         setShippingPhoneInput(data.shippingPhone || "");
       }).catch(() => {});
     }
-  }, [showSettings, showPost, loggedIn]);
+  }, [showSettings, showPost, showProfile, loggedIn]);
 
   useEffect(() => {
     if (loggedIn) {
@@ -514,6 +514,7 @@ export default function RopelinApp() {
   const [avatarColor] = useState(PALETTE[Math.floor(Math.random() * PALETTE.length)]);
   const [showProfile, setShowProfile] = useState(false);
   const [profileTab, setProfileTab] = useState("venta");
+  const [profileSettingsSubTab, setProfileSettingsSubTab] = useState("perfil");
   const [viewingProfile, setViewingProfile] = useState(null); // username que se está viendo (null = el tuyo)
   const [otherProfileData, setOtherProfileData] = useState(null);
   const [otherProfileLoading, setOtherProfileLoading] = useState(false);
@@ -2844,6 +2845,9 @@ export default function RopelinApp() {
                 {isOwnProfile && (
                   <button className={"tab" + (profileTab === "favoritos" ? " active" : "")} onClick={() => setProfileTab("favoritos")}>Favoritos</button>
                 )}
+                {isOwnProfile && (
+                  <button className={"tab" + (profileTab === "ajustes" ? " active" : "")} onClick={() => setProfileTab("ajustes")}>Ajustes</button>
+                )}
               </div>
 
               {profileTab === "venta" && (
@@ -2897,6 +2901,125 @@ export default function RopelinApp() {
                         </div>
                       ))}
                     </div>
+              )}
+
+              {profileTab === "ajustes" && isOwnProfile && (
+                <div className="profile-settings-tab">
+                  <div className="tabs profile-tabs" style={{ marginBottom: 18 }}>
+                    <button className={"tab" + (profileSettingsSubTab === "perfil" ? " active" : "")} onClick={() => setProfileSettingsSubTab("perfil")}>Perfil</button>
+                    <button className={"tab" + (profileSettingsSubTab === "envios" ? " active" : "")} onClick={() => setProfileSettingsSubTab("envios")}>Envíos</button>
+                    <button className={"tab" + (profileSettingsSubTab === "contrasena" ? " active" : "")} onClick={() => setProfileSettingsSubTab("contrasena")}>Contraseña</button>
+                    <button className={"tab" + (profileSettingsSubTab === "pagos" ? " active" : "")} onClick={() => setProfileSettingsSubTab("pagos")}>Pagos</button>
+                  </div>
+
+                  {profileSettingsSubTab === "perfil" && (
+                    <>
+                      <button className="edit-profile-btn" style={{ marginBottom: 18 }} onClick={openEditProfile}><Pencil size={13} /> Editar foto, portada y biografía</button>
+
+                      <label>Mi ubicación</label>
+                      <div className="location-box">
+                        <div>
+                          <p className="location-current">
+                            <MapPin size={13} />
+                            {myLocation ? (myLocation.city || "Ubicación guardada") : "Sin ubicación guardada"}
+                          </p>
+                          <p className="location-hint">Se usa para mostrarte prendas cerca de ti y quedar en persona sin envío.</p>
+                        </div>
+                        <button className="btn ghost" onClick={detectMyLocation} disabled={locatingMe}>
+                          {locatingMe ? "Detectando..." : myLocation ? "Actualizar" : "Detectar"}
+                        </button>
+                      </div>
+
+                      <button className="logout-btn" style={{ marginTop: 18 }} onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); setShowProfile(false); toast("Sesión cerrada"); }}>Cerrar sesión</button>
+
+                      <div className="danger-zone">
+                        <p className="danger-zone-title">Zona de peligro</p>
+                        {!showDeleteAccount ? (
+                          <button className="danger-zone-btn" onClick={() => setShowDeleteAccount(true)}>Eliminar mi cuenta</button>
+                        ) : (
+                          <div className="delete-confirm-box">
+                            <p className="delete-confirm-text">
+                              Esto es permanente. Se borrarán tus favoritos, notificaciones y artículos aún no vendidos.
+                              Para confirmar, escribe tu nombre de usuario (<strong>{username}</strong>) abajo:
+                            </p>
+                            <input
+                              className="delete-confirm-input"
+                              value={deleteConfirmText}
+                              onChange={(e) => setDeleteConfirmText(e.target.value)}
+                              placeholder={username}
+                            />
+                            <div className="delete-confirm-actions">
+                              <button className="btn ghost" onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}>Cancelar</button>
+                              <button className="danger-zone-btn" disabled={deletingAccount} onClick={handleDeleteAccount}>
+                                {deletingAccount ? "Eliminando..." : "Eliminar cuenta definitivamente"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {profileSettingsSubTab === "envios" && (
+                    <div className="stripe-box" style={{ margin: 0 }}>
+                      <p className="stripe-title"><Truck size={14} /> Dirección de envío (como vendedor)</p>
+                      <p className="stripe-status">Se usa para generar las etiquetas de envío cuando te compren algo por correo.</p>
+                      <label>Calle y número</label>
+                      <div className="input-icon"><input value={shippingStreetInput} onChange={(e) => setShippingStreetInput(e.target.value)} placeholder="Calle Ejemplo, 12, 3ºB" /></div>
+                      <label>Código postal</label>
+                      <div className="input-icon"><input value={shippingPostalInput} onChange={(e) => setShippingPostalInput(e.target.value)} placeholder="28001" /></div>
+                      <label>Teléfono de contacto</label>
+                      <div className="input-icon"><input value={shippingPhoneInput} onChange={(e) => setShippingPhoneInput(e.target.value)} placeholder="+34 600 000 000" /></div>
+                      <button className="stripe-connect-btn" onClick={handleSaveShippingAddress} disabled={savingShippingAddress}>
+                        {savingShippingAddress ? "Guardando..." : "Guardar dirección de envío"}
+                      </button>
+                    </div>
+                  )}
+
+                  {profileSettingsSubTab === "contrasena" && (
+                    <>
+                      {!myEmailVerified && (
+                        <div className="email-unverified-banner">
+                          <p><FileWarning size={14} /> Tu email todavía no está verificado</p>
+                          <button onClick={handleResendVerification} disabled={resendingVerification}>
+                            {resendingVerification ? "Enviando..." : "Reenviar correo de verificación"}
+                          </button>
+                        </div>
+                      )}
+
+                      <label>Nuevo email</label>
+                      <div className="input-icon"><Mail size={14} /><input placeholder={`Actual: ${username}`} value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)} /></div>
+                      {newEmailInput.trim() && (
+                        <div className="input-icon"><Lock size={14} /><input type="password" placeholder="Tu contraseña actual, para confirmar" value={emailChangePassword} onChange={(e) => setEmailChangePassword(e.target.value)} /></div>
+                      )}
+
+                      <label>Nueva contraseña</label>
+                      <div className="input-icon"><Lock size={14} /><input type="password" placeholder="••••••••" value={newPasswordInput} onChange={(e) => setNewPasswordInput(e.target.value)} /></div>
+                      {newPasswordInput.trim() && (
+                        <div className="input-icon"><Lock size={14} /><input type="password" placeholder="Tu contraseña actual" value={currentPasswordInput} onChange={(e) => setCurrentPasswordInput(e.target.value)} /></div>
+                      )}
+
+                      <button className="submit-btn" onClick={handleSaveAccountSettings} disabled={savingAccountSettings}>
+                        {savingAccountSettings ? "Guardando..." : "Guardar cambios"}
+                      </button>
+                    </>
+                  )}
+
+                  {profileSettingsSubTab === "pagos" && (
+                    <div className="stripe-box" style={{ margin: 0 }}>
+                      <p className="stripe-title"><HandCoins size={14} /> Cobros como vendedor</p>
+                      {stripeStatus?.onboarded ? (
+                        <p className="stripe-status ok"><CheckCircle size={13} /> Cuenta activa, ya puedes recibir pagos</p>
+                      ) : (
+                        <>
+                          <p className="stripe-status">Activa Stripe para poder cobrar tus ventas directamente en tu cuenta bancaria.</p>
+                          <p className="stripe-status-note">Te llevará a Stripe — te pedirá tu cuenta bancaria y algún dato de identidad. Es normal, lo exige la ley para poder pagarte, y solo se hace una vez.</p>
+                          <button className="stripe-connect-btn" onClick={handleConnectStripe}>Conectar con Stripe</button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
 
             </div>
