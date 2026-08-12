@@ -166,6 +166,16 @@ export async function updateMyLocation({ city, latitude, longitude, bio, avatarU
   return res.json();
 }
 
+export async function updateShippingAddress({ shippingStreet, shippingPostalCode, shippingPhone } = {}) {
+  const res = await fetch(`${API_URL}/users/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ shippingStreet, shippingPostalCode, shippingPhone }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la dirección");
+  return res.json();
+}
+
 export async function deleteMyAccount() {
   const res = await fetch(`${API_URL}/users/me`, {
     method: "DELETE",

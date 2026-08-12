@@ -9,7 +9,7 @@ import {
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
-  fetchProfile, updateMyLocation, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
+  fetchProfile, updateMyLocation, updateShippingAddress, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
   fetchSavedSearches, saveSearch, deleteSavedSearch,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
   fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer, markItemSold, notifySaleBuyer, fetchItemConversations,
@@ -218,6 +218,10 @@ export default function RopelinApp() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [myEmailVerified, setMyEmailVerified] = useState(true);
+  const [shippingStreetInput, setShippingStreetInput] = useState("");
+  const [shippingPostalInput, setShippingPostalInput] = useState("");
+  const [shippingPhoneInput, setShippingPhoneInput] = useState("");
+  const [savingShippingAddress, setSavingShippingAddress] = useState(false);
   const [myProfileExtra, setMyProfileExtra] = useState({ badges: [], avgSaleDays: null });
   const [resendingVerification, setResendingVerification] = useState(false);
   const [newEmailInput, setNewEmailInput] = useState("");
@@ -365,6 +369,9 @@ export default function RopelinApp() {
     if (showSettings && loggedIn) {
       fetchProfile(username).then((data) => {
         setMyEmailVerified(data.emailVerified !== false);
+        setShippingStreetInput(data.shippingStreet || "");
+        setShippingPostalInput(data.shippingPostalCode || "");
+        setShippingPhoneInput(data.shippingPhone || "");
       }).catch(() => {});
     }
   }, [showSettings, showPost, loggedIn]);
@@ -1234,6 +1241,26 @@ export default function RopelinApp() {
       setSavedSearches((prev) => prev.filter((s) => s.id !== id));
     } catch (err) {
       toast.error(err.message);
+    }
+  }
+
+  async function handleSaveShippingAddress() {
+    if (!shippingStreetInput.trim() || !shippingPostalInput.trim()) {
+      toast.error("Rellena al menos la calle y el código postal");
+      return;
+    }
+    setSavingShippingAddress(true);
+    try {
+      await updateShippingAddress({
+        shippingStreet: shippingStreetInput.trim(),
+        shippingPostalCode: shippingPostalInput.trim(),
+        shippingPhone: shippingPhoneInput.trim(),
+      });
+      toast.success("Dirección de envío guardada");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSavingShippingAddress(false);
     }
   }
 
@@ -4210,6 +4237,20 @@ export default function RopelinApp() {
               </div>
               <button className="btn ghost" onClick={detectMyLocation} disabled={locatingMe}>
                 {locatingMe ? "Detectando..." : myLocation ? "Actualizar" : "Detectar"}
+              </button>
+            </div>
+
+            <div className="stripe-box">
+              <p className="stripe-title"><Truck size={14} /> Dirección de envío (como vendedor)</p>
+              <p className="stripe-status">Se usa para generar las etiquetas de envío cuando te compren algo por correo.</p>
+              <label>Calle y número</label>
+              <div className="input-icon"><input value={shippingStreetInput} onChange={(e) => setShippingStreetInput(e.target.value)} placeholder="Calle Ejemplo, 12, 3ºB" /></div>
+              <label>Código postal</label>
+              <div className="input-icon"><input value={shippingPostalInput} onChange={(e) => setShippingPostalInput(e.target.value)} placeholder="28001" /></div>
+              <label>Teléfono de contacto</label>
+              <div className="input-icon"><input value={shippingPhoneInput} onChange={(e) => setShippingPhoneInput(e.target.value)} placeholder="+34 600 000 000" /></div>
+              <button className="stripe-connect-btn" onClick={handleSaveShippingAddress} disabled={savingShippingAddress}>
+                {savingShippingAddress ? "Guardando..." : "Guardar dirección de envío"}
               </button>
             </div>
 
