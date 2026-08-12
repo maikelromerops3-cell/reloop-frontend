@@ -1775,8 +1775,14 @@ export default function RopelinApp() {
         .saved-search-chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; }
         .saved-search-chip span { font-size: 12px; color: var(--body); cursor: pointer; }
         .saved-search-chip button { background: none; border: none; color: var(--faint); cursor: pointer; display: flex; padding: 2px; }
-        .recently-viewed-row { padding: 14px 18px; margin: 0 26px 24px; max-width: 700px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; }
-        .recently-viewed-row .mini-row .mini-card { flex: 0 0 110px; }
+        .recently-viewed-row { padding: 0 26px; margin-bottom: 22px; }
+        .recently-viewed-label { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--faint); font-weight: 700; margin: 0 0 10px; }
+        .recently-viewed-strip { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+        .recently-viewed-strip::-webkit-scrollbar { display: none; }
+        .rv-thumb { flex: 0 0 auto; cursor: pointer; text-align: center; }
+        .rv-thumb-photo { width: 60px; height: 60px; border-radius: 50%; background-size: cover; background-position: center; border: 2px solid var(--border); transition: border-color .15s ease; }
+        .rv-thumb:hover .rv-thumb-photo { border-color: #FF4D6D; }
+        .rv-thumb-price { display: block; font-size: 11px; color: var(--faint); margin-top: 4px; font-weight: 600; }
         .filter-location-prompt { display: flex; align-items: center; gap: 6px; background: #4DE1C114; border: 1px solid #4DE1C133; color: #4DE1C1; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: 10px; cursor: pointer; font-family: inherit; }
         .cat-scroll { display: flex; gap: 8px; padding: 14px 26px 6px; overflow-x: auto; scrollbar-width: none; }
         .cat-scroll::-webkit-scrollbar { display: none; }
@@ -2619,6 +2625,20 @@ export default function RopelinApp() {
         })}
       </div>
 
+      {recentlyViewed.length > 0 && category === "Para ti" && !query && (
+        <div className="recently-viewed-row">
+          <p className="recently-viewed-label">Visto recientemente</p>
+          <div className="recently-viewed-strip">
+            {recentlyViewed.map((i) => (
+              <div key={i.id} className="rv-thumb" onClick={() => { const found = allItems.find((it) => it.id === i.id); if (found) viewItem(found); }}>
+                <div className="rv-thumb-photo" style={{ backgroundImage: `url(${i.photo})` }} />
+                <span className="rv-thumb-price">{i.price}€</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {openItem && (() => {
         const isDesktop = numCols >= 3;
 
@@ -3440,20 +3460,6 @@ export default function RopelinApp() {
       )}
       {!hidesFeedOnDesktop && (
         <>
-        {recentlyViewed.length > 0 && category === "Para ti" && !query && (
-          <div className="recently-viewed-row">
-            <p className="profile-section-title" style={{ marginBottom: 10 }}>Visto recientemente</p>
-            <div className="mini-row">
-              {recentlyViewed.map((i) => (
-                <div key={i.id} className="mini-card" onClick={() => { const found = allItems.find((it) => it.id === i.id); if (found) viewItem(found); }}>
-                  <div className="mini-swatch" style={{ backgroundImage: `url(${i.photo})`, backgroundSize: "cover", backgroundPosition: "center" }} />
-                  <p className="mini-title">{i.title}</p>
-                  <p className="mini-price">{i.price}€</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         {category === "Para ti" && !query && allItems.length > 0 && (
           <div className="community-impact">
             <Leaf size={18} color="#4DE1C1" />
