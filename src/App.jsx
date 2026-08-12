@@ -370,6 +370,23 @@ export default function RopelinApp() {
   }, [showSettings, showPost, loggedIn]);
 
   useEffect(() => {
+    if (loggedIn) {
+      fetchNotifications().then(setNotifications).catch(() => {});
+    } else {
+      setNotifications([]);
+    }
+  }, [loggedIn]);
+
+  // Vuelve a comprobar si hay notificaciones nuevas cada 45 segundos, mientras hay sesión iniciada
+  useEffect(() => {
+    if (!loggedIn) return;
+    const interval = setInterval(() => {
+      fetchNotifications().then(setNotifications).catch(() => {});
+    }, 45000);
+    return () => clearInterval(interval);
+  }, [loggedIn]);
+
+  useEffect(() => {
     if (showNotifs && loggedIn) {
       fetchNotifications().then(setNotifications).catch(() => {});
     }
