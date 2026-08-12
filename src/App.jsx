@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
-import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon } from "lucide-react";
+import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight } from "lucide-react";
 import {
   fetchItems, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
@@ -300,6 +300,7 @@ export default function RopelinApp() {
   const [offerSent, setOfferSent] = useState(false);
   const [showPost, setShowPost] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [profileMenuView, setProfileMenuView] = useState(null); // null = menú principal, o "venta"/"vendidos"/"favoritos"/"perfil"/"envios"/"contrasena"/"pagos"
   const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [openItem, setOpenItem] = useState(null);
@@ -375,6 +376,9 @@ export default function RopelinApp() {
         setShippingPostalInput(data.shippingPostalCode || "");
         setShippingPhoneInput(data.shippingPhone || "");
       }).catch(() => {});
+    }
+    if (showProfile) {
+      fetchLeague().then(setLeaderboard).catch(() => {});
     }
   }, [showSettings, showPost, showProfile, loggedIn]);
 
@@ -513,8 +517,6 @@ export default function RopelinApp() {
   }
 
   const [avatarColor] = useState(PALETTE[Math.floor(Math.random() * PALETTE.length)]);
-  const [profileTab, setProfileTab] = useState("venta");
-  const [profileSettingsSubTab, setProfileSettingsSubTab] = useState("perfil");
   const [viewingProfile, setViewingProfile] = useState(null); // username que se está viendo (null = el tuyo)
   const [otherProfileData, setOtherProfileData] = useState(null);
   const [otherProfileLoading, setOtherProfileLoading] = useState(false);
@@ -530,9 +532,10 @@ export default function RopelinApp() {
     fetchReviews(targetUsername).then(setProfileReviews).catch(() => {});
 
     if (!uname || uname === username) {
+      fetchLeague().then(setLeaderboard).catch(() => {});
       setViewingProfile(null);
       setOtherProfileData(null);
-      setProfileTab("venta");
+      setProfileMenuView(null);
       setShowProfile(true);
       fetchProfile(username).then((data) => {
         if (data.avatarUrl) { setMyAvatarUrl(data.avatarUrl); localStorage.setItem("reloop_avatar", data.avatarUrl); }
@@ -545,7 +548,7 @@ export default function RopelinApp() {
     }
     setViewingProfile(uname);
     setOtherProfileData(null);
-    setProfileTab("venta");
+    setProfileMenuView(null);
     setShowProfile(true);
     setOtherProfileLoading(true);
     fetchProfile(uname)
@@ -1781,6 +1784,22 @@ export default function RopelinApp() {
         .stat-box strong { display: block; font-size: 18px; }
         .stat-box span { font-size: 10px; color: var(--sub); text-transform: uppercase; letter-spacing: .5px; }
         .profile-tabs { margin-bottom: 16px; }
+        .profile-menu-list { margin-bottom: 10px; }
+        .profile-menu-section-title { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--faint); font-weight: 700; margin: 18px 0 8px; }
+        .profile-menu-section-title:first-child { margin-top: 0; }
+        .profile-menu-row { display: flex; align-items: center; gap: 12px; width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 13px 14px; margin-bottom: 8px; cursor: pointer; font-family: inherit; color: var(--text); }
+        .profile-menu-icon { width: 30px; height: 30px; border-radius: 10px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--sub); }
+        .profile-menu-label { flex: 1; text-align: left; font-size: 13.5px; font-weight: 600; }
+        .profile-menu-row svg:last-child { color: var(--faint); flex-shrink: 0; }
+        .profile-quick-card { display: flex; align-items: center; gap: 12px; width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; font-family: inherit; text-align: left; }
+        .profile-quick-card .avatar-mini { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; flex-shrink: 0; }
+        .profile-quick-card-name { font-size: 14px; font-weight: 700; color: var(--text); margin: 0; }
+        .profile-quick-card-sub { font-size: 12px; color: var(--sub); margin: 2px 0 0; }
+        .profile-badges-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+        .profile-badges-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .profile-badges-count { font-size: 12.5px; color: var(--faint); font-weight: 600; }
+        .profile-badges-bar { height: 6px; border-radius: 999px; background: var(--surface); overflow: hidden; }
+        .profile-badges-bar-fill { height: 100%; background: linear-gradient(90deg, #FF4D6D, #FF8A4D); border-radius: 999px; }
         .empty-tab { font-size: 12px; color: var(--faint); padding: 20px 0; }
         .mini-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; text-align: left; }
         .mini-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
@@ -2839,18 +2858,87 @@ export default function RopelinApp() {
                 </div>
               )}
 
-              <div className="tabs profile-tabs">
-                <button className={"tab" + (profileTab === "venta" ? " active" : "")} onClick={() => setProfileTab("venta")}>En venta</button>
-                <button className={"tab" + (profileTab === "vendidos" ? " active" : "")} onClick={() => setProfileTab("vendidos")}>Vendidos</button>
-                {isOwnProfile && (
-                  <button className={"tab" + (profileTab === "favoritos" ? " active" : "")} onClick={() => setProfileTab("favoritos")}>Favoritos</button>
-                )}
-                {isOwnProfile && (
-                  <button className={"tab" + (profileTab === "ajustes" ? " active" : "")} onClick={() => setProfileTab("ajustes")}>Ajustes</button>
-                )}
-              </div>
+              {isOwnProfile ? (
+                profileMenuView === null ? (
+                  <div className="profile-menu-list">
+                    <button className="profile-quick-card" onClick={() => setProfileMenuView("venta")}>
+                      <div className="avatar-mini" style={myAvatarUrl ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover" } : { background: avatarColor }}>
+                        {!myAvatarUrl && username[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="profile-quick-card-name">{username}</p>
+                        <p className="profile-quick-card-sub">Ver mis anuncios</p>
+                      </div>
+                    </button>
 
-              {profileTab === "venta" && (
+                    {(() => {
+                      const myRanking = leaderboard.find((u) => u.username === username);
+                      return (
+                        <button className="profile-badges-card" style={{ width: "100%", textAlign: "left", cursor: "pointer", border: "1px solid var(--border)" }} onClick={openLeague}>
+                          <div className="profile-badges-card-top">
+                            <span className="profile-menu-icon"><Trophy size={17} color="#FFC24D" /></span>
+                            <span className="profile-menu-label">Liga de vendedores</span>
+                            <span className="profile-badges-count">
+                              {myRanking ? `#${myRanking.rank} · ${myRanking.points} pts` : "Sin puntos todavía"}
+                            </span>
+                          </div>
+                          <p className="location-hint" style={{ margin: "6px 0 0" }}>
+                            {myRanking ? "Toca para ver el ranking completo" : "Vende y recibe reseñas para entrar en el ranking"}
+                          </p>
+                        </button>
+                      );
+                    })()}
+
+                    <p className="profile-menu-section-title">Transacciones</p>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("venta")}>
+                      <span className="profile-menu-icon"><Tag size={17} /></span>
+                      <span className="profile-menu-label">En venta</span>
+                      <ChevronRight size={16} />
+                    </button>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("vendidos")}>
+                      <span className="profile-menu-icon"><CheckCircle size={17} /></span>
+                      <span className="profile-menu-label">Vendidos</span>
+                      <ChevronRight size={16} />
+                    </button>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("favoritos")}>
+                      <span className="profile-menu-icon"><Heart size={17} /></span>
+                      <span className="profile-menu-label">Favoritos</span>
+                      <ChevronRight size={16} />
+                    </button>
+
+                    <p className="profile-menu-section-title">Cuenta</p>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("perfil")}>
+                      <span className="profile-menu-icon"><User size={17} /></span>
+                      <span className="profile-menu-label">Perfil</span>
+                      <ChevronRight size={16} />
+                    </button>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("envios")}>
+                      <span className="profile-menu-icon"><Truck size={17} /></span>
+                      <span className="profile-menu-label">Envíos</span>
+                      <ChevronRight size={16} />
+                    </button>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("contrasena")}>
+                      <span className="profile-menu-icon"><Lock size={17} /></span>
+                      <span className="profile-menu-label">Contraseña</span>
+                      <ChevronRight size={16} />
+                    </button>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("pagos")}>
+                      <span className="profile-menu-icon"><HandCoins size={17} /></span>
+                      <span className="profile-menu-label">Pagos</span>
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <button className="back-btn" style={{ marginBottom: 10 }} onClick={() => setProfileMenuView(null)}><ArrowLeft size={16} /> Volver</button>
+                )
+              ) : (
+                <div className="tabs profile-tabs">
+                  <button className={"tab" + ((profileMenuView || "venta") === "venta" ? " active" : "")} onClick={() => setProfileMenuView("venta")}>En venta</button>
+                  <button className={"tab" + (profileMenuView === "vendidos" ? " active" : "")} onClick={() => setProfileMenuView("vendidos")}>Vendidos</button>
+                </div>
+              )}
+
+              {(profileMenuView === "venta" || (!isOwnProfile && !profileMenuView)) && (
                 profileItems.length === 0
                   ? <p className="empty-tab">{isOwnProfile ? "Aún no tienes prendas publicadas." : "Este vendedor no tiene prendas en venta ahora mismo."}</p>
                   : <div className="mini-grid">
@@ -2875,7 +2963,7 @@ export default function RopelinApp() {
                     </div>
               )}
 
-              {profileTab === "vendidos" && (
+              {profileMenuView === "vendidos" && (
                 profileSold.length === 0
                   ? <p className="empty-tab">Aún no hay ventas completadas.</p>
                   : <div className="mini-grid">
@@ -2889,7 +2977,7 @@ export default function RopelinApp() {
                     </div>
               )}
 
-              {profileTab === "favoritos" && isOwnProfile && (
+              {profileMenuView === "favoritos" && isOwnProfile && (
                 saved.size === 0
                   ? <p className="empty-tab">Aún no has guardado ninguna prenda.</p>
                   : <div className="mini-grid">
@@ -2903,16 +2991,9 @@ export default function RopelinApp() {
                     </div>
               )}
 
-              {profileTab === "ajustes" && isOwnProfile && (
-                <div className="profile-settings-tab">
-                  <div className="tabs profile-tabs" style={{ marginBottom: 18 }}>
-                    <button className={"tab" + (profileSettingsSubTab === "perfil" ? " active" : "")} onClick={() => setProfileSettingsSubTab("perfil")}>Perfil</button>
-                    <button className={"tab" + (profileSettingsSubTab === "envios" ? " active" : "")} onClick={() => setProfileSettingsSubTab("envios")}>Envíos</button>
-                    <button className={"tab" + (profileSettingsSubTab === "contrasena" ? " active" : "")} onClick={() => setProfileSettingsSubTab("contrasena")}>Contraseña</button>
-                    <button className={"tab" + (profileSettingsSubTab === "pagos" ? " active" : "")} onClick={() => setProfileSettingsSubTab("pagos")}>Pagos</button>
-                  </div>
-
-                  {profileSettingsSubTab === "perfil" && (
+              {isOwnProfile && (
+                <>
+                  {profileMenuView === "perfil" && (
                     <>
                       <button className="edit-profile-btn" style={{ marginBottom: 18 }} onClick={openEditProfile}><Pencil size={13} /> Editar foto, portada y biografía</button>
 
@@ -2960,7 +3041,8 @@ export default function RopelinApp() {
                     </>
                   )}
 
-                  {profileSettingsSubTab === "envios" && (
+                  {profileMenuView === "envios" && (
+
                     <div className="stripe-box" style={{ margin: 0 }}>
                       <p className="stripe-title"><Truck size={14} /> Dirección de envío (como vendedor)</p>
                       <p className="stripe-status">Se usa para generar las etiquetas de envío cuando te compren algo por correo.</p>
@@ -2976,7 +3058,7 @@ export default function RopelinApp() {
                     </div>
                   )}
 
-                  {profileSettingsSubTab === "contrasena" && (
+                  {profileMenuView === "contrasena" && (
                     <>
                       {!myEmailVerified && (
                         <div className="email-unverified-banner">
@@ -3005,7 +3087,8 @@ export default function RopelinApp() {
                     </>
                   )}
 
-                  {profileSettingsSubTab === "pagos" && (
+                  {profileMenuView === "pagos" && (
+
                     <div className="stripe-box" style={{ margin: 0 }}>
                       <p className="stripe-title"><HandCoins size={14} /> Cobros como vendedor</p>
                       {stripeStatus?.onboarded ? (
@@ -3019,7 +3102,7 @@ export default function RopelinApp() {
                       )}
                     </div>
                   )}
-                </div>
+                </>
               )}
 
             </div>
