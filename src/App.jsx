@@ -299,6 +299,7 @@ export default function RopelinApp() {
   const [offerAmount, setOfferAmount] = useState("");
   const [offerSent, setOfferSent] = useState(false);
   const [showPost, setShowPost] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [openItem, setOpenItem] = useState(null);
@@ -512,7 +513,6 @@ export default function RopelinApp() {
   }
 
   const [avatarColor] = useState(PALETTE[Math.floor(Math.random() * PALETTE.length)]);
-  const [showProfile, setShowProfile] = useState(false);
   const [profileTab, setProfileTab] = useState("venta");
   const [profileSettingsSubTab, setProfileSettingsSubTab] = useState("perfil");
   const [viewingProfile, setViewingProfile] = useState(null); // username que se está viendo (null = el tuyo)
