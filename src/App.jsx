@@ -718,7 +718,7 @@ export default function RopelinApp() {
     try {
       const stored = JSON.parse(localStorage.getItem("reloop_recently_viewed") || "[]");
       const trimmed = { id: item.id, title: item.title, price: item.price, photo: item.photo };
-      const next = [trimmed, ...stored.filter((i) => i.id !== item.id)].slice(0, 10);
+      const next = [trimmed, ...stored.filter((i) => i.id !== item.id)].slice(0, 8);
       localStorage.setItem("reloop_recently_viewed", JSON.stringify(next));
       setRecentlyViewed(next);
     } catch {}
