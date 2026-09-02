@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
-import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight } from "lucide-react";
+import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, FileDown, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight } from "lucide-react";
 import {
   fetchItems, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
@@ -10,7 +10,7 @@ import {
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, updateShippingAddress, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
-  fetchSavedSearches, saveSearch, deleteSavedSearch, updateNotificationPrefs,
+  fetchSavedSearches, saveSearch, deleteSavedSearch,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
   fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer, markItemSold, notifySaleBuyer, fetchItemConversations,
   forgotPassword, resetPassword, verifyEmail,
@@ -50,10 +50,10 @@ const AUTH_PAGE_STYLES = `
   * { box-sizing: border-box; }
   html, body { margin: 0; background: #121214; }
   .app { background: #121214; font-family: 'Helvetica Neue', Arial, sans-serif; color: #F2F2F0; }
-  .modal { background: #1A1A1E; border: 1px solid #29292f; border-radius: 20px; max-width: 380px; width: 100%; padding: 30px 26px; margin: 20px; }
+  .modal { background: #1A1A1E; border: 1px solid #29292f; border-radius: 22px; max-width: 380px; width: 100%; padding: 30px 26px; margin: 20px; }
   .auth-title { font-family: Georgia, serif; font-size: 20px; font-weight: 700; margin: 0 0 18px; text-align: center; }
   label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 5px; color: #9A9AA3; }
-  .input-icon { display: flex; align-items: center; gap: 8px; border: 1px solid #333; border-radius: 14px; padding: 0 12px; background: #121214; }
+  .input-icon { display: flex; align-items: center; gap: 8px; border: 1px solid #333; border-radius: 12px; padding: 0 12px; background: #121214; }
   .input-icon svg { color: #6A6A73; flex-shrink: 0; }
   .input-icon input { border: none; padding: 10px 0; background: transparent; color: #F2F2F0; font-family: inherit; font-size: 13px; width: 100%; outline: none; }
   .submit-btn { margin-top: 20px; width: 100%; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: #121214; border: none; border-radius: 14px; padding: 13px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
@@ -137,7 +137,6 @@ function ItemCard({ item, onOpen, index, saved, toggleSave }) {
       <div className="card-media" style={{ backgroundImage: `url(${item.photo})` }}>
         {item.minutesAgo < 30 && <span className="new-ribbon">Nuevo</span>}
         {item.featured && <span className="featured-ribbon" style={{ top: item.minutesAgo < 30 ? 38 : 10 }}>Destacado</span>}
-        {item.size && <span className="size-badge">T. {item.size}</span>}
         <button className={"heart" + (saved ? " on" : "")} onClick={(e) => { e.stopPropagation(); toggleSave(item.id); }}>
           <Heart size={16} fill={saved ? "#FF4D6D" : "none"} color={saved ? "#FF4D6D" : "#fff"} />
         </button>
@@ -145,7 +144,7 @@ function ItemCard({ item, onOpen, index, saved, toggleSave }) {
       </div>
       <div className="card-info">
         <h3>{item.title}</h3>
-        <p>{item.condition}</p>
+        <p>{item.size ? `${item.size} · ` : ""}{item.condition}</p>
         <p className="card-city"><MapPin size={10} /> {item.distanceKm !== null ? `a ${item.distanceKm < 1 ? "menos de 1" : Math.round(item.distanceKm)} km · ` : item.city ? `${item.city} · ` : ""}{timeAgo(item.minutesAgo)}</p>
       </div>
     </div>
@@ -216,8 +215,6 @@ export default function RopelinApp() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [myEmailVerified, setMyEmailVerified] = useState(true);
-  const [notifyMessagesPref, setNotifyMessagesPref] = useState(true);
-  const [notifyOffersPref, setNotifyOffersPref] = useState(true);
   const [shippingStreetInput, setShippingStreetInput] = useState("");
   const [shippingPostalInput, setShippingPostalInput] = useState("");
   const [shippingPhoneInput, setShippingPhoneInput] = useState("");
@@ -375,8 +372,6 @@ export default function RopelinApp() {
         setShippingStreetInput(data.shippingStreet || "");
         setShippingPostalInput(data.shippingPostalCode || "");
         setShippingPhoneInput(data.shippingPhone || "");
-        setNotifyMessagesPref(data.notifyMessages !== false);
-        setNotifyOffersPref(data.notifyOffers !== false);
       }).catch(() => {});
     }
     if (showProfile) {
@@ -447,7 +442,7 @@ export default function RopelinApp() {
       toast.success("Etiqueta de envío generada");
       loadOrders();
     } catch (err) {
-      toast.error(err.message, { duration: 12000 });
+      toast.error(err.message);
     }
   }
 
@@ -1251,16 +1246,6 @@ export default function RopelinApp() {
     }
   }
 
-  async function handleToggleNotifyPref(pref, value) {
-    if (pref === "messages") setNotifyMessagesPref(value); else setNotifyOffersPref(value);
-    try {
-      await updateNotificationPrefs(pref === "messages" ? { notifyMessages: value } : { notifyOffers: value });
-    } catch (err) {
-      toast.error(err.message);
-      if (pref === "messages") setNotifyMessagesPref(!value); else setNotifyOffersPref(!value);
-    }
-  }
-
   async function handleSaveShippingAddress() {
     if (!shippingStreetInput.trim() || !shippingPostalInput.trim()) {
       toast.error("Rellena al menos la calle y el código postal");
@@ -1713,9 +1698,9 @@ export default function RopelinApp() {
       <Toaster
         position="bottom-center"
         toastOptions={{
-          style: { background: "var(--card)", color: "var(--text)", border: "1px solid var(--border)", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: "13px" },
-          success: { iconTheme: { primary: "#4DE1C1", secondary: "var(--card)" } },
-          error: { iconTheme: { primary: "#FF4D6D", secondary: "var(--card)" } },
+          style: { background: "#1A1A1E", color: "#F2F2F0", border: "1px solid #29292f", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: "13px" },
+          success: { iconTheme: { primary: "#4DE1C1", secondary: "#1A1A1E" } },
+          error: { iconTheme: { primary: "#FF4D6D", secondary: "#1A1A1E" } },
         }}
       />
       <style>{`
@@ -1732,7 +1717,7 @@ export default function RopelinApp() {
         .app { min-height: 100vh; max-width: 100vw; overflow-x: hidden; background: var(--bg); color: var(--text); font-family: 'Helvetica Neue', Arial, sans-serif; }
         header.top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; padding: 16px 20px; position: sticky; top: 0; background: var(--bg-translucent); backdrop-filter: blur(6px); z-index: 5; }
         .brand { display: flex; align-items: center; gap: 8px; }
-        .brand-mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #FF4D6D, #8C7CFF); display: flex; align-items: center; justify-content: center; }
+        .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #FF4D6D, #8C7CFF); display: flex; align-items: center; justify-content: center; }
         .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
         .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
         .mobile-bottom-nav { display: none; }
@@ -1770,7 +1755,7 @@ export default function RopelinApp() {
         .profile-badge { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text); }
         .mini-avatar { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--bg); }
         .profile-modal { max-width: 400px; padding: 0; }
-        .profile-banner { height: 100px; position: relative; overflow: hidden; border-radius: 20px 22px 0 0; }
+        .profile-banner { height: 100px; position: relative; overflow: hidden; border-radius: 22px 22px 0 0; }
         .banner-texture { position: absolute; inset: 0; background-image: radial-gradient(#ffffff22 1px, transparent 1px); background-size: 10px 10px; }
         .profile-content { padding: 0 22px 24px; text-align: center; margin-top: -30px; position: relative; z-index: 2; }
         .profile-avatar-lg { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: var(--bg); margin: 0 auto 10px; border: 5px solid var(--card); box-shadow: 0 0 0 2px var(--border), 0 4px 14px rgba(0,0,0,0.45); position: relative; z-index: 2; }
@@ -1797,13 +1782,13 @@ export default function RopelinApp() {
           .profile-desktop-flex.has-sidebar .profile-desktop-content { flex: 1; }
         }
         .profile-sidebar-menu { display: flex; flex-direction: column; }
-        .profile-sidebar-item { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; border-radius: 14px; padding: 11px 12px; margin-bottom: 4px; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--body); text-align: left; }
+        .profile-sidebar-item { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; border-radius: 12px; padding: 11px 12px; margin-bottom: 4px; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--body); text-align: left; }
         .profile-sidebar-item:hover { background: var(--card); }
         .profile-sidebar-item.active { background: var(--card); color: var(--text); border: 1px solid var(--border); }
         .profile-menu-section-title { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--faint); font-weight: 700; margin: 18px 0 8px; }
         .profile-menu-section-title:first-child { margin-top: 0; }
         .profile-menu-row { display: flex; align-items: center; gap: 12px; width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 13px 14px; margin-bottom: 8px; cursor: pointer; font-family: inherit; color: var(--text); }
-        .profile-menu-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--sub); }
+        .profile-menu-icon { width: 30px; height: 30px; border-radius: 10px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--sub); }
         .profile-menu-label { flex: 1; text-align: left; font-size: 13.5px; font-weight: 600; }
         .profile-menu-row svg:last-child { color: var(--faint); flex-shrink: 0; }
         .profile-quick-card { display: flex; align-items: center; gap: 12px; width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; font-family: inherit; text-align: left; }
@@ -1816,6 +1801,11 @@ export default function RopelinApp() {
         .profile-badges-bar { height: 6px; border-radius: 999px; background: var(--surface); overflow: hidden; }
         .profile-badges-bar-fill { height: 100%; background: linear-gradient(90deg, #FF4D6D, #FF8A4D); border-radius: 999px; }
         .empty-tab { font-size: 12px; color: var(--faint); padding: 20px 0; }
+        .empty-state-cta { text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 30px 20px; }
+        .empty-state-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--surface); color: var(--sub); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+        .empty-state-title { font-size: 14px; font-weight: 700; color: var(--text); margin: 0 0 4px; }
+        .empty-state-text { font-size: 12.5px; color: var(--sub); margin: 0 0 16px; }
+        .empty-state-cta .btn.primary { display: inline-flex; align-items: center; gap: 6px; }
         .mini-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; text-align: left; }
         .mini-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
         .mini-row .mini-card { flex: 0 0 160px; }
@@ -1825,7 +1815,7 @@ export default function RopelinApp() {
         .profile-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); margin: 4px 0 10px; }
         .mini-card.sold { opacity: 0.6; }
         .mini-swatch { height: 60px; position: relative; }
-        .mini-featured-badge { position: absolute; top: 4px; left: 4px; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: var(--bg); font-size: 8px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 8px; }
+        .mini-featured-badge { position: absolute; top: 4px; left: 4px; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: var(--bg); font-size: 8px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 6px; }
         .mini-title { font-size: 12px; font-weight: 600; margin: 8px 10px 2px; }
         .mini-price { font-size: 12px; font-weight: 700; color: #4DE1C1; margin: 0 10px 10px; }
         button { transition: transform .1s ease, opacity .1s ease; }
@@ -1846,25 +1836,25 @@ export default function RopelinApp() {
         .search-row { padding: 20px 26px 4px; display: flex; gap: 10px; align-items: center; }
         .filter-toggle-btn { flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--input-border); color: var(--sub); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color .15s ease, color .15s ease; }
         .filter-toggle-btn:disabled { opacity: 0.6; cursor: default; }
-        .photo-search-banner { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 10px 16px; margin: 0 26px 14px; font-size: 12.5px; color: var(--body); }
+        .photo-search-banner { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; margin: 0 26px 14px; font-size: 12.5px; color: var(--body); }
         .photo-search-banner strong { color: var(--text); }
         .photo-search-banner button { margin-left: auto; display: flex; align-items: center; gap: 4px; background: none; border: none; color: var(--sub); font-size: 12px; cursor: pointer; font-family: inherit; }
         .photo-search-banner button:hover { color: #FF4D6D; }
         @media (max-width: 640px) { .photo-search-banner { margin: 0 16px 14px; } }
         .filter-toggle-btn.active { border-color: #FF4D6D; color: #FF4D6D; background: #FF4D6D14; }
-        .filter-panel { margin: 10px 26px 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+        .filter-panel { margin: 10px 26px 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
         .filter-panel-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .filter-panel-row label { font-size: 12.5px; font-weight: 600; color: var(--body); flex-shrink: 0; }
-        .filter-panel-row select { background: var(--bg); border: 1px solid var(--input-border); color: var(--text); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
+        .filter-panel-row select { background: var(--bg); border: 1px solid var(--input-border); color: var(--text); border-radius: 10px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
         .filter-price-inputs { display: flex; align-items: center; gap: 6px; }
-        .filter-price-inputs input { width: 68px; background: var(--bg); border: 1px solid var(--input-border); color: var(--text); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
+        .filter-price-inputs input { width: 68px; background: var(--bg); border: 1px solid var(--input-border); color: var(--text); border-radius: 10px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
         .filter-price-inputs span { color: var(--faint); }
         .filter-clear-btn { background: none; border: none; color: #FF4D6D; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; align-self: flex-start; display: flex; align-items: center; gap: 6px; }
         .saved-searches-list { display: flex; flex-direction: column; gap: 6px; }
-        .saved-search-chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; }
+        .saved-search-chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; }
         .saved-search-chip span { font-size: 12px; color: var(--body); cursor: pointer; }
         .saved-search-chip button { background: none; border: none; color: var(--faint); cursor: pointer; display: flex; padding: 2px; }
-        .filter-location-prompt { display: flex; align-items: center; gap: 6px; background: #4DE1C114; border: 1px solid #4DE1C133; color: #4DE1C1; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: 8px; cursor: pointer; font-family: inherit; }
+        .filter-location-prompt { display: flex; align-items: center; gap: 6px; background: #4DE1C114; border: 1px solid #4DE1C133; color: #4DE1C1; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: 10px; cursor: pointer; font-family: inherit; }
         .cat-scroll { display: flex; gap: 8px; padding: 14px 26px 6px; overflow-x: auto; scrollbar-width: none; }
         .cat-scroll::-webkit-scrollbar { display: none; }
         .cat-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; font-family: inherit; flex-shrink: 0; color: var(--sub); width: 68px; }
@@ -1895,14 +1885,13 @@ export default function RopelinApp() {
         }
 
         .col { flex: 1; min-width: 0; max-width: 300px; display: flex; flex-direction: column; gap: 14px; }
-        .card { background: var(--card); border-radius: 20px; overflow: hidden; cursor: pointer; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; border: 1px solid var(--border); }
+        .card { background: var(--card); border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; border: 1px solid var(--border); }
         .card:hover { transform: translateY(-4px); border-color: #FF4D6D55; box-shadow: 0 12px 30px -14px #FF4D6D33; }
         .card-media { height: 150px; position: relative; background-size: cover; background-position: center; flex-shrink: 0; }
         .heart { border: none; background: #00000055; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; position: absolute; top: 10px; right: 10px; }
-        .new-ribbon { position: absolute; top: 10px; left: 10px; background: #4DE1C1; color: var(--bg); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 8px; z-index: 2; }
-        .featured-ribbon { position: absolute; left: 10px; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: var(--bg); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 8px; z-index: 2; }
+        .new-ribbon { position: absolute; top: 10px; left: 10px; background: #4DE1C1; color: var(--bg); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 10px; z-index: 2; }
+        .featured-ribbon { position: absolute; left: 10px; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: var(--bg); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 10px; z-index: 2; }
         .price-pill { position: absolute; bottom: 10px; left: 10px; background: #121214cc; border: 1px solid var(--input-border); border-radius: 14px; padding: 4px 10px; font-size: 13px; font-weight: 700; z-index: 2; color: #4DE1C1; }
-        .size-badge { position: absolute; bottom: 10px; right: 10px; background: #121214cc; border: 1px solid var(--input-border); border-radius: 8px; padding: 3px 8px; font-size: 11px; font-weight: 700; z-index: 2; color: #fff; }
         .card-info { padding: 12px 14px 14px; height: 96px; display: flex; flex-direction: column; justify-content: flex-start; overflow: hidden; }
         .card-info h3 { font-size: 14px; margin: 0 0 4px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 35px; }
         .card-info p { font-size: 12px; color: var(--sub); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1911,15 +1900,9 @@ export default function RopelinApp() {
         .sort-chip { min-width: 150px; }
         .price-filter { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--body); background: var(--surface2); border: 1px solid var(--input-border); border-radius: 20px; padding: 7px 14px; }
         .price-filter input[type=range] { width: 90px; accent-color: #FF4D6D; }
-        .follow-btn { display: flex; align-items: center; gap: 5px; border: 1px solid var(--input-border); background: var(--bg); color: var(--body); border-radius: 14px; padding: 7px 11px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+        .follow-btn { display: flex; align-items: center; gap: 5px; border: 1px solid var(--input-border); background: var(--bg); color: var(--body); border-radius: 12px; padding: 7px 11px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
         .follow-btn.on { background: linear-gradient(135deg, #4DE1C1, #4DA8FF); color: var(--bg); border-color: transparent; }
-        .offer-btn { flex: 0.75; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1.5px solid var(--border); background: none; color: var(--sub); border-radius: 14px; padding: 11px; font-weight: 600; font-size: 12px; cursor: pointer; font-family: inherit; }
-        .boost-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1.5px solid #FFC24D; background: #FFC24D22; color: #FFC24D; border-radius: 14px; padding: 11px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
-        .empty-state-rich { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 32px 20px; text-align: center; }
-        .empty-state-rich-icon { width: 52px; height: 52px; border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; color: #FF4D6D; }
-        .empty-state-rich-title { color: var(--text); font-size: 13.5px; font-weight: 700; margin: 0 0 4px; }
-        .empty-state-rich-sub { color: var(--faint); font-size: 12px; margin: 0 0 16px; }
-        .empty-state-rich-btn { background: #FF4D6D; border: none; border-radius: 8px; padding: 9px 18px; color: #fff; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .offer-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1.5px solid #FFC24D; background: #FFC24D22; color: #FFC24D; border-radius: 14px; padding: 11px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
         .offer-modal { max-width: 340px; }
         .offer-sent { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 0; font-weight: 700; }
         .league-btn { position: relative; }
@@ -1927,17 +1910,17 @@ export default function RopelinApp() {
         .admin-modal { max-width: 560px; max-height: 84vh; overflow-y: auto; padding: 30px; }
         .admin-panel-btn { color: #8C7CFF; border-color: #8C7CFF55; }
         .admin-summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; margin-top: 14px; }
-        .admin-summary-box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 10px 8px; text-align: center; }
+        .admin-summary-box { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 8px; text-align: center; }
         .admin-summary-box strong { display: block; font-size: 16px; font-weight: 800; color: var(--text); }
         .admin-summary-box span { font-size: 10px; color: var(--sub); }
         .admin-menu-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .admin-menu-item { display: flex; align-items: center; gap: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; cursor: pointer; font-family: inherit; text-align: left; transition: border-color .15s ease, background .15s ease; }
+        .admin-menu-item { display: flex; align-items: center; gap: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; cursor: pointer; font-family: inherit; text-align: left; transition: border-color .15s ease, background .15s ease; }
         .admin-menu-item:hover { border-color: #8C7CFF55; background: #17171c; }
-        .admin-menu-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--surface2); display: flex; align-items: center; justify-content: center; color: #8C7CFF; flex-shrink: 0; }
+        .admin-menu-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; color: #8C7CFF; flex-shrink: 0; }
         .admin-menu-label { flex: 1; font-size: 14.5px; font-weight: 700; }
-        .admin-menu-badge { background: #FF4D6D; color: var(--text); font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 8px; }
+        .admin-menu-badge { background: #FF4D6D; color: var(--text); font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 10px; }
         .admin-menu-arrow { color: var(--faint); font-size: 18px; }
-        .admin-back-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .admin-back-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .admin-user-list { display: flex; flex-direction: column; gap: 12px; max-height: 440px; overflow-y: auto; margin-top: 16px; padding-right: 4px; }
         .admin-user-row { display: flex; align-items: center; gap: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
         .admin-user-info { flex: 1; min-width: 0; }
@@ -1961,14 +1944,14 @@ export default function RopelinApp() {
         .admin-refund-btn { width: 100%; margin-top: 10px; padding: 10px; font-size: 12.5px; }
         .admin-search-row { display: flex; gap: 8px; margin-bottom: 16px; margin-top: 4px; }
         .admin-filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-        .admin-filter-select { flex: 1; min-width: 120px; background: var(--bg); border: 1px solid var(--input-border); color: var(--text); border-radius: 8px; padding: 8px 10px; font-size: 12px; font-family: inherit; }
+        .admin-filter-select { flex: 1; min-width: 120px; background: var(--bg); border: 1px solid var(--input-border); color: var(--text); border-radius: 10px; padding: 8px 10px; font-size: 12px; font-family: inherit; }
         .admin-export-btn { font-size: 12px; padding: 8px 14px; white-space: nowrap; }
         .admin-role-select { margin-top: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 4px 8px; font-size: 11px; font-family: inherit; }
         .admin-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; }
         .admin-page-label { font-size: 12px; color: var(--sub); }
         .admin-settings-form label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: var(--sub); margin: 14px 0 6px; }
         .admin-settings-form label:first-child { margin-top: 6px; }
-        .input-plain { width: 100%; border: 1px solid var(--input-border); border-radius: 14px; padding: 10px 12px; background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit; margin-bottom: 12px; }
+        .input-plain { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit; margin-bottom: 12px; }
         .faq-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
         .faq-item { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
         .faq-item summary { font-size: 13.5px; font-weight: 700; cursor: pointer; list-style: none; }
@@ -1985,19 +1968,19 @@ export default function RopelinApp() {
         .admin-ban-btn { background: #FF4D6D22; color: #FF4D6D; }
         .admin-unban-btn { background: #4DE1C122; color: #4DE1C1; }
         .banned-badge { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); }
-        .admin-chart { display: flex; align-items: flex-end; gap: 3px; height: 64px; margin-bottom: 18px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 8px 10px 4px; }
+        .admin-chart { display: flex; align-items: flex-end; gap: 3px; height: 64px; margin-bottom: 18px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px 4px; }
         .admin-chart-bar-wrap { flex: 1; display: flex; align-items: flex-end; height: 100%; cursor: default; }
-        .admin-chart-bar { width: 100%; background: linear-gradient(180deg, #FF4D6D, #FF8A4D); border-radius: 8px 2px 0 0; min-height: 2px; }
+        .admin-chart-bar { width: 100%; background: linear-gradient(180deg, #FF4D6D, #FF8A4D); border-radius: 2px 2px 0 0; min-height: 2px; }
         .admin-category-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-        .admin-category-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; }
+        .admin-category-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; }
         .admin-category-count { font-weight: 800; color: #4DE1C1; }
-        .admin-log-row { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
+        .admin-log-row { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
         .admin-dispute-row.reviewed { opacity: 0.55; }
-        .report-textarea { width: 100%; background: var(--bg); border: 1px solid var(--input-border); border-radius: 14px; padding: 10px 12px; color: var(--text); font-size: 13px; font-family: inherit; resize: none; margin-bottom: 10px; }
+        .report-textarea { width: 100%; background: var(--bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; color: var(--text); font-size: 13px; font-family: inherit; resize: none; margin-bottom: 10px; }
         .report-flag-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--sub); font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 8px 14px; border-radius: 20px; }
         .report-flag-btn:hover { color: #FF4D6D; border-color: #FF4D6D55; background: #FF4D6D0F; }
         .report-modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
-        .report-modal-icon { width: 38px; height: 38px; border-radius: 14px; background: #FF4D6D18; display: flex; align-items: center; justify-content: center; color: #FF4D6D; flex-shrink: 0; }
+        .report-modal-icon { width: 38px; height: 38px; border-radius: 12px; background: #FF4D6D18; display: flex; align-items: center; justify-content: center; color: #FF4D6D; flex-shrink: 0; }
         .report-submit-btn { width: 100%; margin-top: 10px; padding: 12px; font-size: 13px; font-weight: 700; border: none; border-radius: 14px; cursor: pointer; font-family: inherit; background: linear-gradient(135deg, #FF4D6D, #B23A55); color: var(--text); }
         .admin-toolbar { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 8px 6px 14px; }
         .admin-toolbar-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--faint); }
@@ -2005,14 +1988,14 @@ export default function RopelinApp() {
         .admin-icon-action:hover { background: var(--input-border); color: var(--text); }
         .admin-icon-action.danger:hover { background: #FF4D6D22; color: #FF4D6D; }
         .league-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-        .league-explainer { background: var(--card-alt); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 20px; }
+        .league-explainer { background: var(--card-alt); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; margin-bottom: 20px; }
         .league-explainer-title { font-size: 13px; font-weight: 700; color: var(--text); margin: 0 0 8px; }
         .league-explainer ul { margin: 0 0 10px; padding-left: 18px; }
         .league-explainer li { font-size: 12.5px; color: var(--body); line-height: 1.6; }
         .league-explainer li strong { color: #FFC24D; }
         .league-explainer-note { font-size: 11.5px; color: var(--faint); margin: 0; line-height: 1.5; }
         .leaderboard { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; max-height: 360px; overflow-y: auto; padding-right: 4px; }
-        .lb-row { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 9px 12px; }
+        .lb-row { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; }
         .lb-row.first { border-color: #FFC24D55; background: #FFC24D0d; }
         .lb-rank { font-size: 12px; font-weight: 800; color: var(--faint); width: 20px; }
         .lb-row.first .lb-rank { color: #FFC24D; }
@@ -2025,7 +2008,7 @@ export default function RopelinApp() {
         .lb-benefit.tier-gold { background: #FFC24D22; color: #FFC24D; }
         .lb-benefit.tier-silver { background: #C8C8CE22; color: var(--body); }
         .lb-benefit.tier-bronze { background: #FF4D6D22; color: #FF4D6D; }
-        .icon-btn { position: relative; border: 1px solid var(--input-border); background: var(--surface2); color: var(--text); border-radius: 14px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .icon-btn { position: relative; border: 1px solid var(--input-border); background: var(--surface2); color: var(--text); border-radius: 12px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .notif-dot { position: absolute; top: -4px; right: -4px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: #FF4D6D; color: var(--bg); font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
         .notif-modal { max-width: 360px; }
         .favorites-modal { max-width: 420px; }
@@ -2050,21 +2033,21 @@ export default function RopelinApp() {
         .stripe-post-reminder { display: flex; align-items: center; gap: 12px; background: #FFC24D14; border: 1px solid #FFC24D33; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; flex-wrap: wrap; }
         .stripe-post-reminder-title { font-size: 13px; font-weight: 700; color: #FFC24D; margin: 0 0 3px; }
         .stripe-post-reminder-text { font-size: 12px; color: var(--body); margin: 0; line-height: 1.4; }
-        .stripe-post-reminder button { flex-shrink: 0; margin-left: auto; background: #FFC24D; color: var(--bg); border: none; border-radius: 8px; padding: 9px 16px; font-weight: 700; font-size: 12.5px; cursor: pointer; font-family: inherit; }
+        .stripe-post-reminder button { flex-shrink: 0; margin-left: auto; background: #FFC24D; color: var(--bg); border: none; border-radius: 10px; padding: 9px 16px; font-weight: 700; font-size: 12.5px; cursor: pointer; font-family: inherit; }
         .email-unverified-banner { background: #FFC24D14; border: 1px solid #FFC24D33; border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; }
         .email-unverified-banner p { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #FFC24D; font-weight: 600; margin: 0 0 8px; }
-        .email-unverified-banner button { width: 100%; border: none; border-radius: 8px; background: #FFC24D; color: var(--bg); padding: 9px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
+        .email-unverified-banner button { width: 100%; border: none; border-radius: 10px; background: #FFC24D; color: var(--bg); padding: 9px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
         .email-unverified-banner button:disabled { opacity: 0.6; cursor: default; }
         .stripe-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; margin: 0 0 8px; }
         .stripe-status { font-size: 12px; color: var(--sub); margin: 0 0 10px; line-height: 1.4; }
         .stripe-status-note { font-size: 11px; color: var(--faint); margin: -4px 0 12px; line-height: 1.4; }
         .stripe-status.ok { display: flex; align-items: center; gap: 6px; color: #4DE1C1; margin: 0; }
-        .stripe-connect-btn { width: 100%; border: none; border-radius: 14px; background: linear-gradient(135deg, #635BFF, #4A42E8); color: #fff; padding: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
+        .stripe-connect-btn { width: 100%; border: none; border-radius: 12px; background: linear-gradient(135deg, #635BFF, #4A42E8); color: #fff; padding: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
         .orders-modal { max-width: 400px; }
         .profile-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); margin: 16px 0 10px; }
         .related-box { background: var(--card-alt); border: 1px solid #24242a; border-radius: 20px; padding: 20px 22px; margin-top: 16px; }
         .related-box .profile-section-title:first-child { margin-top: 0; }
-        .order-card { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+        .order-card { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 10px; }
         .order-top { display: flex; justify-content: space-between; gap: 8px; }
         .order-title { font-size: 13px; font-weight: 700; margin: 0; }
         .order-price { font-size: 13px; font-weight: 800; color: #4DE1C1; margin: 0; flex-shrink: 0; }
@@ -2074,7 +2057,7 @@ export default function RopelinApp() {
         .order-step.done { color: #4DE1C1; }
         .order-step-line { flex: 1; height: 2px; background: var(--border); margin: 0 4px 14px; }
         .order-step-line.done { background: #4DE1C1; }
-        .order-action-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border: none; border-radius: 14px; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); padding: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; margin-top: 6px; }
+        .order-action-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border: none; border-radius: 12px; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); padding: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; margin-top: 6px; }
         .order-action-btn.secondary { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
         .order-delivery-tag { font-size: 12px; font-weight: 600; color: var(--body); margin: 6px 0; }
         .order-hint { font-size: 11px; color: var(--faint); margin: 0 0 8px; }
@@ -2092,7 +2075,7 @@ export default function RopelinApp() {
         .danger-zone-btn:disabled { opacity: 0.6; cursor: default; }
         .delete-confirm-box { display: flex; flex-direction: column; gap: 10px; }
         .delete-confirm-text { font-size: 12.5px; color: var(--body); line-height: 1.5; margin: 0; }
-        .delete-confirm-input { width: 100%; border: 1px solid #FF4D6D55; border-radius: 14px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; }
+        .delete-confirm-input { width: 100%; border: 1px solid #FF4D6D55; border-radius: 12px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; }
         .delete-confirm-actions { display: flex; gap: 10px; }
         .delete-confirm-actions .btn { flex: 1; }
         .delete-confirm-actions .danger-zone-btn { flex: 1; }
@@ -2106,9 +2089,9 @@ export default function RopelinApp() {
         .own-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; }
         .own-actions button { border: none; background: #00000088; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        .skeleton-card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid var(--border); padding-bottom: 12px; }
+        .skeleton-card { background: var(--card); border-radius: 18px; overflow: hidden; border: 1px solid var(--border); padding-bottom: 12px; }
         .skeleton-media { height: 150px; }
-        .skeleton-line { height: 10px; border-radius: 8px; margin: 10px 14px 0; }
+        .skeleton-line { height: 10px; border-radius: 5px; margin: 10px 14px 0; }
         .shimmer { background: linear-gradient(100deg, var(--surface2) 30%, #2A2A30 50%, var(--surface2) 70%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
         @keyframes shimmer { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
 
@@ -2132,7 +2115,7 @@ export default function RopelinApp() {
         .about-impact-box p { margin: 0; font-size: 12.5px; color: var(--body); line-height: 1.5; }
         .about-impact-box strong { color: #4DE1C1; }
         .about-block { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
-        .about-block-icon { width: 34px; height: 34px; border-radius: 8px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .about-block-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .about-block-title { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; color: var(--text); }
         .about-block-text { margin: 0; font-size: 13px; color: var(--body); line-height: 1.5; }
         .about-block-link { background: none; border: none; padding: 0; margin: 0; font-size: 13px; color: #FF4D6D; font-weight: 600; cursor: pointer; text-decoration: underline; font-family: inherit; }
@@ -2141,14 +2124,14 @@ export default function RopelinApp() {
         .update-date { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #FF4D6D; font-weight: 700; margin: 0 0 10px; }
         .update-bubbles { display: flex; flex-direction: column; gap: 8px; }
         .update-bubble { display: flex; align-items: flex-start; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
-        .update-bubble-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .update-bubble-icon { width: 30px; height: 30px; border-radius: 10px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .update-bubble p { margin: 3px 0 0; font-size: 13px; color: var(--body); line-height: 1.5; }
         .update-type-tag { font-size: 10px; font-weight: 700; border: 1px solid; border-radius: 999px; padding: 2px 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .updates-subscribe-box { background: linear-gradient(135deg, #8C7CFF14, #FF4D6D0a); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-top: 4px; }
+        .updates-subscribe-box { background: linear-gradient(135deg, #8C7CFF14, #FF4D6D0a); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-top: 4px; }
         .updates-subscribe-title { margin: 0 0 10px; font-size: 13px; color: var(--text); font-weight: 700; }
         .updates-subscribe-form { display: flex; gap: 8px; }
-        .updates-subscribe-form input { flex: 1; border: 1px solid var(--input-border); border-radius: 8px; padding: 9px 12px; font-size: 12.5px; background: var(--bg); color: var(--text); font-family: inherit; }
-        .updates-subscribe-form .btn.primary { padding: 9px 16px; font-size: 12.5px; border-radius: 8px; }
+        .updates-subscribe-form input { flex: 1; border: 1px solid var(--input-border); border-radius: 10px; padding: 9px 12px; font-size: 12.5px; background: var(--bg); color: var(--text); font-family: inherit; }
+        .updates-subscribe-form .btn.primary { padding: 9px 16px; font-size: 12.5px; border-radius: 10px; }
         .updates-subscribe-done { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; color: #4DE1C1; font-weight: 700; justify-content: center; }
         .legal-text p { margin: 0 0 12px; }
         .empty-title { font-size: 14px; font-weight: 700; margin: 6px 0 0; }
@@ -2160,17 +2143,17 @@ export default function RopelinApp() {
         .gallery-arrow.right { right: 10px; }
         .gallery-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 2; }
         .gallery-dot { width: 6px; height: 6px; border-radius: 50%; background: #ffffff66; cursor: pointer; }
-        .gallery-dot.active { background: #fff; width: 16px; border-radius: 8px; }
+        .gallery-dot.active { background: #fff; width: 16px; border-radius: 3px; }
         .detail-description { font-size: 13px; color: var(--body); line-height: 1.5; margin: 0 0 16px; white-space: pre-wrap; }
         .detail-icon-btn { position: static; }
         .trend-tag { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #4DE1C1; margin: 3px 0 0; white-space: nowrap; }
 
         .profile-progress { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; text-align: left; }
         .progress-label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 6px; }
-        .progress-track { height: 6px; background: var(--border); border-radius: 8px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #4DE1C1, #4DA8FF); border-radius: 8px; }
+        .progress-track { height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #4DE1C1, #4DA8FF); border-radius: 4px; }
         .progress-hint { font-size: 10px; color: var(--faint); margin: 6px 0 0; }
-        .cover-btn { position: absolute; bottom: 8px; right: 44px; display: flex; align-items: center; gap: 5px; background: #00000066; border: none; color: #fff; font-size: 10px; padding: 5px 10px; border-radius: 14px; cursor: pointer; font-family: inherit; }
+        .cover-btn { position: absolute; bottom: 8px; right: 44px; display: flex; align-items: center; gap: 5px; background: #00000066; border: none; color: #fff; font-size: 10px; padding: 5px 10px; border-radius: 12px; cursor: pointer; font-family: inherit; }
         .share-profile-btn { position: absolute; bottom: 8px; right: 10px; background: #00000066; border: none; color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .milestone-badges { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
         .mstone { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: var(--surface2); border: 1px solid var(--input-border); border-radius: 50%; font-size: 10px; color: #FFC24D; }
@@ -2178,7 +2161,7 @@ export default function RopelinApp() {
         .streak-text { font-size: 11px; color: #FFC24D; margin: 4px 0 10px; font-weight: 600; }
         .verify-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
         .profile-city-line { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 12.5px; color: var(--sub); margin: 0 0 16px; }
-        .verify-chip { display: flex; align-items: center; gap: 4px; font-size: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--faint); padding: 4px 9px; border-radius: 14px; }
+        .verify-chip { display: flex; align-items: center; gap: 4px; font-size: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--faint); padding: 4px 9px; border-radius: 12px; }
         .seller-mini-verify { display: flex; gap: 6px; margin-top: 5px; }
         .seller-mini-verify .verify-chip { padding: 2px 7px; font-size: 9px; }
         .verify-chip.done { color: #4DE1C1; border-color: #4DE1C133; }
@@ -2195,8 +2178,8 @@ export default function RopelinApp() {
         .rb-row { font-size: 11px; margin-bottom: 8px; }
         .rb-row:last-child { margin-bottom: 0; }
         .rb-row span { display: block; margin-bottom: 4px; color: var(--body); }
-        .rb-track { height: 5px; background: var(--border); border-radius: 8px; overflow: hidden; }
-        .rb-fill { height: 100%; background: linear-gradient(90deg, #4DE1C1, #4DA8FF); border-radius: 8px; }
+        .rb-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .rb-fill { height: 100%; background: linear-gradient(90deg, #4DE1C1, #4DA8FF); border-radius: 3px; }
         .chat-modal { max-width: 380px; display: flex; flex-direction: column; height: 560px; max-height: 82vh; padding: 0; overflow: hidden; }
         .chat-header { display: flex; align-items: center; gap: 12px; padding: 16px 50px 16px 18px; border-bottom: 1px solid var(--border); position: relative; flex-shrink: 0; background: linear-gradient(180deg, var(--surface2), var(--card)); }
         .chat-close { position: static; margin-left: auto; order: 3; background: var(--border); }
@@ -2206,7 +2189,7 @@ export default function RopelinApp() {
         .chat-item-ref { font-size: 11px; color: var(--sub); margin: 2px 0 0; }
         .chat-item-strip { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border-bottom: 1px solid var(--border); cursor: pointer; flex-shrink: 0; transition: background .15s ease; }
         .chat-item-strip:hover { background: var(--surface2); }
-        .chat-item-thumb { width: 42px; height: 42px; border-radius: 8px; background-size: cover; background-position: center; flex-shrink: 0; border: 1px solid var(--border); }
+        .chat-item-thumb { width: 42px; height: 42px; border-radius: 10px; background-size: cover; background-position: center; flex-shrink: 0; border: 1px solid var(--border); }
         .chat-item-strip-info { flex: 1; min-width: 0; }
         .chat-item-strip-title { font-size: 12px; font-weight: 600; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .chat-item-strip-price { font-size: 12px; font-weight: 800; color: #4DE1C1; margin: 1px 0 0; }
@@ -2216,7 +2199,7 @@ export default function RopelinApp() {
         .chat-msg-row.grouped { margin-top: -8px; }
         .chat-msg-row.me { align-items: flex-end; }
         .chat-msg-row.seller { align-items: flex-start; }
-        .chat-bubble { max-width: 78%; padding: 10px 14px; border-radius: 20px; font-size: 13px; line-height: 1.45; box-shadow: 0 3px 10px -4px rgba(0,0,0,0.5); }
+        .chat-bubble { max-width: 78%; padding: 10px 14px; border-radius: 18px; font-size: 13px; line-height: 1.45; box-shadow: 0 3px 10px -4px rgba(0,0,0,0.5); }
         .chat-bubble.seller { background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 5px; }
         .chat-bubble.me { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); border-bottom-right-radius: 5px; font-weight: 500; }
         .chat-bubble.offer-bubble { font-weight: 800; border-color: #FFC24D; }
@@ -2228,14 +2211,14 @@ export default function RopelinApp() {
         .offer-resp-btn.counter { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
         .offer-resp-btn:disabled { opacity: 0.6; cursor: default; }
         .offer-counter-row { display: flex; gap: 6px; width: 100%; margin-top: 4px; }
-        .offer-counter-row input { flex: 1; min-width: 0; border: 1px solid var(--input-border); border-radius: 8px; padding: 6px 10px; font-size: 12px; background: var(--bg); color: var(--text); font-family: inherit; }
+        .offer-counter-row input { flex: 1; min-width: 0; border: 1px solid var(--input-border); border-radius: 10px; padding: 6px 10px; font-size: 12px; background: var(--bg); color: var(--text); font-family: inherit; }
         .offer-status-tag { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; }
         .offer-status-tag.pending { background: #FFC24D14; color: #FFC24D; }
         .offer-status-tag.accepted { background: #4DE1C114; color: #4DE1C1; }
         .offer-status-tag.rejected { background: #FF4D6D14; color: #FF4D6D; }
         .chat-msg-time { font-size: 10px; color: var(--faint); margin: 4px 4px 0; }
         .chat-input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--border); flex-shrink: 0; align-items: center; background: #17171a; }
-        .chat-input-row input { flex: 1; border: 1px solid var(--input-border); border-radius: 20px; padding: 11px 16px; background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit; transition: border-color .15s ease; }
+        .chat-input-row input { flex: 1; border: 1px solid var(--input-border); border-radius: 22px; padding: 11px 16px; background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit; transition: border-color .15s ease; }
         .chat-input-row input:focus { outline: none; border-color: #FF4D6D66; }
         .chat-send-btn { border: none; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; box-shadow: 0 4px 14px -4px #FF4D6D88; transition: opacity .15s ease, transform .1s ease; }
         .chat-send-btn:disabled { opacity: 0.4; box-shadow: none; cursor: default; }
@@ -2244,25 +2227,21 @@ export default function RopelinApp() {
         .overlay { position: fixed; inset: 0; background: rgba(10,10,12,0.85); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
         .cropper-overlay { z-index: 50; }
         .cropper-box { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; width: 100%; max-width: 420px; }
-        .cropper-canvas { position: relative; width: 100%; height: 320px; background: #000; border-radius: 14px; overflow: hidden; }
+        .cropper-canvas { position: relative; width: 100%; height: 320px; background: #000; border-radius: 12px; overflow: hidden; }
         .cropper-zoom-slider { width: 100%; margin: 16px 0 4px; accent-color: #FF4D6D; }
         .cropper-actions { display: flex; gap: 10px; margin-top: 14px; }
         .cropper-actions .btn { flex: 1; justify-content: center; }
         .overlay-top { z-index: 15; }
-        .modal { background: var(--card); border: 1px solid var(--border); border-radius: 20px; max-width: 400px; width: 100%; padding: 26px; position: relative; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+        .modal { background: var(--card); border: 1px solid var(--border); border-radius: 22px; max-width: 400px; width: 100%; padding: 26px; position: relative; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         .modal h3 { font-size: 19px; font-weight: 700; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
         .close-btn { position: absolute; top: 16px; right: 16px; background: var(--border); border: none; border-radius: 50%; width: 28px; height: 28px; color: var(--text); cursor: pointer; z-index: 5; }
         label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; color: var(--sub); }
-        input, select { width: 100%; border: 1px solid var(--input-border); border-radius: 14px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; }
-        .post-textarea { width: 100%; border: 1px solid var(--input-border); border-radius: 14px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 4px; }
+        input, select { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; }
+        .post-textarea { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 4px; }
         .submit-btn { margin-top: 20px; width: 100%; border: none; border-radius: 14px; padding: 13px; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); font-weight: 700; font-size: 13px; cursor: pointer; }
         .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .detail-price { font-size: 30px; font-weight: 800; margin: 10px 0 14px; }
         .detail-price-old { font-size: 16px; font-weight: 600; color: var(--faint); text-decoration: line-through; margin-right: 8px; -webkit-text-fill-color: var(--faint); }
-        .trust-note { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--faint); margin: 10px 0 0; }
-        .skeleton-row { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
-        .skeleton-block { background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%); background-size: 200% 100%; animation: skeleton-pulse 1.4s ease-in-out infinite; border-radius: 8px; }
-        @keyframes skeleton-pulse { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         .seller-row { font-size: 13px; color: var(--sub); margin-bottom: 18px; }
         .detail-modal { max-width: 400px; padding: 0; }
         @media (max-width: 780px) {
@@ -2279,16 +2258,16 @@ export default function RopelinApp() {
         }
         .post-page { padding: 20px 26px 100px; max-width: 900px; margin: 0 auto; }
         .legal-page { padding: 20px 26px 100px; max-width: 700px; margin: 0 auto; }
-        .legal-page.wide-page { max-width: 1100px; }
+        .legal-page.profile-page-wide { max-width: 1100px; }
         @media (min-width: 1500px) {
-          .legal-page.wide-page { max-width: 1300px; }
+          .legal-page.profile-page-wide { max-width: 1300px; }
         }
         .legal-page .legal-text { max-height: none; }
         .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 0; margin-bottom: 16px; font-family: inherit; }
         .back-btn:hover { color: var(--text); }
         .item-page-grid { display: flex; gap: 40px; align-items: flex-start; justify-content: center; }
         .item-page-gallery { flex: 1.1; min-width: 0; max-width: 620px; }
-        .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 14px; padding: 14px 18px; margin: 20px auto 0; max-width: 700px; font-size: 12.5px; color: var(--body); line-height: 1.5; }
+        .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #4DE1C114, #4DE1C108); border: 1px solid #4DE1C133; border-radius: 16px; padding: 14px 18px; margin: 20px auto 0; max-width: 700px; font-size: 12.5px; color: var(--body); line-height: 1.5; }
         .community-impact svg { flex-shrink: 0; }
         .community-impact strong { color: #4DE1C1; font-weight: 700; }
         .newsletter-outer { background: linear-gradient(120deg, #8C7CFF, #FF4D6D 70%); margin-top: 34px; }
@@ -2296,9 +2275,9 @@ export default function RopelinApp() {
         .newsletter-title { color: var(--bg); font-size: 20px; font-weight: 800; margin: 0 0 5px; }
         .newsletter-sub { color: var(--bg); opacity: 0.75; font-size: 13.5px; margin: 0; }
         .newsletter-form { display: flex; gap: 10px; flex-wrap: wrap; }
-        .newsletter-form input { width: 260px; border: none; border-radius: 14px; padding: 13px 16px; font-size: 13px; background: #ffffffee; color: var(--bg); font-family: inherit; }
+        .newsletter-form input { width: 260px; border: none; border-radius: 12px; padding: 13px 16px; font-size: 13px; background: #ffffffee; color: var(--bg); font-family: inherit; }
         .newsletter-form input::placeholder { color: var(--faint); }
-        .newsletter-form .btn.primary { background: #121214; color: #fff; border: none; padding: 13px 22px; border-radius: 14px; font-weight: 700; font-size: 13px; }
+        .newsletter-form .btn.primary { background: #121214; color: #fff; border: none; padding: 13px 22px; border-radius: 12px; font-weight: 700; font-size: 13px; }
         .newsletter-thanks { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--bg); font-weight: 700; }
         @media (max-width: 640px) {
           .newsletter-band { padding: 30px 20px; }
@@ -2342,7 +2321,7 @@ export default function RopelinApp() {
           .item-page-info { max-width: 560px; }
         }
         @media (min-width: 781px) {
-          .item-page-info { background: var(--card-alt); border: 1px solid #24242a; border-radius: 20px; padding: 26px 28px; }
+          .item-page-info { background: var(--card-alt); border: 1px solid #24242a; border-radius: 22px; padding: 26px 28px; }
           .item-page-gallery .detail-media { box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6); }
           .item-page .detail-price { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); -webkit-background-clip: text; background-clip: text; color: transparent; }
         }
@@ -2353,9 +2332,9 @@ export default function RopelinApp() {
         }
         .item-page .detail-media { height: 480px; border-radius: 20px; position: sticky; top: 90px; }
         @media (max-width: 780px) {
-          .item-page .detail-media { height: 340px; border-radius: 14px; }
+          .item-page .detail-media { height: 340px; border-radius: 16px; }
         }
-        .detail-media { height: 220px; position: relative; border-radius: 20px 22px 0 0; }
+        .detail-media { height: 220px; position: relative; border-radius: 22px 22px 0 0; }
         .dark-close { top: 14px; right: 14px; background: #00000066; }
         .dark-close-left { top: 14px; left: 14px; right: auto; background: #00000066; z-index: 6; }
         .detail-heart { position: absolute; top: 14px; right: 14px; }
@@ -2386,7 +2365,7 @@ export default function RopelinApp() {
         .questions-box { margin-bottom: 18px; }
         .questions-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--text); margin: 0 0 10px; }
         .questions-empty { font-size: 12px; color: var(--faint); margin: 0 0 10px; }
-        .question-item { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
+        .question-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
         .question-text { font-size: 12.5px; color: var(--body); margin: 0; line-height: 1.5; }
         .question-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
         .question-mini-actions { display: flex; gap: 4px; flex-shrink: 0; }
@@ -2397,13 +2376,13 @@ export default function RopelinApp() {
         .answer-text strong { color: #4DE1C1; }
         .answer-pending { font-size: 11px; color: var(--faint); margin: 6px 0 0; font-style: italic; }
         .answer-form, .ask-form { display: flex; gap: 6px; margin-top: 8px; }
-        .answer-form input, .ask-form input { flex: 1; border: 1px solid var(--input-border); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; background: var(--bg); color: var(--text); font-family: inherit; }
-        .answer-form button, .ask-form button { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); border: none; border-radius: 8px; width: 34px; display: flex; align-items: center; justify-content: center; color: var(--bg); cursor: pointer; }
+        .answer-form input, .ask-form input { flex: 1; border: 1px solid var(--input-border); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; background: var(--bg); color: var(--text); font-family: inherit; }
+        .answer-form button, .ask-form button { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); border: none; border-radius: 10px; width: 34px; display: flex; align-items: center; justify-content: center; color: var(--bg); cursor: pointer; }
         .answer-form button:disabled, .ask-form button:disabled { opacity: 0.6; }
         .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
         .mark-sold-btn { flex-basis: 100%; }
         .detail-actions .chat-btn { flex: 1; margin: 0; }
-        .buy-btn { flex: 1.25; border: none; border-radius: 14px; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); font-weight: 800; font-size: 14px; padding: 13px; cursor: pointer; box-shadow: 0 4px 16px #FF4D6D44; }
+        .buy-btn { flex: 1; border: none; border-radius: 14px; background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); font-weight: 700; font-size: 13px; cursor: pointer; }
         .chat-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: 1px solid var(--input-border); border-radius: 14px; background: transparent; color: var(--text); padding: 12px; font-weight: 600; font-size: 13px; cursor: pointer; }
         .chat-btn:hover { background: var(--border); }
         .empty { padding: 60px 26px; text-align: center; color: var(--faint); font-size: 13px; }
@@ -2422,11 +2401,11 @@ export default function RopelinApp() {
         .auth-title { font-size: 21px; font-weight: 700; margin: 0 0 6px; }
         .auth-subtitle { font-size: 13px; color: var(--sub); margin: 0; line-height: 1.5; }
         .tabs { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 4px; margin-bottom: 24px; }
-        .tab { flex: 1; border: none; background: transparent; color: var(--sub); padding: 11px; border-radius: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+        .tab { flex: 1; border: none; background: transparent; color: var(--sub); padding: 11px; border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
         .tab.active { background: var(--text); color: var(--bg); }
         .auth-modal label { margin: 18px 0 7px; }
         .auth-modal label:first-of-type { margin-top: 0; }
-        .input-icon { display: flex; align-items: center; gap: 10px; border: 1px solid var(--input-border); border-radius: 14px; padding: 0 14px; background: var(--bg); transition: border-color 0.15s; }
+        .input-icon { display: flex; align-items: center; gap: 10px; border: 1px solid var(--input-border); border-radius: 13px; padding: 0 14px; background: var(--bg); transition: border-color 0.15s; }
         .input-icon:focus-within { border-color: #FF4D6D88; }
         .input-icon svg { color: var(--faint); flex-shrink: 0; }
         .input-icon input { border: none; padding: 13px 0; background: transparent; }
@@ -2448,13 +2427,13 @@ export default function RopelinApp() {
         }
         .post-section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--faint); font-weight: 700; margin: 24px 0 10px; }
         .post-section-label:first-of-type { margin-top: 6px; }
-        .upload-box { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 1.5px dashed var(--input-border); border-radius: 14px; padding: 26px 16px; margin-bottom: 12px; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
+        .upload-box { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 1.5px dashed var(--input-border); border-radius: 16px; padding: 26px 16px; margin-bottom: 12px; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
         .upload-box:hover { border-color: #FF4D6D; }
         .image-preview-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
         .image-preview.uploading { display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--faint); }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .image-preview { position: relative; width: 100%; aspect-ratio: 1; border-radius: 14px; overflow: hidden; border: 1px solid var(--input-border); }
+        .image-preview { position: relative; width: 100%; aspect-ratio: 1; border-radius: 12px; overflow: hidden; border: 1px solid var(--input-border); }
         .image-preview img { width: 100%; height: 100%; object-fit: cover; }
         .image-preview button { position: absolute; top: 4px; right: 4px; background: #000000aa; border: none; color: #fff; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
         .upload-hint { font-size: 11px; color: var(--faint); font-weight: 400; }
@@ -2463,7 +2442,7 @@ export default function RopelinApp() {
         .pill.active { background: linear-gradient(135deg, #FF4D6D, #FF8A4D); color: var(--bg); border-color: transparent; font-weight: 700; }
         .price-input { max-width: 140px; }
         .euro-prefix { color: var(--faint); font-weight: 700; font-size: 14px; }
-        .post-preview-card { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--bg); margin-top: 18px; }
+        .post-preview-card { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--bg); margin-top: 18px; }
         .post-preview-media { height: 140px; background: var(--card); display: flex; align-items: center; justify-content: center; color: var(--faint); background-size: contain; background-repeat: no-repeat; background-position: center; }
         .post-preview-body { padding: 10px 12px; }
         .post-preview-price { color: #4DE1C1; font-weight: 700; font-size: 14px; margin: 0; }
@@ -2741,11 +2720,7 @@ export default function RopelinApp() {
             </div>
 
             {otherProfileLoading ? (
-              <div className="profile-content">
-                <div className="skeleton-row"><div className="skeleton-block" style={{ width: 46, height: 46, borderRadius: "50%" }} /><div style={{ flex: 1 }}><div className="skeleton-block" style={{ width: "60%", height: 12, marginBottom: 8 }} /><div className="skeleton-block" style={{ width: "40%", height: 10 }} /></div></div>
-                <div className="skeleton-row" style={{ height: 44 }} />
-                <div className="skeleton-row" style={{ height: 44 }} />
-              </div>
+              <div className="profile-content"><p className="empty-tab">Cargando perfil...</p></div>
             ) : (
             <div className="profile-content">
               <div
@@ -2984,16 +2959,14 @@ export default function RopelinApp() {
               <div className="profile-desktop-content">
               {(profileMenuView === "venta" || (!isOwnProfile && !profileMenuView)) && (
                 profileItems.length === 0
-                  ? isOwnProfile ? (
-                      <div className="empty-state-rich">
-                        <div className="empty-state-rich-icon"><PackageOpen size={24} /></div>
-                        <p className="empty-state-rich-title">Aún no tienes prendas publicadas</p>
-                        <p className="empty-state-rich-sub">Publica tu primera prenda en menos de un minuto</p>
-                        <button className="empty-state-rich-btn" onClick={() => { setShowProfile(false); openPostForm(); }}>+ Publicar</button>
+                  ? (isOwnProfile ? (
+                      <div className="empty-state-cta">
+                        <span className="empty-state-icon"><Shirt size={22} /></span>
+                        <p className="empty-state-title">Aún no tienes prendas publicadas</p>
+                        <p className="empty-state-text">Publica tu primera prenda y empieza a sumar puntos en tu liga.</p>
+                        <button className="btn primary" onClick={openPostForm}><Plus size={14} /> Publicar prenda</button>
                       </div>
-                    ) : (
-                      <p className="empty-tab">Este vendedor no tiene prendas en venta ahora mismo.</p>
-                    )
+                    ) : <p className="empty-tab">Este vendedor no tiene prendas en venta ahora mismo.</p>)
                   : <div className="mini-grid">
                       {profileItems.map((i, idx) => (
                         <div key={i.id} className="mini-card own-card" onClick={() => { setShowProfile(false); viewItem(i); }}>
@@ -3018,11 +2991,7 @@ export default function RopelinApp() {
 
               {profileMenuView === "vendidos" && (
                 profileSold.length === 0
-                  ? <div className="empty-state-rich">
-                      <div className="empty-state-rich-icon"><CheckCircle size={24} /></div>
-                      <p className="empty-state-rich-title">Aún no hay ventas completadas</p>
-                      <p className="empty-state-rich-sub">Cuando vendas algo, aparecerá aquí</p>
-                    </div>
+                  ? <p className="empty-tab">Aún no hay ventas completadas.</p>
                   : <div className="mini-grid">
                       {profileSold.map((s, idx) => (
                         <div key={s.id} className="mini-card sold">
@@ -3036,11 +3005,7 @@ export default function RopelinApp() {
 
               {profileMenuView === "favoritos" && isOwnProfile && (
                 saved.size === 0
-                  ? <div className="empty-state-rich">
-                      <div className="empty-state-rich-icon"><Heart size={24} /></div>
-                      <p className="empty-state-rich-title">Aún no has guardado ninguna prenda</p>
-                      <p className="empty-state-rich-sub">Dale al corazón de cualquier artículo para verlo aquí</p>
-                    </div>
+                  ? <p className="empty-tab">Aún no has guardado ninguna prenda.</p>
                   : <div className="mini-grid">
                       {allItems.filter((i) => saved.has(i.id)).map((i, idx) => (
                         <div key={i.id} className="mini-card">
@@ -3174,7 +3139,7 @@ export default function RopelinApp() {
         );
 
         return numCols >= 3 ? (
-          <div className="legal-page wide-page">
+          <div className="legal-page profile-page-wide">
             <button className="back-btn" onClick={closeProfileView}><ArrowLeft size={16} /> Volver</button>
             <div className="profile-modal detail-modal" style={{ maxWidth: "none", padding: 0, background: "none", border: "none" }}>
               {profileContentEl}
@@ -3383,7 +3348,7 @@ export default function RopelinApp() {
                   ) : openItem.featured ? (
                     <button className="buy-btn" disabled style={{ opacity: 0.6 }}><TrendingUp size={15} /> Ya destacado</button>
                   ) : (
-                    <button className="boost-btn" onClick={() => handleBoost(openItem.id)}><TrendingUp size={15} /> {`Destacar por ${platformSettings.boostPrice}€`}</button>
+                    <button className="offer-btn" onClick={() => handleBoost(openItem.id)}><TrendingUp size={15} /> {`Destacar por ${platformSettings.boostPrice}€`}</button>
                   )}
                   {openItem.status !== "sold" && (
                     <button className="chat-btn mark-sold-btn" onClick={() => handleMarkSold(openItem.id)}><CheckCircle size={15} /> Marcar como vendido</button>
@@ -3395,14 +3360,10 @@ export default function RopelinApp() {
                 <>
                   <button className="chat-btn" onClick={() => openChat(openItem)}><MessageCircle size={15} /> Contactar</button>
                   <button className="offer-btn" onClick={() => loggedIn ? setShowOffer(true) : setShowAuth(true)}><HandCoins size={15} /> Ofertar</button>
-                  <button className="buy-btn" onClick={() => loggedIn ? setShowCheckout(true) : setShowAuth(true)}>Comprar ahora</button>
+                  <button className="buy-btn" onClick={() => loggedIn ? setShowCheckout(true) : setShowAuth(true)}>Comprar</button>
                 </>
               )}
             </div>
-
-            {openItem.seller !== username && openItem.status !== "sold" && (
-              <p className="trust-note"><ShieldCheck size={13} /> Pago protegido: el dinero se retiene hasta que confirmes que te ha llegado bien.</p>
-            )}
 
             {isAdmin && (
               <div className="admin-toolbar">
@@ -3466,18 +3427,7 @@ export default function RopelinApp() {
             </div>
 
             <p className="profile-section-title">Ranking esta semana</p>
-            {leagueLoading && (
-              <>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <div key={n} className="skeleton-row">
-                    <div className="skeleton-block" style={{ width: 24, height: 24 }} />
-                    <div className="skeleton-block" style={{ width: 38, height: 38, borderRadius: "50%" }} />
-                    <div style={{ flex: 1 }}><div className="skeleton-block" style={{ width: "50%", height: 11 }} /></div>
-                    <div className="skeleton-block" style={{ width: 50, height: 14 }} />
-                  </div>
-                ))}
-              </>
-            )}
+            {leagueLoading && <p className="empty-tab">Cargando ranking...</p>}
             {!leagueLoading && leaderboard.length === 0 && (
               <p className="empty-tab">Todavía no hay suficientes ventas o reseñas para formar un ranking. ¡Sé el primero en aparecer aquí!</p>
             )}
@@ -3509,7 +3459,7 @@ export default function RopelinApp() {
         );
 
         return numCols >= 3 ? (
-          <div className="legal-page wide-page">
+          <div className="legal-page">
             <button className="back-btn" onClick={() => setShowLeague(false)}><ArrowLeft size={16} /> Volver</button>
             {leagueContentEl}
           </div>
@@ -3774,7 +3724,7 @@ export default function RopelinApp() {
                 <div className="legal-text">
                   <p><strong>Datos que recogemos:</strong> email, nombre de usuario, fotos que subas, mensajes de chat, y datos de pago (procesados por Stripe, nunca los almacenamos nosotros).</p>
                   <p><strong>Para qué los usamos:</strong> gestionar tu cuenta, procesar pagos y envíos, enviarte notificaciones sobre tus compras/ventas, y mejorar el servicio.</p>
-                  <p><strong>Con quién los compartimos:</strong> Stripe (pagos), Cloudinary (imágenes), Packlink (envíos) — solo lo necesario para prestar el servicio.</p>
+                  <p><strong>Con quién los compartimos:</strong> Stripe (pagos), Cloudinary (imágenes), Shippo (envíos) — solo lo necesario para prestar el servicio.</p>
                   <p><strong>Tus derechos:</strong> puedes solicitar acceso, rectificación o eliminación de tus datos escribiendo a nuestro email de contacto.</p>
                   <p style={{ color: "#6A6A73", fontSize: 11, marginTop: 16 }}>Este es un texto de ejemplo. Antes de operar de verdad, revísalo con un abogado para cumplir el RGPD correctamente.</p>
                 </div>
@@ -4222,16 +4172,7 @@ export default function RopelinApp() {
             <p className="auth-title" style={{ marginBottom: 4 }}>Mis pedidos</p>
             <p className="auth-subtitle" style={{ marginBottom: 16 }}>Compras y ventas</p>
 
-            {ordersLoading && (
-              <>
-                {[1, 2].map((n) => (
-                  <div key={n} className="skeleton-row" style={{ flexDirection: "column", alignItems: "stretch" }}>
-                    <div className="skeleton-block" style={{ width: "70%", height: 12, marginBottom: 10 }} />
-                    <div className="skeleton-block" style={{ width: "100%", height: 40 }} />
-                  </div>
-                ))}
-              </>
-            )}
+            {ordersLoading && <p className="empty-tab">Cargando...</p>}
 
             {!ordersLoading && orders.purchases.length === 0 && orders.sales.length === 0 && (
               <p className="empty-tab">Todavía no tienes compras ni ventas.</p>
@@ -4318,6 +4259,11 @@ export default function RopelinApp() {
                     )}
                     {tx.shipment && tx.shipment.trackingCode && (
                       <p className="order-hint">Nº de seguimiento: {tx.shipment.trackingCode}</p>
+                    )}
+                    {tx.shipment && tx.shipment.labelUrl && (
+                      <a className="order-action-btn" href={tx.shipment.labelUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "inline-flex" }}>
+                        <FileDown size={13} /> Descargar etiqueta (PDF)
+                      </a>
                     )}
                     {tx.status === "completed" && (
                       <>
@@ -4435,11 +4381,7 @@ export default function RopelinApp() {
             <p className="auth-subtitle" style={{ marginBottom: 16 }}>{saved.size} {saved.size === 1 ? "artículo guardado" : "artículos guardados"}</p>
 
             {saved.size === 0 ? (
-              <div className="empty-state-rich">
-                <div className="empty-state-rich-icon"><Heart size={24} /></div>
-                <p className="empty-state-rich-title">Aún no has guardado ninguna prenda</p>
-                <p className="empty-state-rich-sub">Dale al corazón de cualquier artículo para verlo aquí</p>
-              </div>
+              <p className="empty-tab">Aún no has guardado ninguna prenda. Dale al corazón de cualquier artículo para verlo aquí.</p>
             ) : (
               <div className="favorites-grid">
                 {allItems.filter((i) => saved.has(i.id)).map((item, idx) => (
@@ -4468,13 +4410,7 @@ export default function RopelinApp() {
           <div className="modal notif-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={() => setShowNotifs(false)}><X size={14} /></button>
             <p className="auth-title" style={{ marginBottom: 16 }}>Notificaciones</p>
-            {notifications.length === 0 && (
-              <div className="empty-state-rich">
-                <div className="empty-state-rich-icon"><Bell size={24} /></div>
-                <p className="empty-state-rich-title">No tienes notificaciones todavía</p>
-                <p className="empty-state-rich-sub">Aquí verás avisos de mensajes, ofertas y ventas</p>
-              </div>
-            )}
+            {notifications.length === 0 && <p className="empty-tab">No tienes notificaciones todavía.</p>}
             {notifications.map((n) => (
               <div
                 key={n.id}
@@ -4542,11 +4478,15 @@ export default function RopelinApp() {
 
             <p className="settings-toggle-row">
               <span>Notificaciones de mensajes</span>
-              <input type="checkbox" checked={notifyMessagesPref} onChange={(e) => handleToggleNotifyPref("messages", e.target.checked)} />
+              <input type="checkbox" defaultChecked />
             </p>
             <p className="settings-toggle-row">
               <span>Notificaciones de ofertas</span>
-              <input type="checkbox" checked={notifyOffersPref} onChange={(e) => handleToggleNotifyPref("offers", e.target.checked)} />
+              <input type="checkbox" defaultChecked />
+            </p>
+            <p className="settings-toggle-row">
+              <span>Bajadas de precio en favoritos</span>
+              <input type="checkbox" defaultChecked />
             </p>
 
             <label>Mi ubicación</label>
@@ -4725,16 +4665,7 @@ export default function RopelinApp() {
                   </p>
                 </div>
 
-                {adminLoading && (
-                  <>
-                    {[1, 2, 3].map((n) => (
-                      <div key={n} className="skeleton-row">
-                        <div className="skeleton-block" style={{ width: 34, height: 34, borderRadius: "50%" }} />
-                        <div style={{ flex: 1 }}><div className="skeleton-block" style={{ width: "45%", height: 11 }} /></div>
-                      </div>
-                    ))}
-                  </>
-                )}
+                {adminLoading && <p className="empty-tab">Cargando...</p>}
 
                 {!adminLoading && adminSection === "users" && (
                   <>
