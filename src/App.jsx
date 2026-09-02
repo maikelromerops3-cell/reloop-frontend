@@ -46,6 +46,17 @@ function miniSwatchStyle(item, idx) {
     : { background: PALETTE[idx % PALETTE.length] };
 }
 
+// Genera un degradado de marca "aleatorio" pero estable para cada usuario (mismo resultado siempre
+// para el mismo username, así la portada no cambia de color al recargar la página).
+function usernameGradient(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  const first = hash % PALETTE.length;
+  const second = (first + 1 + (hash >> 4) % (PALETTE.length - 1)) % PALETTE.length;
+  const angle = 100 + (hash % 90);
+  return `linear-gradient(${angle}deg, ${PALETTE[first]}, ${PALETTE[second]} 55%, #1A1A1E)`;
+}
+
 const AUTH_PAGE_STYLES = `
   * { box-sizing: border-box; }
   html, body { margin: 0; background: #121214; }
@@ -2704,9 +2715,10 @@ export default function RopelinApp() {
           ? orders.sales.filter((tx) => tx.status === "completed").map((tx) => ({ id: tx.item.id, title: tx.item.title, price: tx.amount, images: tx.item.images }))
           : (otherProfileData?.soldItems || []);
         const profileRating = profileReviews?.average ? profileReviews.average.toFixed(1) : null;
+        const profileCoverUrl = isOwnProfile ? myCoverUrl : otherProfileData?.coverUrl;
         const profileContentEl = (
           <>
-            <div className="profile-banner" style={{ background: myCoverUrl && isOwnProfile ? undefined : `linear-gradient(135deg, ${PALETTE[profileUsername.length % PALETTE.length]}, #1A1A1E)`, backgroundImage: myCoverUrl && isOwnProfile ? `url(${myCoverUrl})` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
+            <div className="profile-banner" style={{ background: profileCoverUrl ? undefined : usernameGradient(profileUsername), backgroundImage: profileCoverUrl ? `url(${profileCoverUrl})` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
               <div className="banner-texture" />
               {isOwnProfile && (
                 <>
