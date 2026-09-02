@@ -635,10 +635,6 @@ export default function RopelinApp() {
   const [adminUserPages, setAdminUserPages] = useState(1);
   const [editingAdminItem, setEditingAdminItem] = useState(null);
   const [adminItemEditForm, setAdminItemEditForm] = useState({ title: "", description: "" });
-  const [soldItems] = useState([
-    { id: "s001", title: "Abrigo de paño", price: 32 },
-    { id: "s002", title: "Botas Chelsea", price: 24 },
-  ]);
   const [form, setForm] = useState({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] });
   const [uploadingImages, setUploadingImages] = useState([]);
   const [authForm, setAuthForm] = useState({ email: "", password: "", username: "", city: "" });
@@ -2704,7 +2700,9 @@ export default function RopelinApp() {
         const profileUsername = viewingProfile || username;
         const isOwnProfile = !viewingProfile;
         const profileItems = isOwnProfile ? allItems.filter((i) => i.seller === username) : (otherProfileData?.items || []);
-        const profileSold = isOwnProfile ? soldItems : (otherProfileData?.soldItems || []);
+        const profileSold = isOwnProfile
+          ? orders.sales.filter((tx) => tx.status === "completed").map((tx) => ({ id: tx.item.id, title: tx.item.title, price: tx.amount, images: tx.item.images }))
+          : (otherProfileData?.soldItems || []);
         const profileRating = profileReviews?.average ? profileReviews.average.toFixed(1) : null;
         const profileContentEl = (
           <>
