@@ -176,6 +176,16 @@ export async function updateShippingAddress({ shippingStreet, shippingPostalCode
   return res.json();
 }
 
+export async function updateNotificationPrefs({ notifyMessages, notifyOffers } = {}) {
+  const res = await fetch(`${API_URL}/users/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ notifyMessages, notifyOffers }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron guardar las preferencias");
+  return res.json();
+}
+
 export async function deleteMyAccount() {
   const res = await fetch(`${API_URL}/users/me`, {
     method: "DELETE",
@@ -352,7 +362,11 @@ export async function createShipmentLabel(transactionId, carrier = "correos_expr
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ carrier }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo generar la etiqueta");
+  if (!res.ok) {
+    const body = await res.json();
+    const message = body.detalle ? `${body.error} — ${body.detalle}` : (body.error || "No se pudo generar la etiqueta");
+    throw new Error(message);
+  }
   return res.json();
 }
 
