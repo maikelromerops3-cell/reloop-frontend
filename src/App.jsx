@@ -2862,11 +2862,6 @@ export default function RopelinApp() {
               <button className="icon-round-btn" onClick={() => handleShare(`${window.location.origin}/perfil/${profileUsername}`, `@${profileUsername} en Ropelin`)}>
                 <Share2 size={14} />
               </button>
-              {isOwnProfile && (
-                <button className="icon-round-btn" onClick={() => setProfileMenuView("ajustes")} title="Ajustes">
-                  <Settings size={14} />
-                </button>
-              )}
             </div>
 
             {otherProfileLoading ? (
@@ -3531,7 +3526,7 @@ export default function RopelinApp() {
               <div className="seller-reviews-box">
                 <p className="detail-section-label">Reseñas de @{openItem.seller} ({sellerReviews.total})</p>
                 <div className="reviews-list">
-                  {sellerReviews.reviews.slice(0, 3).map((r) => (
+                  {sellerReviews.reviews.slice(0, 1).map((r) => (
                     <div key={r.id} className="review-row">
                       <div className="review-row-top">
                         <span className="review-author">@{r.authorUsername}</span>
@@ -3546,9 +3541,7 @@ export default function RopelinApp() {
                     </div>
                   ))}
                 </div>
-                {sellerReviews.total > 3 && (
-                  <button className="about-block-link seller-reviews-more" onClick={() => openProfile(openItem.seller)}>Ver las {sellerReviews.total} reseñas →</button>
-                )}
+                <button className="about-block-link seller-reviews-more" onClick={() => openProfile(openItem.seller)}>Ver {sellerReviews.total > 1 ? `las ${sellerReviews.total} reseñas` : "todas las reseñas"} →</button>
               </div>
             )}
 
