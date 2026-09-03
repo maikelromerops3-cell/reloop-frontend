@@ -1867,6 +1867,19 @@ export default function RopelinApp() {
         .mini-featured-badge { position: absolute; top: 4px; left: 4px; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: var(--bg); font-size: 8px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 6px; }
         .mini-title { font-size: 12px; font-weight: 600; margin: 8px 10px 2px; }
         .mini-price { font-size: 12px; font-weight: 700; color: #4DE1C1; margin: 0 10px 10px; }
+        .own-list { display: flex; flex-direction: column; width: 100%; }
+        .own-list-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .own-list-row:last-child { border-bottom: none; }
+        .own-list-row-sold { cursor: default; opacity: 0.6; }
+        .own-list-thumb { width: 56px; height: 56px; border-radius: 10px; background-size: cover; background-position: center; flex-shrink: 0; position: relative; background-color: var(--surface); }
+        .own-list-featured { position: absolute; top: -4px; left: -4px; width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: var(--bg); display: flex; align-items: center; justify-content: center; }
+        .own-list-info { flex: 1; min-width: 0; }
+        .own-list-title { font-size: 13px; font-weight: 600; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .own-list-price { font-size: 13px; font-weight: 700; color: #4DE1C1; margin: 0; }
+        .own-list-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .own-list-actions button { width: 30px; height: 30px; border-radius: 9px; background: var(--surface2); border: 1px solid var(--input-border); display: flex; align-items: center; justify-content: center; color: var(--sub); cursor: pointer; }
+        .own-list-actions button:hover { border-color: #FF4D6D; color: #FF4D6D; }
+        .own-list-sold-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--faint); background: var(--surface2); padding: 4px 9px; border-radius: 8px; flex-shrink: 0; }
         button { transition: transform .1s ease, opacity .1s ease; }
         button:active { transform: scale(0.96); }
         .btn { display: flex; align-items: center; gap: 6px; border: none; border-radius: 20px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
@@ -3007,23 +3020,35 @@ export default function RopelinApp() {
                         <button className="btn primary" onClick={openPostForm}><Plus size={14} /> Publicar prenda</button>
                       </div>
                     ) : <p className="empty-tab">Este vendedor no tiene prendas en venta ahora mismo.</p>)
+                  : isOwnProfile
+                  ? <div className="own-list">
+                      {profileItems.map((i, idx) => (
+                        <div key={i.id} className="own-list-row" onClick={() => { setShowProfile(false); viewItem(i); }}>
+                          <div className="own-list-thumb" style={miniSwatchStyle(i, idx)}>
+                            {i.featured && <span className="own-list-featured"><TrendingUp size={10} /></span>}
+                          </div>
+                          <div className="own-list-info">
+                            <p className="own-list-title">{i.title}</p>
+                            <p className="own-list-price">{i.price}€</p>
+                          </div>
+                          <div className="own-list-actions">
+                            {!i.featured && (
+                              <button title={`Destacar por ${platformSettings.boostPrice}€`} onClick={(e) => { e.stopPropagation(); handleBoost(i.id); }}><TrendingUp size={13} /></button>
+                            )}
+                            <button onClick={(e) => { e.stopPropagation(); startEdit(i); }}><Pencil size={13} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); deleteOwnItem(i.id); }}><Trash2 size={13} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   : <div className="mini-grid">
                       {profileItems.map((i, idx) => (
-                        <div key={i.id} className="mini-card own-card" onClick={() => { setShowProfile(false); viewItem(i); }}>
+                        <div key={i.id} className="mini-card" onClick={() => { setShowProfile(false); viewItem(i); }}>
                           <div className="mini-swatch" style={miniSwatchStyle(i, idx)}>
                             {i.featured && <span className="mini-featured-badge">Destacado</span>}
                           </div>
                           <p className="mini-title">{i.title}</p>
                           <p className="mini-price">{i.price}€</p>
-                          {isOwnProfile && (
-                            <div className="own-actions">
-                              {!i.featured && (
-                                <button title={`Destacar por ${platformSettings.boostPrice}€`} onClick={(e) => { e.stopPropagation(); handleBoost(i.id); }}><TrendingUp size={12} /></button>
-                              )}
-                              <button onClick={(e) => { e.stopPropagation(); startEdit(i); }}><Pencil size={12} /></button>
-                              <button onClick={(e) => { e.stopPropagation(); deleteOwnItem(i.id); }}><Trash2 size={12} /></button>
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
@@ -3032,6 +3057,19 @@ export default function RopelinApp() {
               {profileMenuView === "vendidos" && (
                 profileSold.length === 0
                   ? <p className="empty-tab">Aún no hay ventas completadas.</p>
+                  : isOwnProfile
+                  ? <div className="own-list">
+                      {profileSold.map((s, idx) => (
+                        <div key={s.id} className="own-list-row own-list-row-sold">
+                          <div className="own-list-thumb" style={miniSwatchStyle(s, idx)} />
+                          <div className="own-list-info">
+                            <p className="own-list-title">{s.title}</p>
+                            <p className="own-list-price">{s.price}€</p>
+                          </div>
+                          <span className="own-list-sold-tag">Vendido</span>
+                        </div>
+                      ))}
+                    </div>
                   : <div className="mini-grid">
                       {profileSold.map((s, idx) => (
                         <div key={s.id} className="mini-card sold">
