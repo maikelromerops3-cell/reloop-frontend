@@ -2273,14 +2273,14 @@ export default function RopelinApp() {
         .how-it-works-num { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: #1A1A1A; border: 2px solid var(--border); flex-shrink: 0; }
         .how-it-works-title { font-size: 14px; font-weight: 800; color: var(--text); margin: 0 0 4px; }
         .how-it-works-text { font-size: 13px; color: var(--sub); margin: 0; line-height: 1.5; }
-        .about-impact-box { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #7FD8D014, #7FD8D008); border: 1px solid #7FD8D033; border-radius: 14px; padding: 14px 16px; margin: 4px 0 20px; }
+        .about-impact-box { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #7FD8D014, #7FD8D008); border: 2px solid var(--border); border-radius: 14px; padding: 14px 16px; margin: 4px 0 20px; }
         .about-impact-box p { margin: 0; font-size: 12.5px; color: var(--body); line-height: 1.5; }
         .about-impact-box strong { color: #7FD8D0; }
-        .about-block { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
-        .about-block-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .about-block-title { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; color: var(--text); }
-        .about-block-text { margin: 0; font-size: 13px; color: var(--body); line-height: 1.5; }
-        .about-block-link { background: none; border: none; padding: 0; margin: 0; font-size: 13px; color: #FF4D8D; font-weight: 600; cursor: pointer; text-decoration: underline; font-family: inherit; }
+        .about-block { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 10px; background: var(--card); border: 2.5px solid var(--border); border-radius: 16px; padding: 14px 16px; }
+        .about-block-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2px solid var(--border); }
+        .about-block-title { margin: 0 0 3px; font-size: 14px; font-weight: 800; color: var(--text); }
+        .about-block-text { margin: 0; font-size: 13px; color: var(--sub); line-height: 1.5; }
+        .about-block-link { background: none; border: none; padding: 0; margin: 0; font-size: 13px; color: #FF4D8D; font-weight: 700; cursor: pointer; text-decoration: underline; font-family: inherit; }
         .updates-counter { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #7FD8D0; font-weight: 600; margin: 0 0 20px; }
         .update-entry { margin-bottom: 22px; }
         .update-date { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #FF4D8D; font-weight: 700; margin: 0 0 10px; }
@@ -3205,7 +3205,7 @@ export default function RopelinApp() {
                 <>
 
                   {profileMenuView === "ajustes" && (
-                    <div style={{ textAlign: "left", maxWidth: 420 }}>
+                    <div style={{ textAlign: "left", maxWidth: 480, margin: "0 auto" }}>
                       <div className="settings-avatar-row">
                         <input type="file" accept="image/*" id="avatar-upload-input-settings" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "avatar"); e.target.value = ""; }} />
                         <div className="settings-avatar" style={myAvatarUrl ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover" } : { background: avatarColor }}>
@@ -3939,7 +3939,7 @@ export default function RopelinApp() {
                   )}
 
                   <div className="about-block">
-                    <div className="about-block-icon"><User size={16} color="#9A9AA3" /></div>
+                    <div className="about-block-icon" style={{ background: "#FF4D8D" }}><User size={16} color="#1A1A1A" /></div>
                     <div>
                       <p className="about-block-title">Quién hay detrás</p>
                       <p className="about-block-text">Creado por una sola persona, con ganas de cambiar cómo compramos y vendemos de segunda mano.</p>
@@ -3947,7 +3947,7 @@ export default function RopelinApp() {
                   </div>
 
                   <div className="about-block">
-                    <div className="about-block-icon"><ShieldCheck size={16} color="#9A9AA3" /></div>
+                    <div className="about-block-icon" style={{ background: "#B49CE8" }}><ShieldCheck size={16} color="#1A1A1A" /></div>
                     <div>
                       <p className="about-block-title">Por qué confiar en Ropelin</p>
                       <p className="about-block-text">Los pagos se procesan con Stripe, y la comunidad está moderada para mantener la web segura para todos.</p>
@@ -3955,7 +3955,7 @@ export default function RopelinApp() {
                   </div>
 
                   <div className="about-block">
-                    <div className="about-block-icon"><Sparkles size={16} color="#9A9AA3" /></div>
+                    <div className="about-block-icon" style={{ background: "#7FD8D0" }}><Sparkles size={16} color="#1A1A1A" /></div>
                     <div>
                       <p className="about-block-title">¿En qué estamos trabajando?</p>
                       <button className="about-block-link" onClick={() => openLegalPage("updates")}>Ver las Novedades →</button>
@@ -3963,7 +3963,7 @@ export default function RopelinApp() {
                   </div>
 
                   <div className="about-block">
-                    <div className="about-block-icon"><Mail size={16} color="#9A9AA3" /></div>
+                    <div className="about-block-icon" style={{ background: "#FFC24D" }}><Mail size={16} color="#1A1A1A" /></div>
                     <div>
                       <p className="about-block-title">¿Alguna duda?</p>
                       <button className="about-block-link" onClick={() => { setShowLegal(null); openHelpCenter(); }}>Escríbenos desde el Centro de ayuda →</button>
@@ -3975,36 +3975,66 @@ export default function RopelinApp() {
             {showLegal === "terms" && (
               <>
                 <p className="auth-title">Términos y condiciones</p>
-                <div className="legal-text">
-                  <p><strong>1. Objeto.</strong> Ropelin es una plataforma que conecta a compradores y vendedores de artículos de segunda mano. No somos propietarios de los artículos publicados ni parte de la compraventa entre usuarios.</p>
-                  <p><strong>2. Registro.</strong> Debes ser mayor de edad y aportar datos veraces al crear tu cuenta.</p>
-                  <p><strong>3. Comisiones.</strong> Ropelin cobra una comisión sobre cada venta completada a través de la plataforma, detallada antes de confirmar el pago.</p>
-                  <p><strong>4. Responsabilidad.</strong> Cada vendedor es responsable de la veracidad de sus anuncios y del estado real de los artículos. Ropelin no garantiza la calidad de los productos.</p>
-                  <p><strong>5. Envíos.</strong> Los envíos se gestionan a través de transportistas externos; Ropelin facilita la generación de etiquetas pero no es responsable de incidencias del transportista.</p>
-                  <p><strong>6. Cuenta.</strong> Podemos suspender cuentas que incumplan estas condiciones o la normativa vigente.</p>
-                  <p style={{ color: "#6A6A73", fontSize: 11, marginTop: 16 }}>Este es un texto de ejemplo. Antes de operar de verdad, revísalo con un abogado o gestoría para adaptarlo a tu caso concreto.</p>
+                <div className="how-it-works-list">
+                  {[
+                    { color: "#FF4D8D", title: "Objeto", text: "Ropelin es una plataforma que conecta a compradores y vendedores de artículos de segunda mano. No somos propietarios de los artículos publicados ni parte de la compraventa entre usuarios." },
+                    { color: "#B49CE8", title: "Registro", text: "Debes ser mayor de edad y aportar datos veraces al crear tu cuenta." },
+                    { color: "#7FD8D0", title: "Comisiones", text: "Ropelin cobra una comisión sobre cada venta completada a través de la plataforma, detallada antes de confirmar el pago." },
+                    { color: "#FFC24D", title: "Responsabilidad", text: "Cada vendedor es responsable de la veracidad de sus anuncios y del estado real de los artículos. Ropelin no garantiza la calidad de los productos." },
+                    { color: "#FF8A4D", title: "Envíos", text: "Los envíos se gestionan a través de transportistas externos; Ropelin facilita la generación de etiquetas pero no es responsable de incidencias del transportista." },
+                    { color: "#8C7CFF", title: "Cuenta", text: "Podemos suspender cuentas que incumplan estas condiciones o la normativa vigente." },
+                  ].map((s, i) => (
+                    <div className="how-it-works-card" key={i}>
+                      <span className="how-it-works-num" style={{ background: s.color }}>{i + 1}</span>
+                      <div>
+                        <p className="how-it-works-title">{s.title}</p>
+                        <p className="how-it-works-text">{s.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                  <p style={{ color: "var(--faint)", fontSize: 11, marginTop: 4 }}>Este es un texto de ejemplo. Antes de operar de verdad, revísalo con un abogado o gestoría para adaptarlo a tu caso concreto.</p>
                 </div>
               </>
             )}
             {showLegal === "privacy" && (
               <>
                 <p className="auth-title">Política de privacidad</p>
-                <div className="legal-text">
-                  <p><strong>Datos que recogemos:</strong> email, nombre de usuario, fotos que subas, mensajes de chat, y datos de pago (procesados por Stripe, nunca los almacenamos nosotros).</p>
-                  <p><strong>Para qué los usamos:</strong> gestionar tu cuenta, procesar pagos y envíos, enviarte notificaciones sobre tus compras/ventas, y mejorar el servicio.</p>
-                  <p><strong>Con quién los compartimos:</strong> Stripe (pagos), Cloudinary (imágenes), Shippo (envíos) — solo lo necesario para prestar el servicio.</p>
-                  <p><strong>Tus derechos:</strong> puedes solicitar acceso, rectificación o eliminación de tus datos escribiendo a nuestro email de contacto.</p>
-                  <p style={{ color: "#6A6A73", fontSize: 11, marginTop: 16 }}>Este es un texto de ejemplo. Antes de operar de verdad, revísalo con un abogado para cumplir el RGPD correctamente.</p>
+                <div className="how-it-works-list">
+                  {[
+                    { color: "#FF4D8D", title: "Datos que recogemos", text: "Email, nombre de usuario, fotos que subas, mensajes de chat, y datos de pago (procesados por Stripe, nunca los almacenamos nosotros)." },
+                    { color: "#B49CE8", title: "Para qué los usamos", text: "Gestionar tu cuenta, procesar pagos y envíos, enviarte notificaciones sobre tus compras/ventas, y mejorar el servicio." },
+                    { color: "#7FD8D0", title: "Con quién los compartimos", text: "Stripe (pagos), Cloudinary (imágenes), Shippo (envíos) — solo lo necesario para prestar el servicio." },
+                    { color: "#FFC24D", title: "Tus derechos", text: "Puedes solicitar acceso, rectificación o eliminación de tus datos escribiendo a nuestro email de contacto." },
+                  ].map((s, i) => (
+                    <div className="how-it-works-card" key={i}>
+                      <span className="how-it-works-num" style={{ background: s.color }}>{i + 1}</span>
+                      <div>
+                        <p className="how-it-works-title">{s.title}</p>
+                        <p className="how-it-works-text">{s.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                  <p style={{ color: "var(--faint)", fontSize: 11, marginTop: 4 }}>Este es un texto de ejemplo. Antes de operar de verdad, revísalo con un abogado para cumplir el RGPD correctamente.</p>
                 </div>
               </>
             )}
             {showLegal === "cookies" && (
               <>
                 <p className="auth-title">Política de cookies</p>
-                <div className="legal-text">
-                  <p><strong>Cookies esenciales:</strong> necesarias para que funcione el inicio de sesión y el carrito. No se pueden desactivar.</p>
-                  <p><strong>Cookies de análisis (opcionales):</strong> nos ayudan a entender cómo se usa la web, para mejorarla.</p>
-                  <p style={{ color: "#6A6A73", fontSize: 11, marginTop: 16 }}>Este es un texto de ejemplo, revísalo antes de operar de verdad.</p>
+                <div className="how-it-works-list">
+                  {[
+                    { color: "#FF4D8D", title: "Cookies esenciales", text: "Necesarias para que funcione el inicio de sesión y el carrito. No se pueden desactivar." },
+                    { color: "#7FD8D0", title: "Cookies de análisis (opcionales)", text: "Nos ayudan a entender cómo se usa la web, para mejorarla." },
+                  ].map((s, i) => (
+                    <div className="how-it-works-card" key={i}>
+                      <span className="how-it-works-num" style={{ background: s.color }}>{i + 1}</span>
+                      <div>
+                        <p className="how-it-works-title">{s.title}</p>
+                        <p className="how-it-works-text">{s.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                  <p style={{ color: "var(--faint)", fontSize: 11, marginTop: 4 }}>Este es un texto de ejemplo, revísalo antes de operar de verdad.</p>
                 </div>
               </>
             )}
