@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
-import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, FileDown, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight } from "lucide-react";
+import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, FileDown, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight, Clock } from "lucide-react";
 import {
   fetchItems, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
@@ -232,7 +232,7 @@ export default function RopelinApp() {
   const [shippingPostalInput, setShippingPostalInput] = useState("");
   const [shippingPhoneInput, setShippingPhoneInput] = useState("");
   const [savingShippingAddress, setSavingShippingAddress] = useState(false);
-  const [myProfileExtra, setMyProfileExtra] = useState({ badges: [], avgSaleDays: null });
+  const [myProfileExtra, setMyProfileExtra] = useState({ badges: [], avgSaleDays: null, followersCount: 0, followingCount: 0 });
   const [resendingVerification, setResendingVerification] = useState(false);
   const [newEmailInput, setNewEmailInput] = useState("");
   const [emailChangePassword, setEmailChangePassword] = useState("");
@@ -571,7 +571,7 @@ export default function RopelinApp() {
         if (data.coverUrl) { setMyCoverUrl(data.coverUrl); localStorage.setItem("reloop_cover", data.coverUrl); }
         if (data.bio) setMyBio(data.bio);
         setMyEmailVerified(data.emailVerified !== false);
-        setMyProfileExtra({ badges: data.badges || [], avgSaleDays: data.avgSaleDays });
+        setMyProfileExtra({ badges: data.badges || [], avgSaleDays: data.avgSaleDays, followersCount: data.followersCount || 0, followingCount: data.followingCount || 0 });
       }).catch(() => {});
       return;
     }
@@ -591,7 +591,7 @@ export default function RopelinApp() {
   const [myBio, setMyBio] = useState("");
   const [myAvatarUrl, setMyAvatarUrl] = useState(() => localStorage.getItem("reloop_avatar") || "");
   const [myCoverUrl, setMyCoverUrl] = useState(() => localStorage.getItem("reloop_cover") || "");
-  const [showProfileDetails, setShowProfileDetails] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [userRole, setUserRole] = useState(getRole());
   const isAdmin = userRole === "admin";
   const isModerator = userRole === "admin" || userRole === "moderator";
@@ -1792,8 +1792,10 @@ export default function RopelinApp() {
         .profile-sub { font-size: 12px; color: var(--sub); margin: 4px 0 14px; display: flex; align-items: center; justify-content: center; gap: 4px; }
         .profile-quick-actions { display: flex; justify-content: center; gap: 8px; margin: 4px 0 16px; }
         .edit-profile-btn { border: 1px solid var(--input-border); background: var(--surface2); color: var(--body); border-radius: 20px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .details-toggle { border: none; background: none; color: #4DE1C1; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .profile-details { text-align: left; margin-bottom: 6px; animation: fadeIn .15s ease; }
+        .about-me-box { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: left; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+        .about-me-heading { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--faint); margin: 0 0 8px; }
+        .about-me-line { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); margin: 0 0 6px; }
+        .about-me-line:last-child { margin-bottom: 0; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .edit-profile-btn:hover { border-color: #4DE1C1; color: #4DE1C1; }
         .sheet-overlay { align-items: flex-end; padding: 0; }
@@ -2219,7 +2221,7 @@ export default function RopelinApp() {
         .progress-track { height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #4DE1C1, #4DA8FF); border-radius: 4px; }
         .progress-hint { font-size: 10px; color: var(--faint); margin: 6px 0 0; }
-        .cover-btn { position: absolute; bottom: 8px; right: 44px; display: flex; align-items: center; gap: 5px; background: #00000066; border: none; color: #fff; font-size: 10px; padding: 5px 10px; border-radius: 12px; cursor: pointer; font-family: inherit; }
+        .cover-btn { position: absolute; bottom: 8px; right: 80px; display: flex; align-items: center; gap: 5px; background: #00000066; border: none; color: #fff; font-size: 10px; padding: 5px 10px; border-radius: 12px; cursor: pointer; font-family: inherit; }
         .share-profile-btn { position: absolute; bottom: 8px; right: 10px; background: #00000066; border: none; color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .milestone-badges { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
         .mstone { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: var(--surface2); border: 1px solid var(--input-border); border-radius: 50%; font-size: 10px; color: #FFC24D; }
@@ -2785,7 +2787,14 @@ export default function RopelinApp() {
                   <button className="cover-btn" onClick={() => document.getElementById("cover-upload-input").click()}><ImagePlus size={13} /> Cambiar portada</button>
                 </>
               )}
-              <button className="share-profile-btn"><Share2 size={14} /></button>
+              <button className="share-profile-btn">
+                <Share2 size={14} />
+              </button>
+              {isOwnProfile && (
+                <button className="share-profile-btn" style={{ right: 44 }} onClick={() => setShowSettingsMenu(true)} title="Ajustes">
+                  <Settings size={14} />
+                </button>
+              )}
             </div>
 
             {otherProfileLoading ? (
@@ -2839,9 +2848,6 @@ export default function RopelinApp() {
                     {following.has(profileUsername) ? "Siguiendo" : "Seguir"}
                   </button>
                 )}
-                <button className="details-toggle" onClick={() => setShowProfileDetails(!showProfileDetails)}>
-                  {showProfileDetails ? "Ocultar detalles" : "Ver más detalles"}
-                </button>
               </div>
 
               {!isOwnProfile && (
@@ -2850,17 +2856,22 @@ export default function RopelinApp() {
                 </button>
               )}
 
-              {showProfileDetails && (
-                <div className="profile-details">
-                  <div className="verify-row">
-                    <span className="verify-chip done"><CheckCircle size={11} /> Email</span>
-                  </div>
-
+              <div className="about-me-box">
+                <div className="about-me-col">
+                  <p className="about-me-heading">Sobre mí</p>
                   {(isOwnProfile ? myLocation?.city : otherProfileData?.city) && (
-                    <p className="profile-city-line"><MapPin size={12} /> {isOwnProfile ? myLocation?.city : otherProfileData?.city}</p>
+                    <p className="about-me-line"><MapPin size={13} /> {isOwnProfile ? myLocation?.city : otherProfileData?.city}</p>
                   )}
+                  <p className="about-me-line"><Clock size={13} /> Miembro desde 2026</p>
+                  <p className="about-me-line">
+                    <UserPlus size={13} /> {(isOwnProfile ? myProfileExtra.followersCount : otherProfileData?.followersCount) || 0} seguidores, {(isOwnProfile ? myProfileExtra.followingCount : otherProfileData?.followingCount) || 0} siguiendo
+                  </p>
                 </div>
-              )}
+                <div className="about-me-col">
+                  <p className="about-me-heading">Información verificada</p>
+                  <p className="about-me-line"><CheckCircle size={13} color="#4DE1C1" /> E-mail</p>
+                </div>
+              </div>
 
               <div className="stats-row">
                 <div className="stat-box">
@@ -2908,19 +2919,6 @@ export default function RopelinApp() {
                     </button>
                     <button className={"profile-sidebar-item" + (profileMenuView === "resenas" ? " active" : "")} onClick={() => setProfileMenuView("resenas")}>
                       <Star size={16} /> Reseñas
-                    </button>
-                    <p className="profile-menu-section-title">Cuenta</p>
-                    <button className={"profile-sidebar-item" + (profileMenuView === "perfil" ? " active" : "")} onClick={() => setProfileMenuView("perfil")}>
-                      <User size={16} /> Perfil
-                    </button>
-                    <button className={"profile-sidebar-item" + (profileMenuView === "envios" ? " active" : "")} onClick={() => setProfileMenuView("envios")}>
-                      <Truck size={16} /> Envíos
-                    </button>
-                    <button className={"profile-sidebar-item" + (profileMenuView === "contrasena" ? " active" : "")} onClick={() => setProfileMenuView("contrasena")}>
-                      <Lock size={16} /> Contraseña
-                    </button>
-                    <button className={"profile-sidebar-item" + (profileMenuView === "pagos" ? " active" : "")} onClick={() => setProfileMenuView("pagos")}>
-                      <HandCoins size={16} /> Pagos
                     </button>
                   </div>
                 ) :
@@ -2973,28 +2971,6 @@ export default function RopelinApp() {
                     <button className="profile-menu-row" onClick={() => setProfileMenuView("resenas")}>
                       <span className="profile-menu-icon"><Star size={17} /></span>
                       <span className="profile-menu-label">Reseñas{profileReviews ? ` (${profileReviews.total})` : ""}</span>
-                      <ChevronRight size={16} />
-                    </button>
-
-                    <p className="profile-menu-section-title">Cuenta</p>
-                    <button className="profile-menu-row" onClick={() => setProfileMenuView("perfil")}>
-                      <span className="profile-menu-icon"><User size={17} /></span>
-                      <span className="profile-menu-label">Perfil</span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button className="profile-menu-row" onClick={() => setProfileMenuView("envios")}>
-                      <span className="profile-menu-icon"><Truck size={17} /></span>
-                      <span className="profile-menu-label">Envíos</span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button className="profile-menu-row" onClick={() => setProfileMenuView("contrasena")}>
-                      <span className="profile-menu-icon"><Lock size={17} /></span>
-                      <span className="profile-menu-label">Contraseña</span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button className="profile-menu-row" onClick={() => setProfileMenuView("pagos")}>
-                      <span className="profile-menu-icon"><HandCoins size={17} /></span>
-                      <span className="profile-menu-label">Pagos</span>
                       <ChevronRight size={16} />
                     </button>
                   </div>
@@ -5241,6 +5217,37 @@ export default function RopelinApp() {
               <MapPin size={13} /> {locatingMe ? "Detectando..." : "Detectar mi ubicación automáticamente"}
             </button>
             <button className="btn primary admin-refund-btn" onClick={saveEditProfile}>Guardar cambios</button>
+          </div>
+        </div>
+      )}
+
+      {showSettingsMenu && (
+        <div className="overlay" onClick={() => setShowSettingsMenu(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 340 }}>
+            <button className="close-btn" onClick={() => setShowSettingsMenu(false)}><X size={14} /></button>
+            <p className="auth-title">Ajustes</p>
+            <div className="settings-menu-list">
+              <button className="profile-menu-row" onClick={() => { setProfileMenuView("perfil"); setShowSettingsMenu(false); }}>
+                <span className="profile-menu-icon"><User size={17} /></span>
+                <span className="profile-menu-label">Perfil</span>
+                <ChevronRight size={16} />
+              </button>
+              <button className="profile-menu-row" onClick={() => { setProfileMenuView("envios"); setShowSettingsMenu(false); }}>
+                <span className="profile-menu-icon"><Truck size={17} /></span>
+                <span className="profile-menu-label">Envíos</span>
+                <ChevronRight size={16} />
+              </button>
+              <button className="profile-menu-row" onClick={() => { setProfileMenuView("contrasena"); setShowSettingsMenu(false); }}>
+                <span className="profile-menu-icon"><Lock size={17} /></span>
+                <span className="profile-menu-label">Contraseña</span>
+                <ChevronRight size={16} />
+              </button>
+              <button className="profile-menu-row" onClick={() => { setProfileMenuView("pagos"); setShowSettingsMenu(false); }}>
+                <span className="profile-menu-icon"><HandCoins size={17} /></span>
+                <span className="profile-menu-label">Pagos</span>
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
         </div>
       )}
