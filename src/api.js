@@ -346,11 +346,19 @@ export async function fetchTransactions() {
   return res.json(); // { purchases, sales }
 }
 
-export async function createShipmentLabel(transactionId, carrier = "correos_express") {
+export async function fetchShippingRates(transactionId) {
+  const res = await fetch(`${API_URL}/shipments/${transactionId}/rates`, {
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron consultar las tarifas de envío");
+  return res.json(); // { rates: [{ rateId, provider, servicelevel, amount, currency, estimatedDays }] }
+}
+
+export async function createShipmentLabel(transactionId, rateId, provider) {
   const res = await fetch(`${API_URL}/shipments/${transactionId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ carrier }),
+    body: JSON.stringify({ rateId, provider }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo generar la etiqueta");
   return res.json();
@@ -374,11 +382,11 @@ export async function completeInPerson(transactionId) {
   return res.json();
 }
 
-export async function submitReview(targetUsername, rating, comment) {
+export async function submitReview(transactionId, rating, comment) {
   const res = await fetch(`${API_URL}/reviews`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ targetUsername, rating, comment }),
+    body: JSON.stringify({ transactionId, rating, comment }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la valoración");
   return res.json();

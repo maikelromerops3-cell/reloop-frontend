@@ -8,7 +8,7 @@ import {
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
-  fetchTransactions, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
+  fetchTransactions, fetchShippingRates, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, updateShippingAddress, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
   fetchSavedSearches, saveSearch, deleteSavedSearch,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
@@ -143,11 +143,13 @@ function normalizeItem(raw) {
 }
 
 function ItemCard({ item, onOpen, index, saved, toggleSave }) {
+  const isSold = item.status === "sold";
   return (
-    <div className="card" onClick={() => onOpen(item)}>
+    <div className={"card" + (isSold ? " card-sold" : "")} onClick={() => onOpen(item)}>
       <div className="card-media" style={{ backgroundImage: `url(${item.photo})` }}>
-        {item.minutesAgo < 30 && <span className="new-ribbon">Nuevo</span>}
-        {item.featured && <span className="featured-ribbon" style={{ top: item.minutesAgo < 30 ? 38 : 10 }}>Destacado</span>}
+        {isSold && <span className="sold-ribbon">Vendido</span>}
+        {!isSold && item.minutesAgo < 30 && <span className="new-ribbon">Nuevo</span>}
+        {!isSold && item.featured && <span className="featured-ribbon" style={{ top: item.minutesAgo < 30 ? 38 : 10 }}>Destacado</span>}
         <button className={"heart" + (saved ? " on" : "")} onClick={(e) => { e.stopPropagation(); toggleSave(item.id); }}>
           <Heart size={16} fill={saved ? "#FF4D6D" : "none"} color={saved ? "#FF4D6D" : "#fff"} />
         </button>
@@ -447,13 +449,31 @@ export default function RopelinApp() {
   // Ventas pagadas por el comprador a las que todavía no se les ha generado el envío
   const pendingShipmentsCount = orders.sales.filter((tx) => tx.status === "paid" && !tx.shipment).length;
 
-  async function handleGenerateLabel(transactionId) {
+  const [ratePicker, setRatePicker] = useState(null); // { transactionId, rates, loading, purchasing, selectedRateId }
+
+  async function handleOpenRatePicker(transactionId) {
+    setRatePicker({ transactionId, rates: [], loading: true, purchasing: false, selectedRateId: null });
     try {
-      await createShipmentLabel(transactionId);
+      const { rates } = await fetchShippingRates(transactionId);
+      setRatePicker({ transactionId, rates, loading: false, purchasing: false, selectedRateId: rates[0]?.rateId || null });
+    } catch (err) {
+      toast.error(err.message);
+      setRatePicker(null);
+    }
+  }
+
+  async function handleConfirmRate() {
+    const chosen = ratePicker.rates.find((r) => r.rateId === ratePicker.selectedRateId);
+    if (!chosen) return;
+    setRatePicker((prev) => ({ ...prev, purchasing: true }));
+    try {
+      await createShipmentLabel(ratePicker.transactionId, chosen.rateId, chosen.provider);
       toast.success("Etiqueta de envío generada");
+      setRatePicker(null);
       loadOrders();
     } catch (err) {
       toast.error(err.message);
+      setRatePicker((prev) => ({ ...prev, purchasing: false }));
     }
   }
 
@@ -514,11 +534,12 @@ export default function RopelinApp() {
   async function handleSubmitReview(e) {
     e.preventDefault();
     try {
-      await submitReview(reviewingTx.otherUsername, reviewStars, reviewComment);
+      await submitReview(reviewingTx.id, reviewStars, reviewComment);
       toast.success("¡Gracias por tu valoración!");
       setReviewingTx(null);
       setReviewStars(5);
       setReviewComment("");
+      loadOrders();
     } catch (err) {
       toast.error(err.message);
     }
@@ -1775,6 +1796,27 @@ export default function RopelinApp() {
         .profile-details { text-align: left; margin-bottom: 6px; animation: fadeIn .15s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .edit-profile-btn:hover { border-color: #4DE1C1; color: #4DE1C1; }
+        .sheet-overlay { align-items: flex-end; padding: 0; }
+        .sheet-modal { width: 100%; max-width: 480px; margin: 0 auto; background: var(--card); border-radius: 20px 20px 0 0; padding: 10px 20px 24px; max-height: 80vh; display: flex; flex-direction: column; animation: sheet-up .2s ease; }
+        @keyframes sheet-up { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .sheet-handle { width: 36px; height: 4px; border-radius: 4px; background: var(--input-border); margin: 0 auto 14px; }
+        .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .sheet-title { font-size: 16px; font-weight: 800; margin: 0; }
+        .sheet-loading { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 30px 0; color: var(--faint); font-size: 13px; }
+        .sheet-loading .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .sheet-rate-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+        .sheet-rate-card { display: flex; align-items: center; gap: 10px; width: 100%; background: var(--surface2); border: 1.5px solid var(--input-border); border-radius: 14px; padding: 12px 14px; cursor: pointer; font-family: inherit; color: var(--body); text-align: left; }
+        .sheet-rate-card.selected { border-color: #FF4D6D; background: #FF4D6D14; }
+        .sheet-rate-card:disabled { opacity: 0.5; cursor: default; }
+        .sheet-rate-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--sub); }
+        .sheet-rate-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+        .sheet-rate-provider { font-size: 13px; font-weight: 700; text-transform: capitalize; }
+        .sheet-rate-meta { font-size: 11px; color: var(--faint); }
+        .sheet-rate-price { font-size: 14px; font-weight: 800; color: #4DE1C1; white-space: nowrap; }
+        .sheet-rate-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--input-border); flex-shrink: 0; }
+        .sheet-rate-radio.on { border-color: #FF4D6D; background: #FF4D6D; box-shadow: inset 0 0 0 3px var(--card); }
+        .sheet-confirm-btn { width: 100%; }
         .stats-row { display: flex; gap: 10px; margin-bottom: 18px; }
         .stat-box { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .stat-box strong { display: block; font-size: 18px; }
@@ -1898,6 +1940,10 @@ export default function RopelinApp() {
         .heart { border: none; background: #00000055; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; position: absolute; top: 10px; right: 10px; }
         .new-ribbon { position: absolute; top: 10px; left: 10px; background: #4DE1C1; color: var(--bg); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 10px; z-index: 2; }
         .featured-ribbon { position: absolute; left: 10px; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: var(--bg); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 10px; z-index: 2; }
+        .card-sold .card-media { filter: grayscale(0.6) brightness(0.55); }
+        .card-sold .card-info { opacity: 0.6; }
+        .item-shipping-box { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+        .sold-ribbon { position: absolute; top: 12px; left: 50%; transform: translateX(-50%) rotate(-6deg); background: #1A1A1E; border: 1px solid #ffffff33; color: #fff; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 5px 16px; border-radius: 8px; z-index: 2; }
         .price-pill { position: absolute; bottom: 10px; left: 10px; background: #121214cc; border: 1px solid var(--input-border); border-radius: 14px; padding: 4px 10px; font-size: 13px; font-weight: 700; z-index: 2; color: #4DE1C1; }
         .card-info { padding: 12px 14px 14px; height: 96px; display: flex; flex-direction: column; justify-content: flex-start; overflow: hidden; }
         .card-info h3 { font-size: 14px; margin: 0 0 4px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 35px; }
@@ -2800,31 +2846,6 @@ export default function RopelinApp() {
                   {(isOwnProfile ? myLocation?.city : otherProfileData?.city) && (
                     <p className="profile-city-line"><MapPin size={12} /> {isOwnProfile ? myLocation?.city : otherProfileData?.city}</p>
                   )}
-
-                  {profileReviews && profileReviews.reviews.length > 0 && (
-                    <>
-                      <p className="profile-section-title">Reseñas ({profileReviews.total})</p>
-                      <div className="reviews-list">
-                        {profileReviews.reviews.map((r) => (
-                          <div key={r.id} className="review-row">
-                            <div className="review-row-top">
-                              <span className="review-author">@{r.authorUsername}</span>
-                              <span className="review-stars">
-                                {Array.from({ length: 5 }).map((_, i) => (
-                                  <Star key={i} size={11} fill={i < r.rating ? "#FFC24D" : "none"} color="#FFC24D" />
-                                ))}
-                              </span>
-                            </div>
-                            {r.comment && <p className="review-comment">{r.comment}</p>}
-                            <span className="review-date">{new Date(r.createdAt).toLocaleDateString("es-ES")}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {profileReviews && profileReviews.reviews.length === 0 && (
-                    <p className="empty-tab">Aún no tiene ninguna reseña.</p>
-                  )}
                 </div>
               )}
 
@@ -2871,6 +2892,9 @@ export default function RopelinApp() {
                     </button>
                     <button className={"profile-sidebar-item" + (profileMenuView === "favoritos" ? " active" : "")} onClick={() => setProfileMenuView("favoritos")}>
                       <Heart size={16} /> Favoritos
+                    </button>
+                    <button className={"profile-sidebar-item" + (profileMenuView === "resenas" ? " active" : "")} onClick={() => setProfileMenuView("resenas")}>
+                      <Star size={16} /> Reseñas
                     </button>
                     <p className="profile-menu-section-title">Cuenta</p>
                     <button className={"profile-sidebar-item" + (profileMenuView === "perfil" ? " active" : "")} onClick={() => setProfileMenuView("perfil")}>
@@ -2933,6 +2957,11 @@ export default function RopelinApp() {
                       <span className="profile-menu-label">Favoritos</span>
                       <ChevronRight size={16} />
                     </button>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("resenas")}>
+                      <span className="profile-menu-icon"><Star size={17} /></span>
+                      <span className="profile-menu-label">Reseñas{profileReviews ? ` (${profileReviews.total})` : ""}</span>
+                      <ChevronRight size={16} />
+                    </button>
 
                     <p className="profile-menu-section-title">Cuenta</p>
                     <button className="profile-menu-row" onClick={() => setProfileMenuView("perfil")}>
@@ -2963,6 +2992,7 @@ export default function RopelinApp() {
                 <div className="tabs profile-tabs">
                   <button className={"tab" + ((profileMenuView || "venta") === "venta" ? " active" : "")} onClick={() => setProfileMenuView("venta")}>En venta</button>
                   <button className={"tab" + (profileMenuView === "vendidos" ? " active" : "")} onClick={() => setProfileMenuView("vendidos")}>Vendidos</button>
+                  <button className={"tab" + (profileMenuView === "resenas" ? " active" : "")} onClick={() => setProfileMenuView("resenas")}>Reseñas</button>
                 </div>
               )}
 
@@ -3022,6 +3052,27 @@ export default function RopelinApp() {
                           <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
                           <p className="mini-title">{i.title}</p>
                           <p className="mini-price">{i.price}€</p>
+                        </div>
+                      ))}
+                    </div>
+              )}
+
+              {profileMenuView === "resenas" && (
+                !profileReviews ? null : profileReviews.reviews.length === 0
+                  ? <p className="empty-tab">Aún no tiene ninguna reseña.</p>
+                  : <div className="reviews-list">
+                      {profileReviews.reviews.map((r) => (
+                        <div key={r.id} className="review-row">
+                          <div className="review-row-top">
+                            <span className="review-author">@{r.authorUsername}</span>
+                            <span className="review-stars">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Star key={i} size={11} fill={i < r.rating ? "#FFC24D" : "none"} color="#FFC24D" />
+                              ))}
+                            </span>
+                          </div>
+                          {r.comment && <p className="review-comment">{r.comment}</p>}
+                          <span className="review-date">{new Date(r.createdAt).toLocaleDateString("es-ES")}</span>
                         </div>
                       ))}
                     </div>
@@ -3374,6 +3425,30 @@ export default function RopelinApp() {
                 </>
               )}
             </div>
+
+            {(() => {
+              if (openItem.seller !== username || openItem.status !== "sold") return null;
+              const sale = orders.sales.find((tx) => tx.itemId === openItem.id);
+              if (!sale) return null;
+              return (
+                <div className="item-shipping-box">
+                  {!sale.shipment && sale.status === "paid" && (
+                    <>
+                      <button className="chat-btn mark-sold-btn" onClick={() => handleOpenRatePicker(sale.id)}><Truck size={15} /> Generar etiqueta de envío</button>
+                      <p className="order-hint">O si quedáis en persona, que @{sale.buyer.username} lo confirme desde su lado</p>
+                    </>
+                  )}
+                  {sale.shipment && sale.shipment.labelUrl && (
+                    <a className="chat-btn mark-sold-btn" href={sale.shipment.labelUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "inline-flex", justifyContent: "center" }}>
+                      <FileDown size={15} /> Descargar etiqueta (PDF)
+                    </a>
+                  )}
+                  {sale.shipment && sale.shipment.trackingCode && (
+                    <p className="order-hint">Nº de seguimiento: {sale.shipment.trackingCode}</p>
+                  )}
+                </div>
+              );
+            })()}
 
             {isAdmin && (
               <div className="admin-toolbar">
@@ -4225,9 +4300,13 @@ export default function RopelinApp() {
                     {tx.status === "completed" && (
                       <>
                         <p className="order-delivery-tag">{tx.deliveryMethod === "in_person" ? "📍 Entregado en persona" : "📦 Entregado por correo"}</p>
-                        <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.seller.username })}>
-                          <Star size={13} /> Valorar a @{tx.seller.username}
-                        </button>
+                        {tx.reviewedByMe ? (
+                          <p className="order-hint">✓ Ya has valorado a @{tx.seller.username}</p>
+                        ) : (
+                          <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.seller.username })}>
+                            <Star size={13} /> Valorar a @{tx.seller.username}
+                          </button>
+                        )}
                       </>
                     )}
                     {tx.status === "disputed" && (
@@ -4261,7 +4340,7 @@ export default function RopelinApp() {
 
                     {!tx.shipment && tx.status === "paid" && (
                       <>
-                        <button className="order-action-btn" onClick={() => handleGenerateLabel(tx.id)}>
+                        <button className="order-action-btn" onClick={() => handleOpenRatePicker(tx.id)}>
                           <Truck size={13} /> Generar etiqueta de envío
                         </button>
                         <p className="order-hint">O si quedáis en persona, que @{tx.buyer.username} lo confirme desde su lado</p>
@@ -4278,9 +4357,13 @@ export default function RopelinApp() {
                     {tx.status === "completed" && (
                       <>
                         <p className="order-delivery-tag">{tx.deliveryMethod === "in_person" ? "📍 Entregado en persona" : "📦 Entregado por correo"}</p>
-                        <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.buyer.username })}>
-                          <Star size={13} /> Valorar a @{tx.buyer.username}
-                        </button>
+                        {tx.reviewedByMe ? (
+                          <p className="order-hint">✓ Ya has valorado a @{tx.buyer.username}</p>
+                        ) : (
+                          <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.buyer.username })}>
+                            <Star size={13} /> Valorar a @{tx.buyer.username}
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
@@ -5120,6 +5203,62 @@ export default function RopelinApp() {
               <MapPin size={13} /> {locatingMe ? "Detectando..." : "Detectar mi ubicación automáticamente"}
             </button>
             <button className="btn primary admin-refund-btn" onClick={saveEditProfile}>Guardar cambios</button>
+          </div>
+        </div>
+      )}
+
+      {ratePicker && (
+        <div className="overlay sheet-overlay" onClick={() => !ratePicker.purchasing && setRatePicker(null)}>
+          <div className="sheet-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <p className="sheet-title">Elige transportista</p>
+              <button className="close-btn" onClick={() => setRatePicker(null)} disabled={ratePicker.purchasing}><X size={14} /></button>
+            </div>
+
+            {ratePicker.loading && (
+              <div className="sheet-loading">
+                <RefreshCw size={18} className="spin" />
+                <p>Consultando tarifas disponibles…</p>
+              </div>
+            )}
+
+            {!ratePicker.loading && ratePicker.rates.length === 0 && (
+              <p className="order-hint" style={{ padding: "20px 0" }}>No hay tarifas disponibles para este envío ahora mismo.</p>
+            )}
+
+            {!ratePicker.loading && ratePicker.rates.length > 0 && (
+              <div className="sheet-rate-list">
+                {ratePicker.rates.map((r) => {
+                  const selected = ratePicker.selectedRateId === r.rateId;
+                  return (
+                    <button
+                      key={r.rateId}
+                      className={"sheet-rate-card" + (selected ? " selected" : "")}
+                      disabled={ratePicker.purchasing}
+                      onClick={() => setRatePicker((prev) => ({ ...prev, selectedRateId: r.rateId }))}
+                    >
+                      <span className="sheet-rate-icon"><Truck size={16} /></span>
+                      <span className="sheet-rate-info">
+                        <span className="sheet-rate-provider">{r.provider}</span>
+                        <span className="sheet-rate-meta">
+                          {r.servicelevel ? `${r.servicelevel} · ` : ""}
+                          {r.estimatedDays != null ? `${r.estimatedDays} día${r.estimatedDays === 1 ? "" : "s"}` : "Plazo estimado no disponible"}
+                        </span>
+                      </span>
+                      <span className="sheet-rate-price">{Number(r.amount).toFixed(2)}{r.currency === "EUR" ? "€" : ` ${r.currency}`}</span>
+                      <span className={"sheet-rate-radio" + (selected ? " on" : "")} />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {!ratePicker.loading && ratePicker.rates.length > 0 && (
+              <button className="btn primary sheet-confirm-btn" onClick={handleConfirmRate} disabled={!ratePicker.selectedRateId || ratePicker.purchasing}>
+                {ratePicker.purchasing ? "Generando etiqueta…" : "Generar etiqueta"}
+              </button>
+            )}
           </div>
         </div>
       )}
