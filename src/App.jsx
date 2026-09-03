@@ -458,6 +458,19 @@ export default function RopelinApp() {
 
   const [ratePicker, setRatePicker] = useState(null); // { transactionId, rates, loading, purchasing, selectedRateId }
 
+  async function handleShare(url, title) {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+      } catch {
+        // el usuario canceló el diálogo nativo, no hacemos nada
+      }
+    } else {
+      navigator.clipboard.writeText(url);
+      toast("Enlace copiado", { icon: "🔗" });
+    }
+  }
+
   async function handleOpenRatePicker(transactionId) {
     setRatePicker({ transactionId, rates: [], loading: true, purchasing: false, selectedRateId: null });
     try {
@@ -1984,7 +1997,7 @@ export default function RopelinApp() {
         }
 
         .col { flex: 1; min-width: 0; max-width: 300px; display: flex; flex-direction: column; gap: 14px; }
-        .card { background: var(--card); border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; border: 2.5px solid var(--border); }
+        .card { background: var(--card); border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; border: 3px solid var(--border); }
         .card:hover { transform: translateY(-4px); border-color: #FF4D8D55; box-shadow: 0 12px 30px -14px #FF4D8D33; }
         .card-media { height: 150px; position: relative; background-size: cover; background-position: center; flex-shrink: 0; }
         .heart { border: none; background: #00000055; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; position: absolute; top: 10px; right: 10px; }
@@ -1994,7 +2007,7 @@ export default function RopelinApp() {
         .card-sold .card-info { opacity: 0.6; }
         .item-shipping-box { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
         .sold-ribbon { position: absolute; top: 12px; left: 50%; transform: translateX(-50%) rotate(-6deg); background: #1A1A1E; border: 1px solid #ffffff33; color: #fff; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 5px 16px; border-radius: 8px; z-index: 2; }
-        .price-pill { position: absolute; bottom: 10px; left: 10px; background: #121214cc; border: 1px solid var(--input-border); border-radius: 14px; padding: 4px 10px; font-size: 13px; font-weight: 700; z-index: 2; color: #7FD8D0; }
+        .price-pill { position: absolute; bottom: 10px; left: 10px; background: #7FD8D0; border: 2px solid var(--border); border-radius: 14px; padding: 4px 10px; font-size: 13px; font-weight: 800; z-index: 2; color: #04342C; }
         .card-info { padding: 12px 14px 14px; height: 96px; display: flex; flex-direction: column; justify-content: flex-start; overflow: hidden; }
         .card-info h3 { font-size: 14px; margin: 0 0 4px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 35px; }
         .card-info p { font-size: 12px; color: var(--sub); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -2822,7 +2835,7 @@ export default function RopelinApp() {
                   <button className="cover-btn" onClick={() => document.getElementById("cover-upload-input").click()}><ImagePlus size={13} /> Cambiar portada</button>
                 </>
               )}
-              <button className="share-profile-btn">
+              <button className="share-profile-btn" onClick={() => handleShare(`${window.location.origin}/perfil/${profileUsername}`, `@${profileUsername} en Ropelin`)}>
                 <Share2 size={14} />
               </button>
               {isOwnProfile && (
@@ -3233,10 +3246,7 @@ export default function RopelinApp() {
             <div className="detail-media-actions">
               <button
                 className="heart detail-icon-btn"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/item/${openItem.id}`);
-                  toast("Enlace copiado", { icon: "🔗" });
-                }}
+                onClick={() => handleShare(`${window.location.origin}/item/${openItem.id}`, openItem.title)}
               ><Share2 size={16} /></button>
               <button className={"heart detail-icon-btn" + (saved.has(openItem.id) ? " on" : "")} onClick={() => toggleSave(openItem.id)}>
                 <Heart size={18} fill={saved.has(openItem.id) ? "#FF4D8D" : "none"} color={saved.has(openItem.id) ? "#FF4D8D" : "#fff"} />
@@ -3346,14 +3356,6 @@ export default function RopelinApp() {
                 <FileWarning size={12} /> Denunciar este artículo
               </button>
             )}
-
-            <div className="impact-box">
-              <Leaf size={16} color="#7FD8D0" />
-              <div>
-                <p className="impact-title">Impacto de esta compra</p>
-                <p className="impact-sub">Ahorras ~{(openItem.price * 2.1).toFixed(0)} kg de CO₂ y {(openItem.price * 90).toFixed(0)} L de agua frente a comprarlo nuevo</p>
-              </div>
-            </div>
 
             <div className="shipping-box">
               <Truck size={16} color="#9A9AA3" />
