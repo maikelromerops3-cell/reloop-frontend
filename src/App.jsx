@@ -2252,6 +2252,12 @@ export default function RopelinApp() {
         .site-footer button:hover { color: var(--text); }
         .legal-modal { max-width: 460px; }
         .legal-text { font-size: 13px; color: var(--body); line-height: 1.6; max-height: 55vh; overflow-y: auto; }
+        .how-it-works-intro { font-size: 14px; color: var(--sub); margin: 0 0 18px; }
+        .how-it-works-list { display: flex; flex-direction: column; gap: 10px; max-height: 55vh; overflow-y: auto; }
+        .how-it-works-card { display: flex; align-items: flex-start; gap: 14px; background: var(--card); border: 2.5px solid var(--border); border-radius: 16px; padding: 14px 16px; }
+        .how-it-works-num { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: #1A1A1A; border: 2px solid var(--border); flex-shrink: 0; }
+        .how-it-works-title { font-size: 14px; font-weight: 800; color: var(--text); margin: 0 0 4px; }
+        .how-it-works-text { font-size: 13px; color: var(--sub); margin: 0; line-height: 1.5; }
         .about-impact-box { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #7FD8D014, #7FD8D008); border: 1px solid #7FD8D033; border-radius: 14px; padding: 14px 16px; margin: 4px 0 20px; }
         .about-impact-box p { margin: 0; font-size: 12.5px; color: var(--body); line-height: 1.5; }
         .about-impact-box strong { color: #7FD8D0; }
@@ -2375,7 +2381,7 @@ export default function RopelinApp() {
         .overlay-top { z-index: 15; }
         .modal { background: var(--card); border: 1px solid var(--border); border-radius: 22px; max-width: 400px; width: 100%; padding: 26px; position: relative; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         .modal h3 { font-size: 19px; font-weight: 700; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
-        .close-btn { position: absolute; top: 16px; right: 16px; background: var(--border); border: none; border-radius: 50%; width: 28px; height: 28px; color: var(--text); cursor: pointer; z-index: 5; }
+        .close-btn { position: absolute; top: 16px; right: 16px; background: var(--surface2); border: 2px solid var(--border); border-radius: 50%; width: 28px; height: 28px; color: var(--text); cursor: pointer; z-index: 5; display: flex; align-items: center; justify-content: center; }
         label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; color: var(--sub); }
         input, select { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; }
         .post-textarea { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 4px; }
@@ -2635,28 +2641,11 @@ export default function RopelinApp() {
             <button className="btn ghost hide-on-mobile-nav" onClick={() => setShowAuth(true)}><LogIn size={14} /> <span className="btn-label">Entrar</span></button>
           )}
 
-          <div className="more-menu-wrap">
-            <button className="icon-btn more-menu-btn" onClick={() => setShowMoreMenu((v) => !v)}>
-              <MoreHorizontal size={16} />
+          {isModerator && (
+            <button className="icon-btn" onClick={openAdminPanel} title="Admin">
+              <ShieldCheck size={16} />
             </button>
-            {showMoreMenu && (
-              <>
-                <div className="more-menu-backdrop" onClick={() => setShowMoreMenu(false)} />
-                <div className="more-menu-panel">
-                  {loggedIn && (
-                    <button onClick={() => { setShowMoreMenu(false); setShowSettings(true); }}><Settings size={15} /> Ajustes</button>
-                  )}
-                  <button onClick={() => { setShowMoreMenu(false); openLeague(); }}><Trophy size={15} /> Liga</button>
-                  {isModerator && (
-                    <button onClick={() => { setShowMoreMenu(false); openAdminPanel(); }}><ShieldCheck size={15} /> Admin</button>
-                  )}
-                  {loggedIn && (
-                    <button onClick={() => { setShowMoreMenu(false); apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); toast("Sesión cerrada"); }}><LogOut size={15} /> Salir</button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+          )}
         </div>
       </header>
 
@@ -2856,7 +2845,7 @@ export default function RopelinApp() {
                 <Share2 size={14} />
               </button>
               {isOwnProfile && (
-                <button className="icon-round-btn" onClick={() => setShowSettingsMenu(true)} title="Ajustes">
+                <button className="icon-round-btn" onClick={() => setProfileMenuView("ajustes")} title="Ajustes">
                   <Settings size={14} />
                 </button>
               )}
@@ -2982,6 +2971,11 @@ export default function RopelinApp() {
                     <button className={"profile-sidebar-item" + (profileMenuView === "resenas" ? " active" : "")} onClick={() => setProfileMenuView("resenas")}>
                       <Star size={16} /> Reseñas
                     </button>
+                    {isOwnProfile && (
+                      <button className={"profile-sidebar-item" + (profileMenuView === "ajustes" ? " active" : "")} onClick={() => setProfileMenuView("ajustes")}>
+                        <Settings size={16} /> Ajustes
+                      </button>
+                    )}
                   </div>
                 ) :
                 profileMenuView === null ? (
@@ -3033,6 +3027,11 @@ export default function RopelinApp() {
                     <button className="profile-menu-row" onClick={() => setProfileMenuView("resenas")}>
                       <span className="profile-menu-icon"><Star size={17} /></span>
                       <span className="profile-menu-label">Reseñas{profileReviews ? ` (${profileReviews.total})` : ""}</span>
+                      <ChevronRight size={16} />
+                    </button>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("ajustes")}>
+                      <span className="profile-menu-icon"><Settings size={17} /></span>
+                      <span className="profile-menu-label">Ajustes</span>
                       <ChevronRight size={16} />
                     </button>
                   </div>
@@ -3123,12 +3122,18 @@ export default function RopelinApp() {
               {profileMenuView === "favoritos" && isOwnProfile && (
                 saved.size === 0
                   ? <p className="empty-tab">Aún no has guardado ninguna prenda.</p>
-                  : <div className="mini-grid">
+                  : <div className="own-grid">
                       {allItems.filter((i) => saved.has(i.id)).map((i, idx) => (
-                        <div key={i.id} className="mini-card">
-                          <div className="mini-swatch" style={miniSwatchStyle(i, idx)} />
-                          <p className="mini-title">{i.title}</p>
-                          <p className="mini-price">{i.price}€</p>
+                        <div key={i.id} className="own-grid-item" onClick={() => { setShowProfile(false); viewItem(i); }}>
+                          <div className="own-grid-photo" style={miniSwatchStyle(i, idx)}>
+                            <div className="own-grid-overlay">
+                              <p className="own-grid-title">{i.title}</p>
+                              <p className="own-grid-price">{i.price}€</p>
+                            </div>
+                          </div>
+                          <div className="own-grid-actions">
+                            <button onClick={(e) => { e.stopPropagation(); toggleSave(i.id); }} title="Quitar de favoritos"><Heart size={13} fill="#FF4D8D" color="#FF4D8D" /></button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -3157,6 +3162,108 @@ export default function RopelinApp() {
 
               {isOwnProfile && (
                 <>
+
+                  {profileMenuView === "ajustes" && (
+                    <div style={{ textAlign: "left" }}>
+                      <div className="settings-avatar-row">
+                        <input type="file" accept="image/*" id="avatar-upload-input-settings" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "avatar"); e.target.value = ""; }} />
+                        <div className="settings-avatar" style={myAvatarUrl ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover" } : { background: avatarColor }}>
+                          {!myAvatarUrl && username[0]?.toUpperCase()}
+                        </div>
+                        <button className="btn ghost" onClick={() => document.getElementById("avatar-upload-input-settings").click()}>Editar foto de perfil</button>
+                      </div>
+
+                      <label>Nombre</label>
+                      <div className="input-icon"><input value={firstNameInput} onChange={(e) => setFirstNameInput(e.target.value)} placeholder="Tu nombre" /></div>
+
+                      <label>Apellidos</label>
+                      <div className="input-icon"><input value={lastNameInput} onChange={(e) => setLastNameInput(e.target.value)} placeholder="Tus apellidos" /></div>
+
+                      <label>Ciudad</label>
+                      <div className="location-box" style={{ marginBottom: 14 }}>
+                        <div className="input-icon" style={{ flex: 1, marginBottom: 0 }}><MapPin size={14} /><input value={cityInput} onChange={(e) => setCityInput(e.target.value)} placeholder="Madrid" /></div>
+                        <button className="btn ghost" onClick={detectMyLocation} disabled={locatingMe} title="Detectar por GPS">
+                          {locatingMe ? "..." : "Detectar"}
+                        </button>
+                      </div>
+
+                      <label>Teléfono</label>
+                      <div className="input-icon"><input value={shippingPhoneInput} onChange={(e) => setShippingPhoneInput(e.target.value)} placeholder="+34 600 000 000" /></div>
+
+                      <button className="submit-btn" onClick={saveBasicInfo} disabled={savingBasicInfo} style={{ marginTop: 4, marginBottom: 20 }}>
+                        {savingBasicInfo ? "Guardando..." : "Guardar cambios"}
+                      </button>
+
+                      <p className="settings-subheading">Email y contraseña</p>
+                      {!myEmailVerified && (
+                        <div className="email-unverified-banner">
+                          <p><FileWarning size={14} /> Tu email todavía no está verificado</p>
+                          <button onClick={handleResendVerification} disabled={resendingVerification}>
+                            {resendingVerification ? "Enviando..." : "Reenviar correo de verificación"}
+                          </button>
+                        </div>
+                      )}
+                      <label>Nuevo email</label>
+                      <div className="input-icon"><Mail size={14} /><input placeholder={`Actual: ${username}`} value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)} /></div>
+                      {newEmailInput.trim() && (
+                        <div className="input-icon"><Lock size={14} /><input type="password" placeholder="Tu contraseña actual, para confirmar" value={emailChangePassword} onChange={(e) => setEmailChangePassword(e.target.value)} /></div>
+                      )}
+                      <label>Nueva contraseña</label>
+                      <div className="input-icon"><Lock size={14} /><input type="password" placeholder="••••••••" value={newPasswordInput} onChange={(e) => setNewPasswordInput(e.target.value)} /></div>
+                      {newPasswordInput.trim() && (
+                        <div className="input-icon"><Lock size={14} /><input type="password" placeholder="Tu contraseña actual" value={currentPasswordInput} onChange={(e) => setCurrentPasswordInput(e.target.value)} /></div>
+                      )}
+                      <button className="submit-btn" onClick={handleSaveAccountSettings} disabled={savingAccountSettings || (!newPasswordInput.trim() && !newEmailInput.trim())} style={{ marginBottom: 20 }}>
+                        {savingAccountSettings ? "Guardando..." : "Guardar email/contraseña"}
+                      </button>
+
+                      <div className="settings-menu-list">
+                        <button className="profile-menu-row" onClick={() => setProfileMenuView("envios")}>
+                          <span className="profile-menu-icon"><Truck size={17} /></span>
+                          <span className="profile-menu-label">Envíos</span>
+                          <ChevronRight size={16} />
+                        </button>
+                        <button className="profile-menu-row" onClick={() => setProfileMenuView("pagos")}>
+                          <span className="profile-menu-icon"><HandCoins size={17} /></span>
+                          <span className="profile-menu-label">Pagos</span>
+                          <ChevronRight size={16} />
+                        </button>
+                        <button className="profile-menu-row" onClick={() => setProfileMenuView("referido")}>
+                          <span className="profile-menu-icon"><UserPlus size={17} /></span>
+                          <span className="profile-menu-label">Invita y gana</span>
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+
+                      <button className="logout-btn" style={{ marginTop: 20 }} onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); setShowProfile(false); toast("Sesión cerrada"); }}>Cerrar sesión</button>
+
+                      <div className="danger-zone">
+                        <p className="danger-zone-title">Zona de peligro</p>
+                        {!showDeleteAccount ? (
+                          <button className="danger-zone-btn" onClick={() => setShowDeleteAccount(true)}>Eliminar mi cuenta</button>
+                        ) : (
+                          <div className="delete-confirm-box">
+                            <p className="delete-confirm-text">
+                              Esto es permanente. Se borrarán tus favoritos, notificaciones y artículos aún no vendidos.
+                              Para confirmar, escribe tu nombre de usuario (<strong>{username}</strong>) abajo:
+                            </p>
+                            <input
+                              className="delete-confirm-input"
+                              value={deleteConfirmText}
+                              onChange={(e) => setDeleteConfirmText(e.target.value)}
+                              placeholder={username}
+                            />
+                            <div className="delete-confirm-actions">
+                              <button className="btn ghost" onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}>Cancelar</button>
+                              <button className="danger-zone-btn" disabled={deletingAccount} onClick={handleDeleteAccount}>
+                                {deletingAccount ? "Eliminando..." : "Eliminar cuenta definitivamente"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {profileMenuView === "envios" && (
                     <div className="stripe-box" style={{ margin: 0 }}>
@@ -3409,7 +3516,7 @@ export default function RopelinApp() {
             {openItem.seller === username && openItem.status !== "sold" && !stripeStatus?.onboarded && (
               <div className="email-unverified-banner" style={{ marginBottom: 14 }}>
                 <p><FileWarning size={14} /> Nadie puede comprarte este artículo por correo todavía</p>
-                <button onClick={() => { setShowLegal(null); setShowProfile(true); setProfileMenuView(null); setShowSettingsMenu(true); }}>Conectar Stripe</button>
+                <button onClick={() => { setShowLegal(null); setShowProfile(true); setProfileMenuView("ajustes"); }}>Conectar Stripe</button>
               </div>
             )}
 
@@ -3756,29 +3863,23 @@ export default function RopelinApp() {
             {showLegal === "how-it-works" && (
               <>
                 <p className="auth-title">Cómo funciona</p>
-                <div className="legal-text">
-                  <p>Comprar y vender de segunda mano en Ropelin es sencillo y está protegido en cada paso.</p>
-
-                  <div className="about-block">
-                    <p style={{ fontWeight: 700, marginBottom: 4 }}>1. Encuentra o publica una prenda</p>
-                    <p>Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio.</p>
-                  </div>
-                  <div className="about-block">
-                    <p style={{ fontWeight: 700, marginBottom: 4 }}>2. Habla, oferta o compra directamente</p>
-                    <p>Puedes preguntar al vendedor, hacer una oferta más baja, o comprar al precio marcado. El pago se hace dentro de Ropelin con Stripe — nunca por fuera, para que quede constancia de todo.</p>
-                  </div>
-                  <div className="about-block">
-                    <p style={{ fontWeight: 700, marginBottom: 4 }}>3. El vendedor envía o quedáis en persona</p>
-                    <p>Tras el pago, el vendedor genera una etiqueta de envío con un par de clics, o podéis quedar en persona si os viene mejor.</p>
-                  </div>
-                  <div className="about-block">
-                    <p style={{ fontWeight: 700, marginBottom: 4 }}>4. Confirmas que lo has recibido</p>
-                    <p>En cuanto te llegue, confirmas la recepción desde tu perfil — así queda cerrado el pedido para las dos partes.</p>
-                  </div>
-                  <div className="about-block">
-                    <p style={{ fontWeight: 700, marginBottom: 4 }}>5. Valorad la compra</p>
-                    <p>Al confirmar la entrega, comprador y vendedor podéis valoraros mutuamente — así se construye la confianza de la comunidad.</p>
-                  </div>
+                <p className="how-it-works-intro">Comprar y vender de segunda mano en Ropelin es sencillo y está protegido en cada paso.</p>
+                <div className="how-it-works-list">
+                  {[
+                    { color: "#FF4D8D", title: "Encuentra o publica una prenda", text: "Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio." },
+                    { color: "#B49CE8", title: "Habla, oferta o compra directamente", text: "Pregunta al vendedor, haz una oferta más baja, o compra al precio marcado. El pago se hace dentro de Ropelin con Stripe — nunca por fuera, para que quede constancia de todo." },
+                    { color: "#7FD8D0", title: "El vendedor envía o quedáis en persona", text: "Tras el pago, el vendedor genera una etiqueta de envío con un par de clics, o podéis quedar en persona si os viene mejor." },
+                    { color: "#FFC24D", title: "Confirmas que lo has recibido", text: "En cuanto te llegue, confirmas la recepción desde tu perfil — así queda cerrado el pedido para las dos partes." },
+                    { color: "#FF8A4D", title: "Valorad la compra", text: "Al confirmar la entrega, comprador y vendedor podéis valoraros mutuamente — así se construye la confianza de la comunidad." },
+                  ].map((step, i) => (
+                    <div className="how-it-works-card" key={i}>
+                      <span className="how-it-works-num" style={{ background: step.color }}>{i + 1}</span>
+                      <div>
+                        <p className="how-it-works-title">{step.title}</p>
+                        <p className="how-it-works-text">{step.text}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </>
             )}
@@ -5259,118 +5360,6 @@ export default function RopelinApp() {
               <MapPin size={13} /> {locatingMe ? "Detectando..." : "Detectar mi ubicación automáticamente"}
             </button>
             <button className="btn primary admin-refund-btn" onClick={saveEditProfile}>Guardar cambios</button>
-          </div>
-        </div>
-      )}
-
-      {showSettingsMenu && (
-        <div className="overlay sheet-overlay" onClick={() => setShowSettingsMenu(false)}>
-          <div className="sheet-modal settings-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="sheet-handle" />
-            <div className="sheet-header">
-              <p className="sheet-title">Ajustes</p>
-              <button className="close-btn" onClick={() => setShowSettingsMenu(false)}><X size={14} /></button>
-            </div>
-
-            <div className="settings-scroll">
-              <div className="settings-avatar-row">
-                <input type="file" accept="image/*" id="avatar-upload-input-settings" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "avatar"); e.target.value = ""; }} />
-                <div className="settings-avatar" style={myAvatarUrl ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover" } : { background: avatarColor }}>
-                  {!myAvatarUrl && username[0]?.toUpperCase()}
-                </div>
-                <button className="btn ghost" onClick={() => document.getElementById("avatar-upload-input-settings").click()}>Editar foto de perfil</button>
-              </div>
-
-              <label>Nombre</label>
-              <div className="input-icon"><input value={firstNameInput} onChange={(e) => setFirstNameInput(e.target.value)} placeholder="Tu nombre" /></div>
-
-              <label>Apellidos</label>
-              <div className="input-icon"><input value={lastNameInput} onChange={(e) => setLastNameInput(e.target.value)} placeholder="Tus apellidos" /></div>
-
-              <label>Ciudad</label>
-              <div className="location-box" style={{ marginBottom: 14 }}>
-                <div className="input-icon" style={{ flex: 1, marginBottom: 0 }}><MapPin size={14} /><input value={cityInput} onChange={(e) => setCityInput(e.target.value)} placeholder="Madrid" /></div>
-                <button className="btn ghost" onClick={detectMyLocation} disabled={locatingMe} title="Detectar por GPS">
-                  {locatingMe ? "..." : "Detectar"}
-                </button>
-              </div>
-
-              <label>Teléfono</label>
-              <div className="input-icon"><input value={shippingPhoneInput} onChange={(e) => setShippingPhoneInput(e.target.value)} placeholder="+34 600 000 000" /></div>
-
-              <button className="submit-btn" onClick={saveBasicInfo} disabled={savingBasicInfo} style={{ marginTop: 4, marginBottom: 20 }}>
-                {savingBasicInfo ? "Guardando..." : "Guardar cambios"}
-              </button>
-
-              <p className="settings-subheading">Email y contraseña</p>
-              {!myEmailVerified && (
-                <div className="email-unverified-banner">
-                  <p><FileWarning size={14} /> Tu email todavía no está verificado</p>
-                  <button onClick={handleResendVerification} disabled={resendingVerification}>
-                    {resendingVerification ? "Enviando..." : "Reenviar correo de verificación"}
-                  </button>
-                </div>
-              )}
-              <label>Nuevo email</label>
-              <div className="input-icon"><Mail size={14} /><input placeholder={`Actual: ${username}`} value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)} /></div>
-              {newEmailInput.trim() && (
-                <div className="input-icon"><Lock size={14} /><input type="password" placeholder="Tu contraseña actual, para confirmar" value={emailChangePassword} onChange={(e) => setEmailChangePassword(e.target.value)} /></div>
-              )}
-              <label>Nueva contraseña</label>
-              <div className="input-icon"><Lock size={14} /><input type="password" placeholder="••••••••" value={newPasswordInput} onChange={(e) => setNewPasswordInput(e.target.value)} /></div>
-              {newPasswordInput.trim() && (
-                <div className="input-icon"><Lock size={14} /><input type="password" placeholder="Tu contraseña actual" value={currentPasswordInput} onChange={(e) => setCurrentPasswordInput(e.target.value)} /></div>
-              )}
-              <button className="submit-btn" onClick={handleSaveAccountSettings} disabled={savingAccountSettings || (!newPasswordInput.trim() && !newEmailInput.trim())} style={{ marginBottom: 20 }}>
-                {savingAccountSettings ? "Guardando..." : "Guardar email/contraseña"}
-              </button>
-
-              <div className="settings-menu-list">
-                <button className="profile-menu-row" onClick={() => { setProfileMenuView("envios"); setShowSettingsMenu(false); }}>
-                  <span className="profile-menu-icon"><Truck size={17} /></span>
-                  <span className="profile-menu-label">Envíos</span>
-                  <ChevronRight size={16} />
-                </button>
-                <button className="profile-menu-row" onClick={() => { setProfileMenuView("pagos"); setShowSettingsMenu(false); }}>
-                  <span className="profile-menu-icon"><HandCoins size={17} /></span>
-                  <span className="profile-menu-label">Pagos</span>
-                  <ChevronRight size={16} />
-                </button>
-                <button className="profile-menu-row" onClick={() => { setProfileMenuView("referido"); setShowSettingsMenu(false); }}>
-                  <span className="profile-menu-icon"><UserPlus size={17} /></span>
-                  <span className="profile-menu-label">Invita y gana</span>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-
-              <button className="logout-btn" style={{ marginTop: 20 }} onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); setShowProfile(false); setShowSettingsMenu(false); toast("Sesión cerrada"); }}>Cerrar sesión</button>
-
-              <div className="danger-zone">
-                <p className="danger-zone-title">Zona de peligro</p>
-                {!showDeleteAccount ? (
-                  <button className="danger-zone-btn" onClick={() => setShowDeleteAccount(true)}>Eliminar mi cuenta</button>
-                ) : (
-                  <div className="delete-confirm-box">
-                    <p className="delete-confirm-text">
-                      Esto es permanente. Se borrarán tus favoritos, notificaciones y artículos aún no vendidos.
-                      Para confirmar, escribe tu nombre de usuario (<strong>{username}</strong>) abajo:
-                    </p>
-                    <input
-                      className="delete-confirm-input"
-                      value={deleteConfirmText}
-                      onChange={(e) => setDeleteConfirmText(e.target.value)}
-                      placeholder={username}
-                    />
-                    <div className="delete-confirm-actions">
-                      <button className="btn ghost" onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}>Cancelar</button>
-                      <button className="danger-zone-btn" disabled={deletingAccount} onClick={handleDeleteAccount}>
-                        {deletingAccount ? "Eliminando..." : "Eliminar cuenta definitivamente"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       )}
