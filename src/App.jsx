@@ -4,7 +4,7 @@ import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
 import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, FileDown, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight, Clock } from "lucide-react";
 import {
-  fetchItems, createItem, updateItem, deleteItem,
+  fetchItems, fetchItem, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
@@ -18,7 +18,7 @@ import {
   fetchNotifications, markAllNotificationsRead,
   disputeTransaction,
   fetchAdminUsers, fetchAdminStats, fetchAdminDisputes, refundTransaction,
-  banUser, unbanUser, fetchAdminReports, resolveReport, fetchAdminLogs, fetchAdminTop, fetchAdminTimeseries, submitReport,
+  banUser, unbanUser, adminDeleteItem, fetchAdminReports, resolveReport, fetchAdminLogs, fetchAdminTop, fetchAdminTimeseries, submitReport,
   submitSupportMessage, fetchMySupportMessages, fetchAdminSupport, replySupportMessage,
   fetchPublicSettings, fetchAdminSettings, updateAdminSettings, adminEditItem, exportUsersCsv, exportTransactionsCsv, changeUserRole,
 } from "./api";
@@ -129,6 +129,7 @@ function normalizeItem(raw) {
     ...raw,
     price: Number(raw.price),
     seller: raw.seller?.username || raw.seller || raw.sellerId,
+    sellerStripeOnboarded: raw.seller?.stripeOnboarded ?? null,
     photo: raw.images && raw.images.length ? raw.images[0] : `https://picsum.photos/seed/${raw.id}/500/500`,
     minutesAgo,
     city: raw.seller?.city || null,
@@ -143,13 +144,11 @@ function normalizeItem(raw) {
 }
 
 function ItemCard({ item, onOpen, index, saved, toggleSave }) {
-  const isSold = item.status === "sold";
   return (
-    <div className={"card" + (isSold ? " card-sold" : "")} onClick={() => onOpen(item)}>
+    <div className="card" onClick={() => onOpen(item)}>
       <div className="card-media" style={{ backgroundImage: `url(${item.photo})` }}>
-        {isSold && <span className="sold-ribbon">Vendido</span>}
-        {!isSold && item.minutesAgo < 30 && <span className="new-ribbon">Nuevo</span>}
-        {!isSold && item.featured && <span className="featured-ribbon" style={{ top: item.minutesAgo < 30 ? 38 : 10 }}>Destacado</span>}
+        {item.minutesAgo < 30 && <span className="new-ribbon">Nuevo</span>}
+        {item.featured && <span className="featured-ribbon" style={{ top: item.minutesAgo < 30 ? 38 : 10 }}>Destacado</span>}
         <button className={"heart" + (saved ? " on" : "")} onClick={(e) => { e.stopPropagation(); toggleSave(item.id); }}>
           <Heart size={16} fill={saved ? "#FF4D8D" : "none"} color={saved ? "#FF4D8D" : "#fff"} />
         </button>
@@ -1535,6 +1534,32 @@ export default function RopelinApp() {
     }
   }
 
+  async function handleDeleteReportedItem(report) {
+    if (!window.confirm(`¿Eliminar "${report.item?.title}"? Esta acción quedará registrada en el log de admin.`)) return;
+    try {
+      await adminDeleteItem(report.itemId, `Denuncia: ${report.reason}`);
+      toast.success("Artículo eliminado");
+      loadAdminTab("reports");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function handleBanFromReport(report) {
+    if (report.targetType === "item" && report.item?.sellerId) {
+      setBanningUser({ id: report.item.sellerId, username: report.item.seller?.username || "" });
+      return;
+    }
+    if (report.reportedUsername) {
+      try {
+        const user = await fetchProfile(report.reportedUsername);
+        setBanningUser({ id: user.id, username: report.reportedUsername });
+      } catch {
+        toast.error("No se pudo encontrar a ese usuario");
+      }
+    }
+  }
+
   async function submitReportForm(e) {
     e.preventDefault();
     if (!reportReason.trim()) return;
@@ -2900,7 +2925,6 @@ export default function RopelinApp() {
                   {(isOwnProfile ? myLocation?.city : otherProfileData?.city) && (
                     <p className="about-me-line"><MapPin size={13} /> {isOwnProfile ? myLocation?.city : otherProfileData?.city}</p>
                   )}
-                  <p className="about-me-line"><Clock size={13} /> Miembro desde 2026</p>
                   <p className="about-me-line">
                     <UserPlus size={13} /> {(isOwnProfile ? myProfileExtra.followersCount : otherProfileData?.followersCount) || 0} seguidores, {(isOwnProfile ? myProfileExtra.followingCount : otherProfileData?.followingCount) || 0} siguiendo
                   </p>
@@ -3202,7 +3226,7 @@ export default function RopelinApp() {
         ) : (
           <div className="overlay detail-overlay" onClick={closeProfileView}>
             <div className="modal profile-modal detail-modal" onClick={(e) => e.stopPropagation()}>
-              <button className="close-btn dark-close" onClick={closeProfileView}><X size={14} /></button>
+              <button className="close-btn dark-close-left" onClick={closeProfileView}><X size={14} /></button>
               {profileContentEl}
             </div>
           </div>
@@ -3382,6 +3406,13 @@ export default function RopelinApp() {
               </div>
             )}
 
+            {openItem.seller === username && openItem.status !== "sold" && !stripeStatus?.onboarded && (
+              <div className="email-unverified-banner" style={{ marginBottom: 14 }}>
+                <p><FileWarning size={14} /> Nadie puede comprarte este artículo por correo todavía</p>
+                <button onClick={() => { setShowLegal(null); setShowProfile(true); setProfileMenuView(null); setShowSettingsMenu(true); }}>Conectar Stripe</button>
+              </div>
+            )}
+
             <div className="detail-actions">
               {openItem.seller === username ? (
                 <>
@@ -3403,7 +3434,11 @@ export default function RopelinApp() {
                 <>
                   <button className="chat-btn" onClick={() => openChat(openItem)}><MessageCircle size={15} /> Contactar</button>
                   <button className="offer-btn" onClick={() => loggedIn ? setShowOffer(true) : setShowAuth(true)}><HandCoins size={15} /> Ofertar</button>
-                  <button className="buy-btn" onClick={() => loggedIn ? setShowCheckout(true) : setShowAuth(true)}>Comprar</button>
+                  {openItem.sellerStripeOnboarded === false ? (
+                    <button className="buy-btn" disabled title="Este vendedor todavía no puede recibir pagos por correo" style={{ opacity: 0.6 }}>No disponible por correo</button>
+                  ) : (
+                    <button className="buy-btn" onClick={() => loggedIn ? setShowCheckout(true) : setShowAuth(true)}>Comprar</button>
+                  )}
                 </>
               )}
             </div>
@@ -3718,6 +3753,35 @@ export default function RopelinApp() {
                 </>
               );
             })()}
+            {showLegal === "how-it-works" && (
+              <>
+                <p className="auth-title">Cómo funciona</p>
+                <div className="legal-text">
+                  <p>Comprar y vender de segunda mano en Ropelin es sencillo y está protegido en cada paso.</p>
+
+                  <div className="about-block">
+                    <p style={{ fontWeight: 700, marginBottom: 4 }}>1. Encuentra o publica una prenda</p>
+                    <p>Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio.</p>
+                  </div>
+                  <div className="about-block">
+                    <p style={{ fontWeight: 700, marginBottom: 4 }}>2. Habla, oferta o compra directamente</p>
+                    <p>Puedes preguntar al vendedor, hacer una oferta más baja, o comprar al precio marcado. El pago se hace dentro de Ropelin con Stripe — nunca por fuera, para que quede constancia de todo.</p>
+                  </div>
+                  <div className="about-block">
+                    <p style={{ fontWeight: 700, marginBottom: 4 }}>3. El vendedor envía o quedáis en persona</p>
+                    <p>Tras el pago, el vendedor genera una etiqueta de envío con un par de clics, o podéis quedar en persona si os viene mejor.</p>
+                  </div>
+                  <div className="about-block">
+                    <p style={{ fontWeight: 700, marginBottom: 4 }}>4. Confirmas que lo has recibido</p>
+                    <p>En cuanto te llegue, confirmas la recepción desde tu perfil — así queda cerrado el pedido para las dos partes.</p>
+                  </div>
+                  <div className="about-block">
+                    <p style={{ fontWeight: 700, marginBottom: 4 }}>5. Valorad la compra</p>
+                    <p>Al confirmar la entrega, comprador y vendedor podéis valoraros mutuamente — así se construye la confianza de la comunidad.</p>
+                  </div>
+                </div>
+              </>
+            )}
             {showLegal === "about" && (
               <>
                 <p className="auth-title">Quiénes somos</p>
@@ -4107,6 +4171,7 @@ export default function RopelinApp() {
           <div className="footer-col">
             <p className="footer-col-title">Ropelin</p>
             <button onClick={() => openLegalPage("about")}>Quiénes somos</button>
+            <button onClick={() => openLegalPage("how-it-works")}>Cómo funciona</button>
             <button onClick={() => openLegalPage("updates")}>Novedades</button>
             <button onClick={openHelpCenter}>Ayuda</button>
           </div>
@@ -4491,7 +4556,7 @@ export default function RopelinApp() {
                 key={n.id}
                 className={"notif-row" + (n.read ? "" : " unread")}
                 style={{ cursor: n.link ? "pointer" : "default" }}
-                onClick={() => {
+                onClick={async () => {
                   if (!n.link) return;
                   setShowNotifs(false);
                   if (n.link === "/pedidos") {
@@ -4500,7 +4565,10 @@ export default function RopelinApp() {
                   }
                   const match = n.link.match(/\/item\/(.+)/);
                   if (match) {
-                    const found = allItems.find((i) => i.id === match[1]);
+                    let found = allItems.find((i) => i.id === match[1]);
+                    if (!found) {
+                      try { found = normalizeItem(await fetchItem(match[1])); } catch { /* el artículo ya no existe */ }
+                    }
                     if (found) {
                       if (n.type === "message" || n.type === "offer") {
                         openChat(found);
@@ -5014,9 +5082,15 @@ export default function RopelinApp() {
                             </p>
                             <p className="admin-user-meta">Denunciado por @{r.reporter.username} · {new Date(r.createdAt).toLocaleDateString("es-ES")}</p>
                             <p className="admin-dispute-reason">"{r.reason}"</p>
-                            {r.status === "pending" && (
-                              <button className="btn primary admin-refund-btn" onClick={() => handleResolveReport(r.id)}>Marcar como revisada</button>
-                            )}
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                              {r.status === "pending" && (
+                                <button className="btn primary admin-refund-btn" onClick={() => handleResolveReport(r.id)}>Marcar como revisada</button>
+                              )}
+                              {r.targetType === "item" && r.itemId && (
+                                <button className="danger-zone-btn" onClick={() => handleDeleteReportedItem(r)}>Eliminar artículo</button>
+                              )}
+                              <button className="admin-ban-btn" onClick={() => handleBanFromReport(r)}>Suspender usuario</button>
+                            </div>
                           </div>
                         ))}
                       </div>

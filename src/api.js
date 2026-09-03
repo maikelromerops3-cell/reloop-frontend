@@ -437,6 +437,16 @@ export async function changeUserRole(userId, role) {
   return res.json();
 }
 
+export async function adminDeleteItem(id, reason) {
+  const res = await fetch(`${API_URL}/items/${id}/admin`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo eliminar el artículo");
+  return res.json();
+}
+
 export async function banUser(userId, reason) {
   const res = await fetch(`${API_URL}/admin/users/${userId}/ban`, {
     method: "PATCH",
