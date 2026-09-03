@@ -2587,27 +2587,30 @@ export default function RopelinApp() {
           .post-modal { max-width: 760px; }
           .post-modal-grid { display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start; }
         }
-        .post-section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--faint); font-weight: 700; margin: 24px 0 10px; }
+        .post-section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text); font-weight: 800; margin: 24px 0 10px; display: flex; align-items: center; gap: 6px; }
         .post-section-label:first-of-type { margin-top: 6px; }
-        .upload-box { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 1.5px dashed var(--input-border); border-radius: 16px; padding: 26px 16px; margin-bottom: 12px; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
-        .upload-box:hover { border-color: #FF4D8D; }
+        .post-section-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #FF4D8D; display: inline-block; }
+        .upload-box { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 2.5px dashed var(--border); border-radius: 16px; padding: 26px 16px; margin-bottom: 12px; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; background: var(--card); }
+        .upload-box:hover { border-color: #FF4D8D; background: #FF4D8D0d; }
         .image-preview-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
         .image-preview.uploading { display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--faint); }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .image-preview { position: relative; width: 100%; aspect-ratio: 1; border-radius: 12px; overflow: hidden; border: 1px solid var(--input-border); }
+        .image-preview { position: relative; width: 100%; aspect-ratio: 1; border-radius: 12px; overflow: hidden; border: 2px solid var(--border); }
         .image-preview img { width: 100%; height: 100%; object-fit: cover; }
         .image-preview button { position: absolute; top: 4px; right: 4px; background: #000000aa; border: none; color: #fff; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
         .upload-hint { font-size: 11px; color: var(--faint); font-weight: 400; }
         .pill-group { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
-        .pill { border: 1px solid var(--input-border); background: var(--bg); color: var(--body); border-radius: 20px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
-        .pill.active { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); border-color: transparent; font-weight: 700; }
+        .pill { border: 2px solid var(--border); background: var(--card); color: var(--text); border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .pill.active { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #fff; border-color: var(--border); font-weight: 800; }
         .price-input { max-width: 140px; }
         .euro-prefix { color: var(--faint); font-weight: 700; font-size: 14px; }
-        .post-preview-card { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--bg); margin-top: 18px; }
-        .post-preview-media { height: 140px; background: var(--card); display: flex; align-items: center; justify-content: center; color: var(--faint); background-size: contain; background-repeat: no-repeat; background-position: center; }
+        .post-preview-card { border: 2.5px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--card); margin-top: 18px; }
+        .post-preview-media { height: 140px; background: var(--surface); display: flex; align-items: center; justify-content: center; color: var(--faint); background-size: contain; background-repeat: no-repeat; background-position: center; }
         .post-preview-body { padding: 10px 12px; }
-        .post-preview-price { color: #7FD8D0; font-weight: 700; font-size: 14px; margin: 0; }
+        .post-preview-price { color: #fff; background: #1A1A1E; display: inline-block; padding: 3px 10px; border-radius: 12px; font-weight: 800; font-size: 13px; margin: 0 0 6px; }
+        .post-form-card { background: var(--card); border: 2.5px solid var(--border); border-radius: 16px; padding: 16px 18px 18px; }
+        .post-form-card label:first-child { margin-top: 0; }
         .post-preview-title { font-size: 12.5px; color: var(--body); margin: 3px 0 0; }
         .post-preview-meta { font-size: 11px; color: var(--faint); margin: 3px 0 0; }
       `}</style>
@@ -4110,57 +4113,61 @@ export default function RopelinApp() {
             <div className="post-form-col">
               <form onSubmit={handlePublish}>
                 <p className="post-section-label">Detalles</p>
-                <label>Título</label>
-                <div className="input-icon">
-                  <Tag size={14} />
-                  <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej. Bicicleta urbana, chaqueta vaquera, lámpara..." />
-                </div>
+                <div className="post-form-card">
+                  <label>Título</label>
+                  <div className="input-icon">
+                    <Tag size={14} />
+                    <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej. Bicicleta urbana, chaqueta vaquera, lámpara..." />
+                  </div>
 
-                <label>Descripción</label>
-                <textarea
-                  className="post-textarea"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Medidas, estado real, motivo de venta, defectos si los hay..."
-                  rows={3}
-                />
+                  <label>Descripción</label>
+                  <textarea
+                    className="post-textarea"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Medidas, estado real, motivo de venta, defectos si los hay..."
+                    rows={3}
+                  />
 
-                <label>Categoría</label>
-                <div className="pill-group">
-                  {platformSettings.categories.map((c) => (
-                    <button type="button" key={c} className={"pill" + (form.category === c ? " active" : "")} onClick={() => setForm({ ...form, category: c, size: "", isShoe: false })}>{c}</button>
-                  ))}
-                </div>
+                  <label>Categoría</label>
+                  <div className="pill-group">
+                    {platformSettings.categories.map((c) => (
+                      <button type="button" key={c} className={"pill" + (form.category === c ? " active" : "")} onClick={() => setForm({ ...form, category: c, size: "", isShoe: false })}>{c}</button>
+                    ))}
+                  </div>
 
-                {form.category === "Moda" && (
-                  <>
-                    <label>Tipo de talla</label>
-                    <div className="pill-group">
-                      <button type="button" className={"pill" + (!form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: false, size: "" })}>Ropa (XS-XL)</button>
-                      <button type="button" className={"pill" + (form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: true, size: "" })}>Calzado (nº)</button>
-                    </div>
+                  {form.category === "Moda" && (
+                    <>
+                      <label>Tipo de talla</label>
+                      <div className="pill-group">
+                        <button type="button" className={"pill" + (!form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: false, size: "" })}>Ropa (XS-XL)</button>
+                        <button type="button" className={"pill" + (form.isShoe ? " active" : "")} onClick={() => setForm({ ...form, isShoe: true, size: "" })}>Calzado (nº)</button>
+                      </div>
 
-                    <label>Talla</label>
-                    <div className="pill-group">
-                      {(form.isShoe ? SHOE_SIZES : SIZES).map((s) => (
-                        <button type="button" key={s} className={"pill" + (form.size === s ? " active" : "")} onClick={() => setForm({ ...form, size: s })}>{s}</button>
-                      ))}
-                    </div>
-                  </>
-                )}
+                      <label>Talla</label>
+                      <div className="pill-group">
+                        {(form.isShoe ? SHOE_SIZES : SIZES).map((s) => (
+                          <button type="button" key={s} className={"pill" + (form.size === s ? " active" : "")} onClick={() => setForm({ ...form, size: s })}>{s}</button>
+                        ))}
+                      </div>
+                    </>
+                  )}
 
-                <label>Estado</label>
-                <div className="pill-group">
-                  {["Como nuevo", "Muy bueno", "Bueno", "Aceptable"].map((c) => (
-                    <button type="button" key={c} className={"pill" + (form.condition === c ? " active" : "")} onClick={() => setForm({ ...form, condition: c })}>{c}</button>
-                  ))}
+                  <label>Estado</label>
+                  <div className="pill-group">
+                    {["Como nuevo", "Muy bueno", "Bueno", "Aceptable"].map((c) => (
+                      <button type="button" key={c} className={"pill" + (form.condition === c ? " active" : "")} onClick={() => setForm({ ...form, condition: c })}>{c}</button>
+                    ))}
+                  </div>
                 </div>
 
                 <p className="post-section-label">Precio</p>
-                <label>Precio de venta</label>
-                <div className="input-icon price-input">
-                  <span className="euro-prefix">€</span>
-                  <input type="number" min="1" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="0" />
+                <div className="post-form-card">
+                  <label>Precio de venta</label>
+                  <div className="input-icon price-input">
+                    <span className="euro-prefix">€</span>
+                    <input type="number" min="1" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="0" />
+                  </div>
                 </div>
 
                 {postError && <p style={{ color: "#FF4D8D", fontSize: 12, marginTop: 10 }}>{postError}</p>}
