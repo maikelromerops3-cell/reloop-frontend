@@ -79,11 +79,11 @@ export async function loginWithGoogle(credential) {
   return data;
 }
 
-export async function register(email, password, username, city) {
+export async function register(email, password, username, city, ref) {
   const res = await fetch(`${API_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, username, city }),
+    body: JSON.stringify({ email, password, username, city, ref }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "Error al registrarse");
   const data = await res.json();
@@ -334,8 +334,7 @@ export async function boostItem(itemId) {
     headers: { ...authHeaders() },
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo iniciar el pago del destacado");
-  const data = await res.json();
-  return data.url;
+  return res.json(); // { url } si es de pago, { freeBoostUsed: true } si se usó un destacado gratis
 }
 
 // --- Pedidos (compras/ventas) ---

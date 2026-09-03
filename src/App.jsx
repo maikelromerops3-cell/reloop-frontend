@@ -235,7 +235,7 @@ export default function RopelinApp() {
   const [cityInput, setCityInput] = useState("");
   const [savingBasicInfo, setSavingBasicInfo] = useState(false);
   const [savingShippingAddress, setSavingShippingAddress] = useState(false);
-  const [myProfileExtra, setMyProfileExtra] = useState({ badges: [], avgSaleDays: null, followersCount: 0, followingCount: 0 });
+  const [myProfileExtra, setMyProfileExtra] = useState({ badges: [], avgSaleDays: null, followersCount: 0, followingCount: 0, freeBoosts: 0 });
   const [resendingVerification, setResendingVerification] = useState(false);
   const [newEmailInput, setNewEmailInput] = useState("");
   const [emailChangePassword, setEmailChangePassword] = useState("");
@@ -329,6 +329,11 @@ export default function RopelinApp() {
   const [saved, setSaved] = useState(new Set());
   const [loggedIn, setLoggedIn] = useState(isLoggedIn());
   const [theme, setTheme] = useState(() => localStorage.getItem("reloop_theme") || "light");
+  const [referralCode] = useState(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("ref");
+    if (fromUrl) { localStorage.setItem("reloop_ref", fromUrl); return fromUrl; }
+    return localStorage.getItem("reloop_ref") || "";
+  });
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("reloop_theme", theme);
@@ -590,7 +595,7 @@ export default function RopelinApp() {
         if (data.coverUrl) { setMyCoverUrl(data.coverUrl); localStorage.setItem("reloop_cover", data.coverUrl); }
         if (data.bio) setMyBio(data.bio);
         setMyEmailVerified(data.emailVerified !== false);
-        setMyProfileExtra({ badges: data.badges || [], avgSaleDays: data.avgSaleDays, followersCount: data.followersCount || 0, followingCount: data.followingCount || 0 });
+        setMyProfileExtra({ badges: data.badges || [], avgSaleDays: data.avgSaleDays, followersCount: data.followersCount || 0, followingCount: data.followingCount || 0, freeBoosts: data.freeBoosts || 0 });
       }).catch(() => {});
       return;
     }
@@ -1393,8 +1398,14 @@ export default function RopelinApp() {
 
   async function handleBoost(itemId) {
     try {
-      const url = await boostItem(itemId);
-      window.location.href = url; // redirige a Stripe para pagar el destacado
+      const result = await boostItem(itemId);
+      if (result.freeBoostUsed) {
+        toast.success("¡Artículo destacado con tu destacado gratis! 🎉");
+        setMyProfileExtra((prev) => ({ ...prev, freeBoosts: Math.max(0, (prev.freeBoosts || 0) - 1) }));
+        loadAllItems();
+      } else {
+        window.location.href = result.url; // redirige a Stripe para pagar el destacado
+      }
     } catch (err) {
       toast.error(err.message);
     }
@@ -1714,7 +1725,8 @@ export default function RopelinApp() {
     try {
       const result = authMode === "login"
         ? await apiLogin(authForm.email, authForm.password)
-        : await apiRegister(authForm.email, authForm.password, authForm.username, authForm.city);
+        : await apiRegister(authForm.email, authForm.password, authForm.username, authForm.city, referralCode);
+      if (authMode === "register" && referralCode) localStorage.removeItem("reloop_ref");
       setUsername(result.username);
       setLoggedIn(true);
       setUserRole(result.role || "user");
@@ -2171,6 +2183,9 @@ export default function RopelinApp() {
         .location-current { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin: 0; }
         .location-hint { font-size: 11px; color: var(--sub); margin: 4px 0 0; }
         .stripe-box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 16px 0; }
+        .referral-balance-box { display: flex; align-items: center; gap: 12px; background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 12px 16px; margin: 12px 0; }
+        .referral-balance-num { font-size: 22px; font-weight: 900; color: var(--text); margin: 0; line-height: 1; }
+        .referral-balance-label { font-size: 12px; color: var(--sub); margin: 2px 0 0; }
         .stripe-post-reminder { display: flex; align-items: center; gap: 12px; background: #FFC24D14; border: 1px solid #FFC24D33; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; flex-wrap: wrap; }
         .stripe-post-reminder-title { font-size: 13px; font-weight: 700; color: #FFC24D; margin: 0 0 3px; }
         .stripe-post-reminder-text { font-size: 12px; color: var(--body); margin: 0; line-height: 1.4; }
@@ -2972,9 +2987,20 @@ export default function RopelinApp() {
                       <Star size={16} /> Reseñas
                     </button>
                     {isOwnProfile && (
-                      <button className={"profile-sidebar-item" + (profileMenuView === "ajustes" ? " active" : "")} onClick={() => setProfileMenuView("ajustes")}>
-                        <Settings size={16} /> Ajustes
-                      </button>
+                      <>
+                        <button className={"profile-sidebar-item" + (profileMenuView === "envios" ? " active" : "")} onClick={() => setProfileMenuView("envios")}>
+                          <Truck size={16} /> Envíos
+                        </button>
+                        <button className={"profile-sidebar-item" + (profileMenuView === "pagos" ? " active" : "")} onClick={() => setProfileMenuView("pagos")}>
+                          <HandCoins size={16} /> Pagos
+                        </button>
+                        <button className={"profile-sidebar-item" + (profileMenuView === "referido" ? " active" : "")} onClick={() => setProfileMenuView("referido")}>
+                          <UserPlus size={16} /> Invita y gana
+                        </button>
+                        <button className={"profile-sidebar-item" + (profileMenuView === "ajustes" ? " active" : "")} onClick={() => setProfileMenuView("ajustes")}>
+                          <Settings size={16} /> Ajustes
+                        </button>
+                      </>
                     )}
                   </div>
                 ) :
@@ -3027,6 +3053,21 @@ export default function RopelinApp() {
                     <button className="profile-menu-row" onClick={() => setProfileMenuView("resenas")}>
                       <span className="profile-menu-icon"><Star size={17} /></span>
                       <span className="profile-menu-label">Reseñas{profileReviews ? ` (${profileReviews.total})` : ""}</span>
+                      <ChevronRight size={16} />
+                    </button>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("envios")}>
+                      <span className="profile-menu-icon"><Truck size={17} /></span>
+                      <span className="profile-menu-label">Envíos</span>
+                      <ChevronRight size={16} />
+                    </button>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("pagos")}>
+                      <span className="profile-menu-icon"><HandCoins size={17} /></span>
+                      <span className="profile-menu-label">Pagos</span>
+                      <ChevronRight size={16} />
+                    </button>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("referido")}>
+                      <span className="profile-menu-icon"><UserPlus size={17} /></span>
+                      <span className="profile-menu-label">Invita y gana</span>
                       <ChevronRight size={16} />
                     </button>
                     <button className="profile-menu-row" onClick={() => setProfileMenuView("ajustes")}>
@@ -3164,7 +3205,7 @@ export default function RopelinApp() {
                 <>
 
                   {profileMenuView === "ajustes" && (
-                    <div style={{ textAlign: "left" }}>
+                    <div style={{ textAlign: "left", maxWidth: 420 }}>
                       <div className="settings-avatar-row">
                         <input type="file" accept="image/*" id="avatar-upload-input-settings" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "avatar"); e.target.value = ""; }} />
                         <div className="settings-avatar" style={myAvatarUrl ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover" } : { background: avatarColor }}>
@@ -3216,24 +3257,6 @@ export default function RopelinApp() {
                       <button className="submit-btn" onClick={handleSaveAccountSettings} disabled={savingAccountSettings || (!newPasswordInput.trim() && !newEmailInput.trim())} style={{ marginBottom: 20 }}>
                         {savingAccountSettings ? "Guardando..." : "Guardar email/contraseña"}
                       </button>
-
-                      <div className="settings-menu-list">
-                        <button className="profile-menu-row" onClick={() => setProfileMenuView("envios")}>
-                          <span className="profile-menu-icon"><Truck size={17} /></span>
-                          <span className="profile-menu-label">Envíos</span>
-                          <ChevronRight size={16} />
-                        </button>
-                        <button className="profile-menu-row" onClick={() => setProfileMenuView("pagos")}>
-                          <span className="profile-menu-icon"><HandCoins size={17} /></span>
-                          <span className="profile-menu-label">Pagos</span>
-                          <ChevronRight size={16} />
-                        </button>
-                        <button className="profile-menu-row" onClick={() => setProfileMenuView("referido")}>
-                          <span className="profile-menu-icon"><UserPlus size={17} /></span>
-                          <span className="profile-menu-label">Invita y gana</span>
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
 
                       <button className="logout-btn" style={{ marginTop: 20 }} onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); setShowProfile(false); toast("Sesión cerrada"); }}>Cerrar sesión</button>
 
@@ -3300,17 +3323,30 @@ export default function RopelinApp() {
                   {profileMenuView === "referido" && (
                     <div className="stripe-box" style={{ margin: 0 }}>
                       <p className="stripe-title"><UserPlus size={14} /> Invita y gana</p>
-                      <p className="stripe-status">Comparte tu enlace con amigos. Cuando activemos las recompensas por invitación, este será tu enlace de siempre.</p>
+                      <p className="stripe-status">Por cada amigo que se registre con tu enlace y publique su primera prenda, ganas <strong>1 destacado gratis</strong> para uno de tus artículos.</p>
+
+                      <div className="referral-balance-box">
+                        <TrendingUp size={20} color="#FF4D8D" />
+                        <div>
+                          <p className="referral-balance-num">{myProfileExtra.freeBoosts || 0}</p>
+                          <p className="referral-balance-label">destacado{myProfileExtra.freeBoosts === 1 ? "" : "s"} gratis disponible{myProfileExtra.freeBoosts === 1 ? "" : "s"}</p>
+                        </div>
+                      </div>
+
                       <div className="input-icon">
-                        <input readOnly value={`ropelin.com/r/${username}`} onClick={(e) => e.target.select()} />
+                        <input readOnly value={`ropelin.com/?ref=${username}`} onClick={(e) => e.target.select()} />
                       </div>
                       <button
                         className="stripe-connect-btn"
-                        onClick={() => { navigator.clipboard.writeText(`https://ropelin.com/r/${username}`); toast.success("Enlace copiado"); }}
+                        onClick={() => handleShare(`${window.location.origin}/?ref=${username}`, "Únete a Ropelin conmigo")}
                       >
-                        Copiar enlace
+                        Compartir enlace
                       </button>
-                      <p className="stripe-status-note">Las recompensas por invitar todavía no están activas — de momento solo comparte el enlace, avisaremos aquí en cuanto se puedan canjear.</p>
+                      <p className="stripe-status-note">
+                        {(myProfileExtra.freeBoosts || 0) > 0
+                          ? "La próxima vez que destaques un artículo, se usará uno de tus destacados gratis en vez de cobrarte."
+                          : "En cuanto uses uno, lo verás reflejado automáticamente la próxima vez que destaques un artículo — no hace falta canjearlo a mano."}
+                      </p>
                     </div>
                   )}
                 </>
