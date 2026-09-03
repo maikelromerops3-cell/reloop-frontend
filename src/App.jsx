@@ -1826,9 +1826,9 @@ export default function RopelinApp() {
         .profile-badge { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text); }
         .mini-avatar { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--bg); }
         .profile-modal { max-width: 400px; padding: 0; }
-        .profile-banner { height: 100px; position: relative; overflow: hidden; border-radius: 22px 22px 0 0; z-index: 3; }
-        .banner-texture { position: absolute; inset: 0; background-image: radial-gradient(#ffffff22 1px, transparent 1px); background-size: 10px 10px; }
-        .profile-content { padding: 0 22px 24px; text-align: center; margin-top: -30px; position: relative; z-index: 2; }
+        .profile-top-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
+        .icon-round-btn { background: var(--surface2); border: 2px solid var(--border); color: var(--text); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .profile-content { padding: 10px 22px 24px; text-align: center; position: relative; z-index: 2; }
         .profile-avatar-lg { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: var(--bg); margin: 0 auto 10px; border: 5px solid var(--card); box-shadow: 0 0 0 2px var(--border), 0 4px 14px rgba(0,0,0,0.45); position: relative; z-index: 2; }
         .edit-avatar-row { display: flex; align-items: center; gap: 14px; margin: 14px 0 6px; }
         .profile-name { font-size: 18px; font-weight: 700; margin: 0; }
@@ -2824,22 +2824,14 @@ export default function RopelinApp() {
           ? orders.sales.filter((tx) => tx.status === "completed").map((tx) => ({ id: tx.item.id, title: tx.item.title, price: tx.amount, images: tx.item.images }))
           : (otherProfileData?.soldItems || []);
         const profileRating = profileReviews?.average ? profileReviews.average.toFixed(1) : null;
-        const profileCoverUrl = isOwnProfile ? myCoverUrl : otherProfileData?.coverUrl;
         const profileContentEl = (
           <>
-            <div className="profile-banner" style={{ background: profileCoverUrl ? undefined : usernameGradient(profileUsername), backgroundImage: profileCoverUrl ? `url(${profileCoverUrl})` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
-              <div className="banner-texture" />
-              {isOwnProfile && (
-                <>
-                  <input type="file" accept="image/*" id="cover-upload-input" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "cover"); e.target.value = ""; }} />
-                  <button className="cover-btn" onClick={() => document.getElementById("cover-upload-input").click()}><ImagePlus size={13} /> Cambiar portada</button>
-                </>
-              )}
-              <button className="share-profile-btn" onClick={() => handleShare(`${window.location.origin}/perfil/${profileUsername}`, `@${profileUsername} en Ropelin`)}>
+            <div className="profile-top-actions">
+              <button className="icon-round-btn" onClick={() => handleShare(`${window.location.origin}/perfil/${profileUsername}`, `@${profileUsername} en Ropelin`)}>
                 <Share2 size={14} />
               </button>
               {isOwnProfile && (
-                <button className="share-profile-btn" style={{ right: 44 }} onClick={() => setShowSettingsMenu(true)} title="Ajustes">
+                <button className="icon-round-btn" onClick={() => setShowSettingsMenu(true)} title="Ajustes">
                   <Settings size={14} />
                 </button>
               )}
