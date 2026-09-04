@@ -349,6 +349,16 @@ export default function RopelinApp() {
     await installPrompt.userChoice;
     setInstallPrompt(null);
   }
+  const [showIosInstallBanner, setShowIosInstallBanner] = useState(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone || window.matchMedia("(display-mode: standalone)").matches;
+    const dismissed = localStorage.getItem("reloop_ios_install_dismissed");
+    return isIOS && !isStandalone && !dismissed;
+  });
+  function dismissIosInstallBanner() {
+    localStorage.setItem("reloop_ios_install_dismissed", "1");
+    setShowIosInstallBanner(false);
+  }
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("reloop_theme", theme);
@@ -1844,6 +1854,21 @@ export default function RopelinApp() {
         .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
         .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
         .mobile-bottom-nav { display: none; }
+        .ios-install-banner {
+          position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
+          z-index: 95; background: var(--card); border: 2.5px solid var(--border); border-radius: 18px;
+          padding: 12px 14px; display: flex; align-items: center; gap: 12px;
+          box-shadow: 0 10px 28px rgba(0,0,0,0.18); animation: ios-banner-up .25s ease;
+        }
+        @keyframes ios-banner-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .ios-install-icon { width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; border: 2px solid var(--border); }
+        .ios-install-text { flex: 1; min-width: 0; }
+        .ios-install-title { font-size: 13.5px; font-weight: 800; color: var(--text); margin: 0 0 2px; }
+        .ios-install-steps { font-size: 12px; color: var(--sub); margin: 0; line-height: 1.4; }
+        .ios-install-close { background: var(--surface2); border: 2px solid var(--border); color: var(--text); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; align-self: flex-start; }
+        @media (max-width: 780px) {
+          .ios-install-banner { bottom: calc(70px + env(safe-area-inset-bottom)); }
+        }
         @media (max-width: 780px) {
           .hide-on-mobile-nav { display: none !important; }
           .mobile-bottom-nav {
@@ -2687,6 +2712,19 @@ export default function RopelinApp() {
           )}
         </div>
       </header>
+
+      {showIosInstallBanner && (
+        <div className="ios-install-banner">
+          <button className="ios-install-close" onClick={dismissIosInstallBanner}><X size={13} /></button>
+          <img src="/icon-192.png" alt="Ropelin" className="ios-install-icon" />
+          <div className="ios-install-text">
+            <p className="ios-install-title">Instala Ropelin</p>
+            <p className="ios-install-steps">
+              Toca <Share2 size={13} style={{ verticalAlign: "middle" }} /> y luego <strong>"Añadir a pantalla de inicio"</strong>
+            </p>
+          </div>
+        </div>
+      )}
 
       {!anyModalOpen && !(showPost && numCols < 3) && (
       <div className="mobile-bottom-nav">
