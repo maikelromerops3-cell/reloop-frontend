@@ -1,0 +1,17 @@
+{
+  "name": "Ropelin — Compra y vende de segunda mano",
+  "short_name": "Ropelin",
+  "description": "Compra y vende de segunda mano en España: ropa, electrónica, hogar y mucho más.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF8EC",
+  "theme_color": "#FFF8EC",
+  "lang": "es",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

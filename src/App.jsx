@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
-import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, FileDown, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight, Clock } from "lucide-react";
+import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, FileDown, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight, Clock, Download } from "lucide-react";
 import {
   fetchItems, fetchItem, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
@@ -334,6 +334,21 @@ export default function RopelinApp() {
     if (fromUrl) { localStorage.setItem("reloop_ref", fromUrl); return fromUrl; }
     return localStorage.getItem("reloop_ref") || "";
   });
+  const [installPrompt, setInstallPrompt] = useState(null);
+  useEffect(() => {
+    function handleBeforeInstall(e) {
+      e.preventDefault();
+      setInstallPrompt(e);
+    }
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+  }, []);
+  async function handleInstallApp() {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  }
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("reloop_theme", theme);
@@ -2657,6 +2672,12 @@ export default function RopelinApp() {
           <button className="btn primary hide-on-mobile-nav" onClick={openPostForm}><Plus size={14} /> Vender</button>
           {!loggedIn && (
             <button className="btn ghost hide-on-mobile-nav" onClick={() => setShowAuth(true)}><LogIn size={14} /> <span className="btn-label">Entrar</span></button>
+          )}
+
+          {installPrompt && (
+            <button className="icon-btn" onClick={handleInstallApp} title="Instalar app">
+              <Download size={16} />
+            </button>
           )}
 
           {isModerator && (
