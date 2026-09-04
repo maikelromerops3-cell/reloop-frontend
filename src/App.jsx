@@ -11,6 +11,7 @@ import {
   fetchTransactions, fetchShippingRates, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, updateShippingAddress, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
   fetchSavedSearches, saveSearch, deleteSavedSearch,
+  fetchPushPublicKey, subscribeToPush, unsubscribeFromPush,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
   fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer, markItemSold, notifySaleBuyer, fetchItemConversations,
   forgotPassword, resetPassword, verifyEmail,
@@ -359,6 +360,58 @@ export default function RopelinApp() {
     localStorage.setItem("reloop_ios_install_dismissed", "1");
     setShowIosInstallBanner(false);
   }
+
+  const [pushStatus, setPushStatus] = useState("unknown"); // "unknown" | "unsupported" | "off" | "on" | "loading"
+  useEffect(() => {
+    if (!loggedIn) return;
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) { setPushStatus("unsupported"); return; }
+    navigator.serviceWorker.ready
+      .then((reg) => reg.pushManager.getSubscription())
+      .then((sub) => setPushStatus(sub ? "on" : "off"))
+      .catch(() => setPushStatus("unsupported"));
+  }, [loggedIn]);
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const raw = window.atob(base64);
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+  }
+
+  async function handleEnablePush() {
+    setPushStatus("loading");
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") { toast.error("No has dado permiso para las notificaciones"); setPushStatus("off"); return; }
+      const publicKey = await fetchPushPublicKey();
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
+      await subscribeToPush(sub.toJSON());
+      setPushStatus("on");
+      toast.success("Notificaciones activadas");
+    } catch (err) {
+      toast.error(err.message || "No se pudieron activar las notificaciones");
+      setPushStatus("off");
+    }
+  }
+
+  async function handleDisablePush() {
+    setPushStatus("loading");
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await unsubscribeFromPush(sub.endpoint);
+        await sub.unsubscribe();
+      }
+      setPushStatus("off");
+      toast("Notificaciones desactivadas");
+    } catch (err) {
+      toast.error(err.message || "No se pudieron desactivar las notificaciones");
+      setPushStatus("on");
+    }
+  }
+
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("reloop_theme", theme);
@@ -3291,6 +3344,21 @@ export default function RopelinApp() {
                       <button className="submit-btn" onClick={saveBasicInfo} disabled={savingBasicInfo} style={{ marginTop: 4, marginBottom: 20 }}>
                         {savingBasicInfo ? "Guardando..." : "Guardar cambios"}
                       </button>
+
+                      <p className="settings-subheading">Notificaciones</p>
+                      {pushStatus === "unsupported" && (
+                        <p className="stripe-status-note" style={{ marginBottom: 20 }}>Tu navegador no admite notificaciones push.</p>
+                      )}
+                      {(pushStatus === "off" || pushStatus === "loading") && pushStatus !== "unsupported" && (
+                        <button className="submit-btn" onClick={handleEnablePush} disabled={pushStatus === "loading"} style={{ marginBottom: 20 }}>
+                          {pushStatus === "loading" ? "Activando..." : "Activar notificaciones"}
+                        </button>
+                      )}
+                      {pushStatus === "on" && (
+                        <button className="btn ghost" onClick={handleDisablePush} style={{ marginBottom: 20, width: "100%" }}>
+                          <CheckCircle size={14} color="#7FD8D0" /> Activadas — tocar para desactivar
+                        </button>
+                      )}
 
                       <p className="settings-subheading">Email y contraseña</p>
                       {!myEmailVerified && (

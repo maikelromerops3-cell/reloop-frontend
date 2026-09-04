@@ -748,3 +748,32 @@ export async function deleteSavedSearch(id) {
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo borrar la búsqueda");
   return res.json();
 }
+
+// --- Notificaciones push ---
+
+export async function fetchPushPublicKey() {
+  const res = await fetch(`${API_URL}/push/public-key`);
+  if (!res.ok) throw new Error((await res.json()).error || "Las notificaciones push no están disponibles");
+  const data = await res.json();
+  return data.publicKey;
+}
+
+export async function subscribeToPush(subscription) {
+  const res = await fetch(`${API_URL}/push/subscribe`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(subscription),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo activar las notificaciones");
+  return res.json();
+}
+
+export async function unsubscribeFromPush(endpoint) {
+  const res = await fetch(`${API_URL}/push/unsubscribe`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ endpoint }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo desactivar las notificaciones");
+  return res.json();
+}

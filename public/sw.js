@@ -39,3 +39,34 @@ self.addEventListener("fetch", (event) => {
       .catch(() => caches.match(event.request).then((cached) => cached || caches.match("/")))
   );
 });
+
+// Notificaciones push reales: el servidor manda { title, body, link } y las mostramos
+self.addEventListener("push", (event) => {
+  let data = { title: "Ropelin", body: "Tienes una notificación nueva" };
+  try { data = event.data.json(); } catch {}
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Ropelin", {
+      body: data.body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { link: data.link || "/" },
+    })
+  );
+});
+
+// Al tocar la notificación, abrimos (o enfocamos) la pestaña de Ropelin en la página correspondiente
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const link = event.notification.data?.link || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsList) => {
+      for (const client of clientsList) {
+        if ("focus" in client) {
+          client.navigate(link);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(link);
+    })
+  );
+});
