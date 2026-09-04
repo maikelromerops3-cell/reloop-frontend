@@ -363,6 +363,15 @@ export async function createShipmentLabel(transactionId, rateId, provider) {
   return res.json();
 }
 
+export async function downloadShipmentLabel(transactionId) {
+  const res = await fetch(`${API_URL}/shipments/${transactionId}/label`, {
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "No se pudo descargar la etiqueta");
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
 export async function confirmReceived(transactionId) {
   const res = await fetch(`${API_URL}/shipments/${transactionId}/received`, {
     method: "PATCH",

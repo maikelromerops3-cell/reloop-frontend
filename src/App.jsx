@@ -8,7 +8,7 @@ import {
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
-  fetchTransactions, fetchShippingRates, createShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
+  fetchTransactions, fetchShippingRates, createShipmentLabel, downloadShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
   fetchProfile, updateMyLocation, updateShippingAddress, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
   fetchSavedSearches, saveSearch, deleteSavedSearch,
   fetchPushPublicKey, subscribeToPush, unsubscribeFromPush,
@@ -1469,6 +1469,15 @@ export default function RopelinApp() {
     try {
       const url = await connectStripe();
       window.location.href = url; // redirige a Stripe para completar el alta como vendedor
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function handleDownloadLabel(transactionId) {
+    try {
+      const blobUrl = await downloadShipmentLabel(transactionId);
+      window.open(blobUrl, "_blank");
     } catch (err) {
       toast.error(err.message);
     }
@@ -3722,9 +3731,9 @@ export default function RopelinApp() {
                     </>
                   )}
                   {sale.shipment && sale.shipment.labelUrl && (
-                    <a className="chat-btn mark-sold-btn" href={sale.shipment.labelUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "inline-flex", justifyContent: "center" }}>
+                    <button className="chat-btn mark-sold-btn" onClick={() => handleDownloadLabel(sale.id)} style={{ justifyContent: "center" }}>
                       <FileDown size={15} /> Descargar etiqueta (PDF)
-                    </a>
+                    </button>
                   )}
                   {sale.shipment && sale.shipment.trackingCode && (
                     <p className="order-hint">Nº de seguimiento: {sale.shipment.trackingCode}</p>
@@ -4126,7 +4135,7 @@ export default function RopelinApp() {
                   {[
                     { color: "#FF4D8D", title: "Datos que recogemos", text: "Email, nombre de usuario, fotos que subas, mensajes de chat, y datos de pago (procesados por Stripe, nunca los almacenamos nosotros)." },
                     { color: "#B49CE8", title: "Para qué los usamos", text: "Gestionar tu cuenta, procesar pagos y envíos, enviarte notificaciones sobre tus compras/ventas, y mejorar el servicio." },
-                    { color: "#7FD8D0", title: "Con quién los compartimos", text: "Stripe (pagos), Cloudinary (imágenes), Shippo (envíos) — solo lo necesario para prestar el servicio." },
+                    { color: "#7FD8D0", title: "Con quién los compartimos", text: "Stripe (pagos), Cloudinary (imágenes), Sendcloud (envíos) — solo lo necesario para prestar el servicio." },
                     { color: "#FFC24D", title: "Tus derechos", text: "Puedes solicitar acceso, rectificación o eliminación de tus datos escribiendo a nuestro email de contacto." },
                   ].map((s, i) => (
                     <div className="how-it-works-card" key={i}>
@@ -4691,9 +4700,9 @@ export default function RopelinApp() {
                       <p className="order-hint">Nº de seguimiento: {tx.shipment.trackingCode}</p>
                     )}
                     {tx.shipment && tx.shipment.labelUrl && (
-                      <a className="order-action-btn" href={tx.shipment.labelUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "inline-flex" }}>
+                      <button className="order-action-btn" onClick={() => handleDownloadLabel(tx.id)}>
                         <FileDown size={13} /> Descargar etiqueta (PDF)
-                      </a>
+                      </button>
                     )}
                     {tx.status === "completed" && (
                       <>
