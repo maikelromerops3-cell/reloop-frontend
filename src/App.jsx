@@ -814,7 +814,64 @@ export default function RopelinApp() {
   const legalPageOpen = !!showLegal;
   // En escritorio, cuando se muestra el detalle de un artículo, el formulario de publicar, o Quiénes somos/Novedades como página, se oculta el feed de detrás (en vez de quedar apilado debajo)
   const hidesFeedOnDesktop = numCols >= 3 && openItem;
-
+  // En Vender, Novedades, Quiénes somos, el apartado legal y la Ayuda se ocultan las tarjetas de artículos, pero el bloque de impacto y el boletín se quedan visibles
+  const hidesFeedCardsOnDesktop = numCols >= 3 && (showPost || legalPageOpen || showHelpCenter || showLeague || showProfile);
+  const anyModalOpen = !!(
+    (openItem && numCols < 3) || showAuth || (showProfile && numCols < 3) || showChat ||
+    (showLegal && !(numCols >= 3 && legalPageOpen)) ||
+    (showHelpCenter && numCols < 3) ||
+    (showLeague && numCols < 3) ||
+    showSettings || showOrders || showFavorites || showAdminPanel || cropperState
+  );
+  useEffect(() => {
+    if (anyModalOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+      document.body.style.overflow = "hidden";
+    } else {
+      const savedScrollY = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.overflow = "";
+      if (savedScrollY) {
+        window.scrollTo(0, parseInt(savedScrollY || "0", 10) * -1);
+      }
+    }
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.overflow = "";
+    };
+  }, [anyModalOpen]);
+  const [adminSection, setAdminSection] = useState(null); // null = menú principal del panel
+  const [adminTab, setAdminTab] = useState("users");
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminStats, setAdminStats] = useState(null);
+  const [adminDisputes, setAdminDisputes] = useState([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminUserSearch, setAdminUserSearch] = useState("");
+  const [adminReports, setAdminReports] = useState([]);
+  const [adminLogs, setAdminLogs] = useState([]);
+  const [adminTop, setAdminTop] = useState(null);
+  const [adminTimeseries, setAdminTimeseries] = useState([]);
+  const [adminSupport, setAdminSupport] = useState([]);
+  const [supportReplyDrafts, setSupportReplyDrafts] = useState({});
+  const [banningUser, setBanningUser] = useState(null); // usuario sobre el que se está escribiendo el motivo de suspensión
+  const [banReason, setBanReason] = useState("");
+  const [showReportForm, setShowReportForm] = useState(null); // { targetType, itemId?, reportedUsername? }
+  const [reportReason, setReportReason] = useState("");
+  const [helpTab, setHelpTab] = useState("faq");
+  const [supportSubject, setSupportSubject] = useState("");
+  const [supportMessage, setSupportMessage] = useState("");
+  const [mySupportMessages, setMySupportMessages] = useState([]);
+  const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo"), instagramUrl: "", tiktokUrl: "", facebookUrl: "", twitterUrl: "", updatesText: "", maintenanceMode: false });
   const footerEl = (
     <footer className="site-footer-rich">
       <div className="footer-inner">
@@ -879,64 +936,6 @@ export default function RopelinApp() {
       </div>
     </footer>
   );
-  // En Vender, Novedades, Quiénes somos, el apartado legal y la Ayuda se ocultan las tarjetas de artículos, pero el bloque de impacto y el boletín se quedan visibles
-  const hidesFeedCardsOnDesktop = numCols >= 3 && (showPost || legalPageOpen || showHelpCenter || showLeague || showProfile);
-  const anyModalOpen = !!(
-    (openItem && numCols < 3) || showAuth || (showProfile && numCols < 3) || showChat ||
-    (showLegal && !(numCols >= 3 && legalPageOpen)) ||
-    (showHelpCenter && numCols < 3) ||
-    (showLeague && numCols < 3) ||
-    showSettings || showOrders || showFavorites || showAdminPanel || cropperState
-  );
-  useEffect(() => {
-    if (anyModalOpen) {
-      const scrollY = window.scrollY;
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = "0";
-      document.body.style.right = "0";
-      document.body.style.overflow = "hidden";
-    } else {
-      const savedScrollY = document.body.style.top;
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
-      document.body.style.overflow = "";
-      if (savedScrollY) {
-        window.scrollTo(0, parseInt(savedScrollY || "0", 10) * -1);
-      }
-    }
-    return () => {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
-      document.body.style.overflow = "";
-    };
-  }, [anyModalOpen]);
-  const [adminSection, setAdminSection] = useState(null); // null = menú principal del panel
-  const [adminTab, setAdminTab] = useState("users");
-  const [adminUsers, setAdminUsers] = useState([]);
-  const [adminStats, setAdminStats] = useState(null);
-  const [adminDisputes, setAdminDisputes] = useState([]);
-  const [adminLoading, setAdminLoading] = useState(false);
-  const [adminUserSearch, setAdminUserSearch] = useState("");
-  const [adminReports, setAdminReports] = useState([]);
-  const [adminLogs, setAdminLogs] = useState([]);
-  const [adminTop, setAdminTop] = useState(null);
-  const [adminTimeseries, setAdminTimeseries] = useState([]);
-  const [adminSupport, setAdminSupport] = useState([]);
-  const [supportReplyDrafts, setSupportReplyDrafts] = useState({});
-  const [banningUser, setBanningUser] = useState(null); // usuario sobre el que se está escribiendo el motivo de suspensión
-  const [banReason, setBanReason] = useState("");
-  const [showReportForm, setShowReportForm] = useState(null); // { targetType, itemId?, reportedUsername? }
-  const [reportReason, setReportReason] = useState("");
-  const [helpTab, setHelpTab] = useState("faq");
-  const [supportSubject, setSupportSubject] = useState("");
-  const [supportMessage, setSupportMessage] = useState("");
-  const [mySupportMessages, setMySupportMessages] = useState([]);
-  const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo"), instagramUrl: "", tiktokUrl: "", facebookUrl: "", twitterUrl: "", updatesText: "", maintenanceMode: false });
   const [adminSettingsForm, setAdminSettingsForm] = useState(null);
   const [adminUserFilters, setAdminUserFilters] = useState({ verified: "", stripeConnected: "" });
   const [adminUserPage, setAdminUserPage] = useState(1);
