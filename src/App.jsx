@@ -67,7 +67,7 @@ const AUTH_PAGE_STYLES = `
   label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 5px; color: #9A9AA3; }
   .input-icon { display: flex; align-items: center; gap: 8px; border: 1px solid #333; border-radius: 12px; padding: 0 12px; background: #121214; }
   .input-icon svg { color: #6A6A73; flex-shrink: 0; }
-  .input-icon input { border: none; padding: 10px 0; background: transparent; color: #F2F2F0; font-family: inherit; font-size: 13px; width: 100%; outline: none; }
+  .input-icon input { border: none; padding: 10px 0; background: transparent; color: #F2F2F0; font-family: inherit; font-size: 16px; width: 100%; outline: none; }
   .submit-btn { margin-top: 20px; width: 100%; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #121214; border: none; border-radius: 14px; padding: 13px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
   .offer-sent { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; font-weight: 700; }
   .spin { animation: spin 1s linear infinite; }
@@ -599,6 +599,114 @@ export default function RopelinApp() {
     }
   }
 
+  function renderPurchaseCard(tx) {
+    return (
+      <div key={tx.id} className="order-card">
+        <div className="order-top">
+          <div className="order-thumb" style={{ backgroundImage: `url(${tx.item.images?.[0] || ""})` }} />
+          <div className="order-top-info">
+            <p className="order-title">{tx.item.title}</p>
+            <p className="order-price">{(Number(tx.amount) + Number(tx.shippingFee || 3.5)).toFixed(2)}€</p>
+            <p className="order-seller">Vendedor: @{tx.seller.username}</p>
+          </div>
+        </div>
+        <div className="order-steps">
+          <div className={"order-step" + (tx.status !== "pending" ? " done" : "")}><ShoppingBag size={13} /><span>Pagado</span></div>
+          <div className={"order-step-line" + (tx.shipment ? " done" : "")} />
+          <div className={"order-step" + (tx.shipment ? " done" : "")}><Truck size={13} /><span>Enviado</span></div>
+          <div className={"order-step-line" + (tx.status === "completed" ? " done" : "")} />
+          <div className={"order-step" + (tx.status === "completed" ? " done" : "")}><CheckCircle size={13} /><span>Recibido</span></div>
+        </div>
+
+        {tx.shipment && tx.shipment.trackingCode && (
+          <p className="order-hint">Nº de seguimiento: {tx.shipment.trackingCode}</p>
+        )}
+        {!tx.shipment && tx.status === "paid" && (
+          <>
+            <p className="order-hint">Esperando a que @{tx.seller.username} genere el envío, o quedad en persona</p>
+            <button className="order-action-btn secondary" onClick={() => handleCompleteInPerson(tx.id)}>
+              Ya lo he recibido en persona
+            </button>
+          </>
+        )}
+        {tx.shipment && tx.status !== "completed" && tx.status !== "disputed" && (
+          <button className="order-action-btn" onClick={() => handleConfirmReceived(tx.id)}>
+            Confirmar que me ha llegado
+          </button>
+        )}
+        {tx.status === "completed" && (
+          <>
+            <p className="order-delivery-tag">{tx.deliveryMethod === "in_person" ? "📍 Entregado en persona" : "📦 Entregado por correo"}</p>
+            {tx.reviewedByMe ? (
+              <p className="order-hint">✓ Ya has valorado a @{tx.seller.username}</p>
+            ) : (
+              <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.seller.username })}>
+                <Star size={13} /> Valorar a @{tx.seller.username}
+              </button>
+            )}
+          </>
+        )}
+        {tx.status === "disputed" && (
+          <p className="order-hint" style={{ color: "#FF4D8D" }}>Reembolso solicitado, en revisión.</p>
+        )}
+        {["paid", "shipped"].includes(tx.status) && (
+          <p className="dispute-link" onClick={() => setDisputingTx(tx)}>¿Algún problema con este pedido? Solicitar reembolso</p>
+        )}
+      </div>
+    );
+  }
+
+  function renderSaleCard(tx) {
+    return (
+      <div key={tx.id} className="order-card">
+        <div className="order-top">
+          <div className="order-thumb" style={{ backgroundImage: `url(${tx.item.images?.[0] || ""})` }} />
+          <div className="order-top-info">
+            <p className="order-title">{tx.item.title}</p>
+            <p className="order-price">{(Number(tx.amount) + Number(tx.shippingFee || 3.5)).toFixed(2)}€</p>
+            <p className="order-seller">Comprador: @{tx.buyer.username}</p>
+          </div>
+        </div>
+        <div className="order-steps">
+          <div className={"order-step" + (tx.status !== "pending" ? " done" : "")}><ShoppingBag size={13} /><span>Pagado</span></div>
+          <div className={"order-step-line" + (tx.shipment ? " done" : "")} />
+          <div className={"order-step" + (tx.shipment ? " done" : "")}><Truck size={13} /><span>Enviado</span></div>
+          <div className={"order-step-line" + (tx.status === "completed" ? " done" : "")} />
+          <div className={"order-step" + (tx.status === "completed" ? " done" : "")}><CheckCircle size={13} /><span>Recibido</span></div>
+        </div>
+
+        {!tx.shipment && tx.status === "paid" && (
+          <>
+            <button className="order-action-btn" onClick={() => handleOpenRatePicker(tx.id)}>
+              <Truck size={13} /> Generar etiqueta de envío
+            </button>
+            <p className="order-hint">O si quedáis en persona, que @{tx.buyer.username} lo confirme desde su lado</p>
+          </>
+        )}
+        {tx.shipment && tx.shipment.trackingCode && (
+          <p className="order-hint">Nº de seguimiento: {tx.shipment.trackingCode}</p>
+        )}
+        {tx.shipment && tx.shipment.labelUrl && (
+          <button className="order-action-btn secondary" onClick={() => handleDownloadLabel(tx.id)}>
+            <FileDown size={13} /> Descargar etiqueta (PDF)
+          </button>
+        )}
+        {tx.status === "completed" && (
+          <>
+            <p className="order-delivery-tag">{tx.deliveryMethod === "in_person" ? "📍 Entregado en persona" : "📦 Entregado por correo"}</p>
+            {tx.reviewedByMe ? (
+              <p className="order-hint">✓ Ya has valorado a @{tx.buyer.username}</p>
+            ) : (
+              <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.buyer.username })}>
+                <Star size={13} /> Valorar a @{tx.buyer.username}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
   function handleMarkSold(itemId) {
     setConfirmingMarkSold(itemId);
   }
@@ -624,10 +732,11 @@ export default function RopelinApp() {
   async function confirmBuyerAndReview(itemId, buyerUsername) {
     if (!buyerUsername.trim()) { setPickingBuyerFor(null); return; }
     try {
-      await notifySaleBuyer(itemId, buyerUsername.trim());
+      const { transactionId } = await notifySaleBuyer(itemId, buyerUsername.trim());
       toast.success(`Avisado @${buyerUsername.trim()} para que también te valore`);
       setPickingBuyerFor(null);
-      setReviewingTx({ id: null, otherUsername: buyerUsername.trim() });
+      setReviewingTx({ id: transactionId, otherUsername: buyerUsername.trim() });
+      loadOrders();
     } catch (err) {
       toast.error(err.message);
     }
@@ -705,6 +814,71 @@ export default function RopelinApp() {
   const legalPageOpen = !!showLegal;
   // En escritorio, cuando se muestra el detalle de un artículo, el formulario de publicar, o Quiénes somos/Novedades como página, se oculta el feed de detrás (en vez de quedar apilado debajo)
   const hidesFeedOnDesktop = numCols >= 3 && openItem;
+
+  const footerEl = (
+    <footer className="site-footer-rich">
+      <div className="footer-inner">
+      <div className="footer-top-row">
+        <p className="footer-brand-line">ROPELIN — COMPRA Y VENDE DE SEGUNDA MANO.</p>
+        {(platformSettings.instagramUrl || platformSettings.tiktokUrl || platformSettings.facebookUrl || platformSettings.twitterUrl) && (
+          <div className="footer-social-row">
+            <span className="footer-social-label">SÍGUENOS</span>
+            {platformSettings.facebookUrl && (
+              <a href={platformSettings.facebookUrl} target="_blank" rel="noopener noreferrer"><Facebook size={15} /></a>
+            )}
+            {platformSettings.instagramUrl && (
+              <a href={platformSettings.instagramUrl} target="_blank" rel="noopener noreferrer"><Instagram size={15} /></a>
+            )}
+            {platformSettings.tiktokUrl && (
+              <a href={platformSettings.tiktokUrl} target="_blank" rel="noopener noreferrer"><TikTokIcon size={15} /></a>
+            )}
+            {platformSettings.twitterUrl && (
+              <a href={platformSettings.twitterUrl} target="_blank" rel="noopener noreferrer"><Twitter size={15} /></a>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="footer-cols">
+        <div className="footer-col">
+          <p className="footer-col-title">Ropelin</p>
+          <button onClick={() => openLegalPage("about")}>Quiénes somos</button>
+          <button onClick={() => openLegalPage("how-it-works")}>Cómo funciona</button>
+          <button onClick={() => openLegalPage("updates")}>Novedades</button>
+          <button onClick={openHelpCenter}>Ayuda</button>
+        </div>
+        <div className="footer-col">
+          <p className="footer-col-title">Comprar y vender</p>
+          <button onClick={openPostForm}>Publicar un artículo</button>
+          <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Moda"); setQuery(""); navigate("/"); }}>Moda</button>
+          <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Electrónica"); setQuery(""); navigate("/"); }}>Electrónica</button>
+          <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Hogar"); setQuery(""); navigate("/"); }}>Hogar</button>
+          <button className="footer-link-accent" onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Todo"); setQuery(""); navigate("/"); }}>Ver todas →</button>
+        </div>
+        <div className="footer-col">
+          <p className="footer-col-title">Legal</p>
+          <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
+          <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
+          <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+        </div>
+        <div className="footer-col">
+          <p className="footer-col-title">Contacto</p>
+          <a href="mailto:hola@ropelin.com" className="footer-link-plain">hola@ropelin.com</a>
+          <button onClick={openHelpCenter}>Centro de ayuda</button>
+        </div>
+      </div>
+      <div className="footer-bottom-bar">
+        <span>© Ropelin {new Date().getFullYear()}</span>
+        <span>·</span>
+        <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
+        <span>·</span>
+        <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
+        <span>·</span>
+        <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+        <span className="footer-trust-badge">🔒 Pagos seguros con <strong>stripe</strong></span>
+      </div>
+      </div>
+    </footer>
+  );
   // En Vender, Novedades, Quiénes somos, el apartado legal y la Ayuda se ocultan las tarjetas de artículos, pero el bloque de impacto y el boletín se quedan visibles
   const hidesFeedCardsOnDesktop = numCols >= 3 && (showPost || legalPageOpen || showHelpCenter || showLeague || showProfile);
   const anyModalOpen = !!(
@@ -762,7 +936,7 @@ export default function RopelinApp() {
   const [supportSubject, setSupportSubject] = useState("");
   const [supportMessage, setSupportMessage] = useState("");
   const [mySupportMessages, setMySupportMessages] = useState([]);
-  const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo"), instagramUrl: "", tiktokUrl: "", facebookUrl: "", twitterUrl: "", updatesText: "" });
+  const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo"), instagramUrl: "", tiktokUrl: "", facebookUrl: "", twitterUrl: "", updatesText: "", maintenanceMode: false });
   const [adminSettingsForm, setAdminSettingsForm] = useState(null);
   const [adminUserFilters, setAdminUserFilters] = useState({ verified: "", stripeConnected: "" });
   const [adminUserPage, setAdminUserPage] = useState(1);
@@ -1269,6 +1443,21 @@ export default function RopelinApp() {
       setChatThreads((prev) => ({ ...prev, [itemId]: [...(prev[itemId] || []), message] }));
     } catch (err) {
       toast.error(err.message);
+    }
+  }
+
+  const [sendingChatPhoto, setSendingChatPhoto] = useState(false);
+  async function handleSendChatPhoto(file) {
+    if (!file || !chatItem) return;
+    setSendingChatPhoto(true);
+    try {
+      const url = await uploadImage(file);
+      const message = await sendChatMessage_(chatItem.id, "", null, url);
+      setChatThreads((prev) => ({ ...prev, [chatItem.id]: [...(prev[chatItem.id] || []), message] }));
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSendingChatPhoto(false);
     }
   }
 
@@ -1876,6 +2065,52 @@ export default function RopelinApp() {
     );
   }
 
+  if (platformSettings.maintenanceMode && !isModerator) {
+    return (
+      <div className="maintenance-page">
+        <style>{`
+          .maintenance-page { min-height: 100vh; background: #FFF8EC; display: flex; align-items: center; justify-content: center; padding: 24px; font-family: Arial, Helvetica, sans-serif; }
+          .maintenance-card { max-width: 380px; text-align: center; background: #fff; border: 2.5px solid #1A1A1A; border-radius: 20px; padding: 32px 28px; }
+          .maintenance-logo { width: 64px; height: 64px; border-radius: 18px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); border: 3px solid #1A1A1A; color: #1A1A1E; font-weight: 900; font-size: 32px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+          .maintenance-title { font-size: 20px; font-weight: 900; color: #1A1A1A; margin: 0 0 8px; }
+          .maintenance-text { font-size: 13.5px; color: #5A5450; line-height: 1.5; margin: 0 0 22px; }
+          .maintenance-form { display: flex; flex-direction: column; gap: 10px; }
+          .maintenance-form input { border: 2px solid #1A1A1A; border-radius: 12px; padding: 12px 14px; font-size: 16px; font-family: inherit; background: #FFF8EC; color: #1A1A1A; }
+          .maintenance-form input:focus { outline: none; border-color: #FF4D8D; }
+          .maintenance-form .submit-btn { border: 2px solid #1A1A1A; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #1A1A1A; border-radius: 12px; padding: 12px; font-weight: 900; font-size: 13.5px; cursor: pointer; font-family: inherit; }
+          .maintenance-success { display: flex; align-items: center; justify-content: center; gap: 8px; color: #04342C; background: #7FD8D0; border: 2px solid #1A1A1A; border-radius: 12px; padding: 12px; font-weight: 800; font-size: 13.5px; margin: 0; }
+        `}</style>
+        <div className="maintenance-card">
+          <div className="maintenance-logo">R</div>
+          <p className="maintenance-title">Volvemos enseguida</p>
+          <p className="maintenance-text">Estamos haciendo mejoras en Ropelin. Apúntate a la lista de espera y te avisamos en cuanto volvamos a estar disponibles.</p>
+          {newsletterSubscribed ? (
+            <p className="maintenance-success"><CheckCircle size={16} /> ¡Apuntado! Te avisaremos por email.</p>
+          ) : (
+            <form
+              className="maintenance-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!/^\S+@\S+\.\S+$/.test(newsletterEmail)) { toast.error("Escribe un email válido"); return; }
+                subscribeNewsletter(newsletterEmail)
+                  .then(() => setNewsletterSubscribed(true))
+                  .catch((err) => toast.error(err.message));
+              }}
+            >
+              <input
+                type="email"
+                placeholder="tu@email.com"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+              />
+              <button type="submit" className="submit-btn">Apuntarme a la lista de espera</button>
+            </form>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       {!cookieChoice && (
@@ -1981,7 +2216,7 @@ export default function RopelinApp() {
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .edit-profile-btn:hover { border-color: #7FD8D0; color: #7FD8D0; }
         .sheet-overlay { align-items: flex-end; padding: 0; }
-        .sheet-modal { width: 100%; max-width: 480px; margin: 0 auto; background: var(--card); border-radius: 20px 20px 0 0; padding: 10px 20px 24px; max-height: 80vh; display: flex; flex-direction: column; animation: sheet-up .2s ease; }
+        .sheet-modal { width: 100%; max-width: 480px; margin: 0 auto; background: var(--card); border-radius: 20px 20px 0 0; border: 2.5px solid var(--border); border-bottom: none; padding: 10px 20px 24px; max-height: 80vh; display: flex; flex-direction: column; animation: sheet-up .2s ease; }
         @keyframes sheet-up { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .sheet-handle { width: 36px; height: 4px; border-radius: 4px; background: var(--input-border); margin: 0 auto 14px; }
         .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -1990,14 +2225,14 @@ export default function RopelinApp() {
         .sheet-loading .spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .sheet-rate-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-        .sheet-rate-card { display: flex; align-items: center; gap: 10px; width: 100%; background: var(--surface2); border: 1.5px solid var(--input-border); border-radius: 14px; padding: 12px 14px; cursor: pointer; font-family: inherit; color: var(--body); text-align: left; }
+        .sheet-rate-card { display: flex; align-items: center; gap: 10px; width: 100%; background: var(--surface2); border: 2px solid var(--border); border-radius: 14px; padding: 12px 14px; cursor: pointer; font-family: inherit; color: var(--body); text-align: left; }
         .sheet-rate-card.selected { border-color: #FF4D8D; background: #FF4D8D14; }
         .sheet-rate-card:disabled { opacity: 0.5; cursor: default; }
-        .sheet-rate-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--sub); }
+        .sheet-rate-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--sub); }
         .sheet-rate-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-        .sheet-rate-provider { font-size: 13px; font-weight: 700; text-transform: capitalize; }
+        .sheet-rate-provider { font-size: 13px; font-weight: 800; text-transform: capitalize; }
         .sheet-rate-meta { font-size: 11px; color: var(--faint); }
-        .sheet-rate-price { font-size: 14px; font-weight: 800; color: #7FD8D0; white-space: nowrap; }
+        .sheet-rate-price { font-size: 14px; font-weight: 800; color: #04342C; background: #7FD8D0; padding: 2px 8px; border-radius: 8px; white-space: nowrap; display: inline-block; }
         .sheet-rate-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--input-border); flex-shrink: 0; }
         .sheet-rate-radio.on { border-color: #FF4D8D; background: #FF4D8D; box-shadow: inset 0 0 0 3px var(--card); }
         .sheet-confirm-btn { width: 100%; }
@@ -2116,7 +2351,7 @@ export default function RopelinApp() {
         .cat-circle.active .cat-icon-wrap.forYou { border-color: #FF4D8D; }
         .cat-circle:hover .cat-icon-wrap { border-color: #4A4A52; }
         .search-box { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--input-border); border-radius: 20px; padding: 10px 16px; flex: 1; min-width: 200px; }
-        .search-box input { border: none; outline: none; background: transparent; color: var(--text); font-size: 13px; width: 100%; font-family: inherit; }
+        .search-box input { border: none; outline: none; background: transparent; color: var(--text); font-size: 16px; width: 100%; font-family: inherit; }
         .chip { border: 1px solid var(--input-border); background: var(--surface2); color: var(--body); border-radius: 20px; padding: 8px 14px; font-size: 12px; cursor: pointer; font-family: inherit; }
         .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
         select.chip { appearance: none; }
@@ -2206,6 +2441,13 @@ export default function RopelinApp() {
         .admin-page-label { font-size: 12px; color: var(--sub); }
         .admin-settings-form label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: var(--sub); margin: 14px 0 6px; }
         .admin-settings-form label:first-child { margin-top: 6px; }
+        .maintenance-toggle-row { display: flex; align-items: center; gap: 14px; background: var(--card-alt); border: 2px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+        .maintenance-toggle-title { font-size: 13px; font-weight: 800; color: var(--text); margin: 0 0 3px; }
+        .maintenance-toggle-sub { font-size: 11.5px; color: var(--sub); margin: 0; line-height: 1.4; }
+        .maintenance-toggle { flex-shrink: 0; width: 46px; height: 26px; border-radius: 999px; border: 2px solid var(--border); background: var(--surface2); cursor: pointer; position: relative; padding: 0; }
+        .maintenance-toggle.on { background: #FF4D8D; }
+        .maintenance-toggle-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid var(--border); transition: transform .15s ease; }
+        .maintenance-toggle.on .maintenance-toggle-knob { transform: translateX(20px); }
         .input-plain { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit; margin-bottom: 12px; }
         .faq-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
         .faq-item { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
@@ -2215,7 +2457,7 @@ export default function RopelinApp() {
         .faq-item[open] summary::before { content: "− "; }
         .faq-item p { font-size: 12.5px; color: var(--sub); margin: 10px 0 0; line-height: 1.5; }
         .admin-search-row .search-box { flex: 1; padding: 8px 12px; }
-        .admin-search-row .search-box input { font-size: 12px; }
+        .admin-search-row .search-box input { font-size: 16px; }
         .admin-search-btn { padding: 0 16px; font-size: 12px; }
         .admin-user-row.banned { opacity: 0.7; border-color: #FF4D8D55; }
         .admin-user-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
@@ -2231,7 +2473,7 @@ export default function RopelinApp() {
         .admin-category-count { font-weight: 800; color: #7FD8D0; }
         .admin-log-row { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
         .admin-dispute-row.reviewed { opacity: 0.55; }
-        .report-textarea { width: 100%; background: var(--bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; color: var(--text); font-size: 13px; font-family: inherit; resize: none; margin-bottom: 10px; }
+        .report-textarea { width: 100%; background: var(--bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; color: var(--text); font-size: 16px; font-family: inherit; resize: none; margin-bottom: 10px; }
         .report-flag-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--sub); font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 8px 14px; border-radius: 20px; }
         .report-flag-btn:hover { color: #FF4D8D; border-color: #FF4D8D55; background: #FF4D8D0F; }
         .report-modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
@@ -2301,24 +2543,29 @@ export default function RopelinApp() {
         .stripe-status-note { font-size: 11px; color: var(--faint); margin: -4px 0 12px; line-height: 1.4; }
         .stripe-status.ok { display: flex; align-items: center; gap: 6px; color: #7FD8D0; margin: 0; }
         .stripe-connect-btn { width: 100%; border: none; border-radius: 12px; background: linear-gradient(135deg, #635BFF, #4A42E8); color: #fff; padding: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
-        .orders-modal { max-width: 400px; }
+        .orders-modal { max-width: 420px; }
         .profile-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); margin: 16px 0 10px; }
+        .orders-subheading { font-size: 12px; font-weight: 700; color: var(--text); margin: 12px 0 8px; }
         .related-box { background: var(--card-alt); border: 1px solid #24242a; border-radius: 20px; padding: 20px 22px; margin-top: 16px; }
         .related-box .profile-section-title:first-child { margin-top: 0; }
-        .order-card { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 10px; }
-        .order-top { display: flex; justify-content: space-between; gap: 8px; }
-        .order-title { font-size: 13px; font-weight: 700; margin: 0; }
-        .order-price { font-size: 13px; font-weight: 800; color: #7FD8D0; margin: 0; flex-shrink: 0; }
-        .order-seller { font-size: 11px; color: var(--sub); margin: 2px 0 12px; }
-        .order-steps { display: flex; align-items: center; margin-bottom: 12px; }
-        .order-step { display: flex; flex-direction: column; align-items: center; gap: 3px; color: #4A4A52; font-size: 9px; text-transform: uppercase; letter-spacing: .3px; flex-shrink: 0; }
-        .order-step.done { color: #7FD8D0; }
-        .order-step-line { flex: 1; height: 2px; background: var(--border); margin: 0 4px 14px; }
+        .order-card { background: var(--card); border: 2.5px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
+        .order-top { display: flex; gap: 12px; margin-bottom: 12px; }
+        .order-thumb { width: 52px; height: 52px; border-radius: 12px; background-size: cover; background-position: center; background-color: var(--surface); border: 2px solid var(--border); flex-shrink: 0; }
+        .order-top-info { flex: 1; min-width: 0; }
+        .order-title { font-size: 13.5px; font-weight: 800; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .order-price { font-size: 13px; font-weight: 800; color: #04342C; background: #7FD8D0; display: inline-block; padding: 1px 8px; border-radius: 8px; margin: 0; }
+        .order-seller { font-size: 11px; color: var(--sub); margin: 3px 0 0; }
+        .order-steps { display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: var(--card-alt); border-radius: 12px; }
+        .order-step { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--faint); font-size: 9px; text-transform: uppercase; letter-spacing: .3px; flex-shrink: 0; }
+        .order-step svg { width: 20px; height: 20px; padding: 4px; border-radius: 50%; background: var(--surface2); border: 2px solid var(--border); box-sizing: content-box; }
+        .order-step.done { color: #04342C; font-weight: 700; }
+        .order-step.done svg { background: #7FD8D0; border-color: var(--border); color: #04342C; }
+        .order-step-line { flex: 1; height: 2px; background: var(--border); margin: 0 4px 16px; }
         .order-step-line.done { background: #7FD8D0; }
-        .order-action-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border: none; border-radius: 12px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); padding: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; margin-top: 6px; }
-        .order-action-btn.secondary { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
-        .order-delivery-tag { font-size: 12px; font-weight: 600; color: var(--body); margin: 6px 0; }
-        .order-hint { font-size: 11px; color: var(--faint); margin: 0 0 8px; }
+        .order-action-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border: 2px solid var(--border); border-radius: 12px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #1A1A1A; padding: 10px; font-weight: 800; font-size: 12px; cursor: pointer; font-family: inherit; margin-top: 6px; }
+        .order-action-btn.secondary { background: var(--surface2); color: var(--text); }
+        .order-delivery-tag { font-size: 11px; font-weight: 800; color: var(--text); background: var(--card-alt); border: 2px solid var(--border); display: inline-block; padding: 3px 10px; border-radius: 999px; margin: 4px 0 8px; }
+        .order-hint { font-size: 11px; color: var(--faint); margin: 0 0 8px; line-height: 1.4; }
         .dispute-link { font-size: 11px; color: var(--faint); text-decoration: underline; cursor: pointer; margin: 8px 0 0; text-align: center; }
         .dispute-link:hover { color: #FF4D8D; }
         .rating-modal { max-width: 340px; }
@@ -2333,7 +2580,7 @@ export default function RopelinApp() {
         .danger-zone-btn:disabled { opacity: 0.6; cursor: default; }
         .delete-confirm-box { display: flex; flex-direction: column; gap: 10px; }
         .delete-confirm-text { font-size: 12.5px; color: var(--body); line-height: 1.5; margin: 0; }
-        .delete-confirm-input { width: 100%; border: 1px solid #FF4D8D55; border-radius: 12px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; }
+        .delete-confirm-input { width: 100%; border: 1px solid #FF4D8D55; border-radius: 12px; padding: 10px 12px; font-size: 16px; background: var(--bg); color: var(--text); font-family: inherit; }
         .delete-confirm-actions { display: flex; gap: 10px; }
         .delete-confirm-actions .btn { flex: 1; }
         .delete-confirm-actions .danger-zone-btn { flex: 1; }
@@ -2444,47 +2691,56 @@ export default function RopelinApp() {
         .rb-row span { display: block; margin-bottom: 4px; color: var(--body); }
         .rb-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
         .rb-fill { height: 100%; background: linear-gradient(90deg, #7FD8D0, #4DA8FF); border-radius: 3px; }
-        .chat-modal { max-width: 380px; display: flex; flex-direction: column; height: 560px; max-height: 82vh; padding: 0; overflow: hidden; }
-        .chat-header { display: flex; align-items: center; gap: 12px; padding: 16px 50px 16px 18px; border-bottom: 1px solid var(--border); position: relative; flex-shrink: 0; background: linear-gradient(180deg, var(--surface2), var(--card)); }
-        .chat-close { position: static; margin-left: auto; order: 3; background: var(--border); }
+        .chat-modal { max-width: 380px; display: flex; flex-direction: column; height: 560px; max-height: 82vh; padding: 0; overflow: hidden; border: 2.5px solid var(--border); }
+        .chat-header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 2px solid var(--border); position: relative; flex-shrink: 0; background: var(--card); }
+        .chat-back-btn { background: none; border: none; padding: 4px; margin-right: 2px; color: var(--text); cursor: pointer; display: flex; align-items: center; flex-shrink: 0; }
         .chat-avatar-ring { padding: 2px; border-radius: 50%; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); flex-shrink: 0; }
         .chat-avatar-ring .mini-avatar { border: 2px solid var(--card); }
-        .chat-seller-name { font-size: 13.5px; font-weight: 700; margin: 0; }
+        .chat-seller-name { font-size: 13.5px; font-weight: 800; margin: 0; }
         .chat-item-ref { font-size: 11px; color: var(--sub); margin: 2px 0 0; }
-        .chat-item-strip { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border-bottom: 1px solid var(--border); cursor: pointer; flex-shrink: 0; transition: background .15s ease; }
+        .chat-item-strip { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card-alt); border-bottom: 2px solid var(--border); cursor: pointer; flex-shrink: 0; transition: background .15s ease; }
         .chat-item-strip:hover { background: var(--surface2); }
-        .chat-item-thumb { width: 42px; height: 42px; border-radius: 10px; background-size: cover; background-position: center; flex-shrink: 0; border: 1px solid var(--border); }
+        .chat-item-thumb { width: 42px; height: 42px; border-radius: 10px; background-size: cover; background-position: center; flex-shrink: 0; border: 2px solid var(--border); }
         .chat-item-strip-info { flex: 1; min-width: 0; }
-        .chat-item-strip-title { font-size: 12px; font-weight: 600; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .chat-item-strip-price { font-size: 12px; font-weight: 800; color: #7FD8D0; margin: 1px 0 0; }
-        .chat-item-strip-link { font-size: 11px; color: #FF8A4D; font-weight: 600; flex-shrink: 0; }
-        .chat-thread { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 2px; background: radial-gradient(circle at 15% 0%, #1F1F2444, transparent 60%); }
+        .chat-item-strip-title { font-size: 12px; font-weight: 700; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-item-strip-price { font-size: 12px; font-weight: 800; color: #04342C; background: #7FD8D0; display: inline-block; padding: 1px 7px; border-radius: 8px; margin: 2px 0 0; }
+        .chat-item-strip-link { font-size: 11px; color: #FF4D8D; font-weight: 700; flex-shrink: 0; }
+        .chat-thread { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 2px; background: var(--bg); }
         .chat-msg-row { display: flex; flex-direction: column; margin-bottom: 14px; }
+        .chat-safety-banner { display: flex; align-items: flex-start; gap: 8px; background: #FFF3D6; border: 2px solid #1A1A1A; border-radius: 12px; padding: 10px 12px; font-size: 11px; color: #8A5A00; line-height: 1.4; margin-bottom: 16px; }
+        .chat-safety-banner svg { flex-shrink: 0; margin-top: 1px; }
+        .chat-quick-replies { display: flex; gap: 6px; padding: 10px 14px 0; overflow-x: auto; flex-shrink: 0; background: var(--card); }
+        .chat-quick-reply-chip { border: 2px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 999px; padding: 6px 12px; font-size: 11.5px; font-weight: 600; white-space: nowrap; cursor: pointer; font-family: inherit; flex-shrink: 0; }
+        .chat-quick-reply-chip:hover { border-color: #FF4D8D; }
+        .chat-attach-btn { background: var(--surface2); border: 2px solid var(--border); color: var(--text); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .chat-attach-btn:disabled { opacity: 0.5; cursor: default; }
+        .chat-photo-bubble { display: block; width: 160px; border-radius: 14px; overflow: hidden; border: 2px solid var(--border); }
+        .chat-photo-bubble img { width: 100%; display: block; }
         .chat-msg-row.grouped { margin-top: -8px; }
         .chat-msg-row.me { align-items: flex-end; }
         .chat-msg-row.seller { align-items: flex-start; }
-        .chat-bubble { max-width: 78%; padding: 10px 14px; border-radius: 18px; font-size: 13px; line-height: 1.45; box-shadow: 0 3px 10px -4px rgba(0,0,0,0.5); }
-        .chat-bubble.seller { background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 5px; }
-        .chat-bubble.me { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); border-bottom-right-radius: 5px; font-weight: 500; }
+        .chat-bubble { max-width: 78%; padding: 10px 14px; border-radius: 18px; font-size: 13px; line-height: 1.45; border: 2px solid var(--border); }
+        .chat-bubble.seller { background: var(--card); border-bottom-left-radius: 5px; }
+        .chat-bubble.me { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #1A1A1A; border-bottom-right-radius: 5px; font-weight: 700; }
         .chat-bubble.offer-bubble { font-weight: 800; border-color: #FFC24D; }
-        .chat-bubble.seller.offer-bubble { background: #FFC24D14; color: #FFC24D; }
+        .chat-bubble.seller.offer-bubble { background: #FFF3D6; color: #8A5A00; }
         .offer-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
-        .offer-resp-btn { border: none; border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
-        .offer-resp-btn.accept { background: #7FD8D0; color: var(--bg); }
-        .offer-resp-btn.reject { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
-        .offer-resp-btn.counter { background: var(--surface); color: var(--body); border: 1px solid var(--border); }
+        .offer-resp-btn { border: 2px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 800; cursor: pointer; font-family: inherit; }
+        .offer-resp-btn.accept { background: #7FD8D0; color: #04342C; }
+        .offer-resp-btn.reject { background: var(--card); color: var(--body); }
+        .offer-resp-btn.counter { background: var(--card); color: var(--body); }
         .offer-resp-btn:disabled { opacity: 0.6; cursor: default; }
         .offer-counter-row { display: flex; gap: 6px; width: 100%; margin-top: 4px; }
-        .offer-counter-row input { flex: 1; min-width: 0; border: 1px solid var(--input-border); border-radius: 10px; padding: 6px 10px; font-size: 12px; background: var(--bg); color: var(--text); font-family: inherit; }
-        .offer-status-tag { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; }
-        .offer-status-tag.pending { background: #FFC24D14; color: #FFC24D; }
-        .offer-status-tag.accepted { background: #7FD8D014; color: #7FD8D0; }
-        .offer-status-tag.rejected { background: #FF4D8D14; color: #FF4D8D; }
+        .offer-counter-row input { flex: 1; min-width: 0; border: 2px solid var(--input-border); border-radius: 10px; padding: 6px 10px; font-size: 16px; background: var(--card); color: var(--text); font-family: inherit; }
+        .offer-status-tag { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; border: 2px solid var(--border); }
+        .offer-status-tag.pending { background: #FFF3D6; color: #8A5A00; }
+        .offer-status-tag.accepted { background: #7FD8D0; color: #04342C; }
+        .offer-status-tag.rejected { background: #FFD9E6; color: #8A1A45; }
         .chat-msg-time { font-size: 10px; color: var(--faint); margin: 4px 4px 0; }
-        .chat-input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--border); flex-shrink: 0; align-items: center; background: #17171a; }
-        .chat-input-row input { flex: 1; border: 1px solid var(--input-border); border-radius: 22px; padding: 11px 16px; background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit; transition: border-color .15s ease; }
-        .chat-input-row input:focus { outline: none; border-color: #FF4D8D66; }
-        .chat-send-btn { border: none; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; box-shadow: 0 4px 14px -4px #FF4D8D88; transition: opacity .15s ease, transform .1s ease; }
+        .chat-input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 2px solid var(--border); flex-shrink: 0; align-items: center; background: var(--card); }
+        .chat-input-row input { flex: 1; border: 2px solid var(--input-border); border-radius: 22px; padding: 11px 16px; background: var(--bg); color: var(--text); font-size: 16px; font-family: inherit; transition: border-color .15s ease; }
+        .chat-input-row input:focus { outline: none; border-color: #FF4D8D; }
+        .chat-send-btn { border: 2px solid var(--border); background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #1A1A1A; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: opacity .15s ease, transform .1s ease; }
         .chat-send-btn:disabled { opacity: 0.4; box-shadow: none; cursor: default; }
         .chat-send-btn:not(:disabled):active { transform: scale(0.92); }
 
@@ -2501,7 +2757,7 @@ export default function RopelinApp() {
         .close-btn { position: absolute; top: 16px; right: 16px; background: var(--surface2); border: 2px solid var(--border); border-radius: 50%; width: 28px; height: 28px; color: var(--text); cursor: pointer; z-index: 5; display: flex; align-items: center; justify-content: center; }
         label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; color: var(--sub); }
         input, select { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; }
-        .post-textarea { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 4px; }
+        .post-textarea { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 16px; background: var(--bg); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 4px; }
         .submit-btn { margin-top: 20px; width: 100%; border: none; border-radius: 14px; padding: 13px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); font-weight: 700; font-size: 13px; cursor: pointer; }
         .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .detail-price { font-size: 30px; font-weight: 800; margin: 10px 0 14px; }
@@ -2512,6 +2768,8 @@ export default function RopelinApp() {
           .detail-overlay { padding: 0; align-items: stretch; }
           .detail-overlay .detail-modal { max-width: 100%; width: 100%; height: 100vh; height: 100dvh; border-radius: 0; margin: 0; max-height: none; }
           .detail-overlay .detail-modal.auth-modal { display: flex; flex-direction: column; justify-content: center; padding: 30px 32px; background: radial-gradient(circle at 50% 0%, #FF4D8D22, transparent 60%), var(--card); }
+          .chat-overlay { padding: 0; align-items: stretch; }
+          .chat-modal { max-width: 100%; width: 100%; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; border-width: 0; }
         }
         .item-page { padding: 20px 26px 100px; max-width: 1100px; margin: 0 auto; }
         @media (min-width: 1500px) {
@@ -2539,7 +2797,7 @@ export default function RopelinApp() {
         .newsletter-title { color: var(--bg); font-size: 20px; font-weight: 800; margin: 0 0 5px; }
         .newsletter-sub { color: var(--bg); opacity: 0.75; font-size: 13.5px; margin: 0; }
         .newsletter-form { display: flex; gap: 10px; flex-wrap: wrap; }
-        .newsletter-form input { width: 260px; border: none; border-radius: 12px; padding: 13px 16px; font-size: 13px; background: #ffffffee; color: var(--bg); font-family: inherit; }
+        .newsletter-form input { width: 260px; border: none; border-radius: 12px; padding: 13px 16px; font-size: 16px; background: #ffffffee; color: var(--bg); font-family: inherit; }
         .newsletter-form input::placeholder { color: var(--faint); }
         .newsletter-form .btn.primary { background: #121214; color: #fff; border: none; padding: 13px 22px; border-radius: 12px; font-weight: 700; font-size: 13px; }
         .newsletter-thanks { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--bg); font-weight: 700; }
@@ -2644,6 +2902,8 @@ export default function RopelinApp() {
         .answer-form button, .ask-form button { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); border: none; border-radius: 10px; width: 34px; display: flex; align-items: center; justify-content: center; color: var(--bg); cursor: pointer; }
         .answer-form button:disabled, .ask-form button:disabled { opacity: 0.6; }
         .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .in-person-alt-btn { display: flex; align-items: center; justify-content: center; gap: 6px; background: none; border: none; color: var(--sub); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 2px 4px; text-align: center; flex-basis: 100%; }
+        .in-person-alt-btn:hover { color: #FF4D8D; }
         .mark-sold-btn { flex-basis: 100%; }
         .detail-actions .chat-btn { flex: 1; margin: 0; }
         .buy-btn { flex: 1; border: none; border-radius: 14px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); font-weight: 700; font-size: 13px; cursor: pointer; }
@@ -2720,9 +2980,7 @@ export default function RopelinApp() {
       <header className="top">
         <div className="brand" onClick={goHome} style={{ cursor: "pointer" }}>
           <div className="brand-mark">
-            <svg width="18" height="18" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <path d="M 54 30 L 54 62 A 13 13 0 1 1 39 56" fill="none" stroke="#121214" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <span style={{ color: "#1A1A1E", fontWeight: 900, fontSize: 15, fontFamily: "Arial, Helvetica, sans-serif", lineHeight: 1 }}>R</span>
           </div>
           <h1>Ropelin</h1>
         </div>
@@ -2731,7 +2989,7 @@ export default function RopelinApp() {
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           {loggedIn && (
-            <button className="icon-btn" onClick={() => setShowOrders(true)}>
+            <button className="icon-btn" onClick={() => { setShowProfile(true); setProfileMenuView("pedidos"); }}>
               <Package size={16} />
               {pendingShipmentsCount > 0 && <span className="notif-dot">{pendingShipmentsCount}</span>}
             </button>
@@ -3093,6 +3351,9 @@ export default function RopelinApp() {
               {isOwnProfile ? (
                 numCols >= 3 ? (
                   <div className="profile-sidebar-menu">
+                    <button className={"profile-sidebar-item" + (profileMenuView === "pedidos" ? " active" : "")} onClick={() => setProfileMenuView("pedidos")}>
+                      <Package size={16} /> Mis pedidos
+                    </button>
                     <button className={"profile-sidebar-item" + ((profileMenuView || "venta") === "venta" ? " active" : "")} onClick={() => setProfileMenuView("venta")}>
                       <Tag size={16} /> En venta
                     </button>
@@ -3125,16 +3386,6 @@ export default function RopelinApp() {
                 ) :
                 profileMenuView === null ? (
                   <div className="profile-menu-list">
-                    <button className="profile-quick-card" onClick={() => setProfileMenuView("venta")}>
-                      <div className="avatar-mini" style={myAvatarUrl ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover" } : { background: avatarColor }}>
-                        {!myAvatarUrl && username[0]?.toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="profile-quick-card-name">{username}</p>
-                        <p className="profile-quick-card-sub">Ver mis anuncios</p>
-                      </div>
-                    </button>
-
                     {(() => {
                       const myRanking = leaderboard.find((u) => u.username === username);
                       return (
@@ -3154,6 +3405,11 @@ export default function RopelinApp() {
                     })()}
 
                     <p className="profile-menu-section-title">Transacciones</p>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("pedidos")}>
+                      <span className="profile-menu-icon"><Package size={17} /></span>
+                      <span className="profile-menu-label">Mis pedidos</span>
+                      <ChevronRight size={16} />
+                    </button>
                     <button className="profile-menu-row" onClick={() => setProfileMenuView("venta")}>
                       <span className="profile-menu-icon"><Tag size={17} /></span>
                       <span className="profile-menu-label">En venta</span>
@@ -3419,6 +3675,44 @@ export default function RopelinApp() {
                           </div>
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {profileMenuView === "pedidos" && (
+                    <div style={{ textAlign: "left" }}>
+                      {ordersLoading && <p className="empty-tab">Cargando...</p>}
+
+                      {!ordersLoading && orders.sales.length === 0 && orders.purchases.length === 0 && (
+                        <p className="empty-tab">Todavía no tienes compras ni ventas.</p>
+                      )}
+
+                      {!ordersLoading && orders.sales.length > 0 && (() => {
+                        const enCurso = orders.sales.filter((tx) => tx.status !== "completed");
+                        const completadas = orders.sales.filter((tx) => tx.status === "completed");
+                        return (
+                          <>
+                            <p className="profile-section-title">Ventas</p>
+                            <p className="orders-subheading">En curso {enCurso.length > 0 && `(${enCurso.length})`}</p>
+                            {enCurso.length > 0 ? enCurso.map((tx) => renderSaleCard(tx)) : <p className="empty-tab">No tienes ventas en curso.</p>}
+                            <p className="orders-subheading">Completadas {completadas.length > 0 && `(${completadas.length})`}</p>
+                            {completadas.length > 0 ? completadas.map((tx) => renderSaleCard(tx)) : <p className="empty-tab">Aún no has completado ninguna venta.</p>}
+                          </>
+                        );
+                      })()}
+
+                      {!ordersLoading && orders.purchases.length > 0 && (() => {
+                        const enCurso = orders.purchases.filter((tx) => tx.status !== "completed");
+                        const finalizadas = orders.purchases.filter((tx) => tx.status === "completed");
+                        return (
+                          <>
+                            <p className="profile-section-title">Compras</p>
+                            <p className="orders-subheading">En curso {enCurso.length > 0 && `(${enCurso.length})`}</p>
+                            {enCurso.length > 0 ? enCurso.map((tx) => renderPurchaseCard(tx)) : <p className="empty-tab">No tienes compras en curso.</p>}
+                            <p className="orders-subheading">Finalizadas {finalizadas.length > 0 && `(${finalizadas.length})`}</p>
+                            {finalizadas.length > 0 ? finalizadas.map((tx) => renderPurchaseCard(tx)) : <p className="empty-tab">Aún no has finalizado ninguna compra.</p>}
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -3714,6 +4008,16 @@ export default function RopelinApp() {
                   ) : (
                     <button className="buy-btn" onClick={() => loggedIn ? setShowCheckout(true) : setShowAuth(true)}>Comprar</button>
                   )}
+                  <button
+                    className="in-person-alt-btn"
+                    onClick={() => {
+                      if (!loggedIn) { setShowAuth(true); return; }
+                      openChat(openItem);
+                      setChatInput(`Hola, ¿quedamos en persona para "${openItem.title}"? Así el pago (Bizum o efectivo) lo acordáis directamente entre vosotros, sin pasar por Ropelin.`);
+                    }}
+                  >
+                    <MapPin size={13} /> Prefiero quedar en persona (pago directo, sin comisión)
+                  </button>
                 </>
               )}
             </div>
@@ -3778,7 +4082,7 @@ export default function RopelinApp() {
             <div className="modal detail-modal" onClick={(e) => e.stopPropagation()}>
               <button className="close-btn dark-close-left" onClick={closeItemView}><X size={14} /></button>
               {galleryEl}
-              <div className="detail-body">{infoEl}{relatedEl}</div>
+              <div className="detail-body">{infoEl}{relatedEl}{footerEl}</div>
             </div>
           </div>
         );
@@ -4448,68 +4752,7 @@ export default function RopelinApp() {
         </>
       )}
 
-      <footer className="site-footer-rich">
-        <div className="footer-inner">
-        <div className="footer-top-row">
-          <p className="footer-brand-line">ROPELIN — COMPRA Y VENDE DE SEGUNDA MANO.</p>
-          {(platformSettings.instagramUrl || platformSettings.tiktokUrl || platformSettings.facebookUrl || platformSettings.twitterUrl) && (
-            <div className="footer-social-row">
-              <span className="footer-social-label">SÍGUENOS</span>
-              {platformSettings.facebookUrl && (
-                <a href={platformSettings.facebookUrl} target="_blank" rel="noopener noreferrer"><Facebook size={15} /></a>
-              )}
-              {platformSettings.instagramUrl && (
-                <a href={platformSettings.instagramUrl} target="_blank" rel="noopener noreferrer"><Instagram size={15} /></a>
-              )}
-              {platformSettings.tiktokUrl && (
-                <a href={platformSettings.tiktokUrl} target="_blank" rel="noopener noreferrer"><TikTokIcon size={15} /></a>
-              )}
-              {platformSettings.twitterUrl && (
-                <a href={platformSettings.twitterUrl} target="_blank" rel="noopener noreferrer"><Twitter size={15} /></a>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="footer-cols">
-          <div className="footer-col">
-            <p className="footer-col-title">Ropelin</p>
-            <button onClick={() => openLegalPage("about")}>Quiénes somos</button>
-            <button onClick={() => openLegalPage("how-it-works")}>Cómo funciona</button>
-            <button onClick={() => openLegalPage("updates")}>Novedades</button>
-            <button onClick={openHelpCenter}>Ayuda</button>
-          </div>
-          <div className="footer-col">
-            <p className="footer-col-title">Comprar y vender</p>
-            <button onClick={openPostForm}>Publicar un artículo</button>
-            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Moda"); setQuery(""); navigate("/"); }}>Moda</button>
-            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Electrónica"); setQuery(""); navigate("/"); }}>Electrónica</button>
-            <button onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Hogar"); setQuery(""); navigate("/"); }}>Hogar</button>
-            <button className="footer-link-accent" onClick={() => { setOpenItem(null); setShowProfile(false); setCategory("Todo"); setQuery(""); navigate("/"); }}>Ver todas →</button>
-          </div>
-          <div className="footer-col">
-            <p className="footer-col-title">Legal</p>
-            <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
-            <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
-            <button onClick={() => setShowLegal("cookies")}>Cookies</button>
-          </div>
-          <div className="footer-col">
-            <p className="footer-col-title">Contacto</p>
-            <a href="mailto:hola@ropelin.com" className="footer-link-plain">hola@ropelin.com</a>
-            <button onClick={openHelpCenter}>Centro de ayuda</button>
-          </div>
-        </div>
-        <div className="footer-bottom-bar">
-          <span>© Ropelin {new Date().getFullYear()}</span>
-          <span>·</span>
-          <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
-          <span>·</span>
-          <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
-          <span>·</span>
-          <button onClick={() => setShowLegal("cookies")}>Cookies</button>
-          <span className="footer-trust-badge">🔒 Pagos seguros con <strong>stripe</strong></span>
-        </div>
-        </div>
-      </footer>
+      {footerEl}
 
       {showForgotPassword && (
         <div className="overlay" onClick={() => { setShowForgotPassword(false); setForgotSent(false); setForgotError(null); }}>
@@ -4599,130 +4842,6 @@ export default function RopelinApp() {
         </div>
       )}
 
-
-      {showOrders && (
-        <div className="overlay" onClick={() => setShowOrders(false)}>
-          <div className="modal orders-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowOrders(false)}><X size={14} /></button>
-            <p className="auth-title" style={{ marginBottom: 4 }}>Mis pedidos</p>
-            <p className="auth-subtitle" style={{ marginBottom: 16 }}>Compras y ventas</p>
-
-            {ordersLoading && <p className="empty-tab">Cargando...</p>}
-
-            {!ordersLoading && orders.purchases.length === 0 && orders.sales.length === 0 && (
-              <p className="empty-tab">Todavía no tienes compras ni ventas.</p>
-            )}
-
-            {!ordersLoading && orders.purchases.length > 0 && (
-              <>
-                <p className="profile-section-title">Compras</p>
-                {orders.purchases.map((tx) => (
-                  <div key={tx.id} className="order-card">
-                    <div className="order-top">
-                      <p className="order-title">{tx.item.title}</p>
-                      <p className="order-price">{(Number(tx.amount) + Number(tx.shippingFee || 3.5)).toFixed(2)}€</p>
-                    </div>
-                    <p className="order-seller">Vendedor: @{tx.seller.username}</p>
-                    <div className="order-steps">
-                      <div className={"order-step" + (tx.status !== "pending" ? " done" : "")}><ShoppingBag size={13} /><span>Pagado</span></div>
-                      <div className={"order-step-line" + (tx.shipment ? " done" : "")} />
-                      <div className={"order-step" + (tx.shipment ? " done" : "")}><Truck size={13} /><span>Enviado</span></div>
-                      <div className={"order-step-line" + (tx.status === "completed" ? " done" : "")} />
-                      <div className={"order-step" + (tx.status === "completed" ? " done" : "")}><CheckCircle size={13} /><span>Recibido</span></div>
-                    </div>
-
-                    {tx.shipment && tx.shipment.trackingCode && (
-                      <p className="order-hint">Nº de seguimiento: {tx.shipment.trackingCode}</p>
-                    )}
-                    {!tx.shipment && tx.status === "paid" && (
-                      <>
-                        <p className="order-hint">Esperando a que @{tx.seller.username} genere el envío, o quedad en persona</p>
-                        <button className="order-action-btn secondary" onClick={() => handleCompleteInPerson(tx.id)}>
-                          Ya lo he recibido en persona
-                        </button>
-                      </>
-                    )}
-                    {tx.shipment && tx.status !== "completed" && tx.status !== "disputed" && (
-                      <button className="order-action-btn" onClick={() => handleConfirmReceived(tx.id)}>
-                        Confirmar que me ha llegado
-                      </button>
-                    )}
-                    {tx.status === "completed" && (
-                      <>
-                        <p className="order-delivery-tag">{tx.deliveryMethod === "in_person" ? "📍 Entregado en persona" : "📦 Entregado por correo"}</p>
-                        {tx.reviewedByMe ? (
-                          <p className="order-hint">✓ Ya has valorado a @{tx.seller.username}</p>
-                        ) : (
-                          <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.seller.username })}>
-                            <Star size={13} /> Valorar a @{tx.seller.username}
-                          </button>
-                        )}
-                      </>
-                    )}
-                    {tx.status === "disputed" && (
-                      <p className="order-hint" style={{ color: "#FF4D8D" }}>Reembolso solicitado, en revisión.</p>
-                    )}
-                    {["paid", "shipped"].includes(tx.status) && (
-                      <p className="dispute-link" onClick={() => setDisputingTx(tx)}>¿Algún problema con este pedido? Solicitar reembolso</p>
-                    )}
-                  </div>
-                ))}
-              </>
-            )}
-
-            {!ordersLoading && orders.sales.length > 0 && (
-              <>
-                <p className="profile-section-title">Ventas</p>
-                {orders.sales.map((tx) => (
-                  <div key={tx.id} className="order-card">
-                    <div className="order-top">
-                      <p className="order-title">{tx.item.title}</p>
-                      <p className="order-price">{(Number(tx.amount) + Number(tx.shippingFee || 3.5)).toFixed(2)}€</p>
-                    </div>
-                    <p className="order-seller">Comprador: @{tx.buyer.username}</p>
-                    <div className="order-steps">
-                      <div className={"order-step" + (tx.status !== "pending" ? " done" : "")}><ShoppingBag size={13} /><span>Pagado</span></div>
-                      <div className={"order-step-line" + (tx.shipment ? " done" : "")} />
-                      <div className={"order-step" + (tx.shipment ? " done" : "")}><Truck size={13} /><span>Enviado</span></div>
-                      <div className={"order-step-line" + (tx.status === "completed" ? " done" : "")} />
-                      <div className={"order-step" + (tx.status === "completed" ? " done" : "")}><CheckCircle size={13} /><span>Recibido</span></div>
-                    </div>
-
-                    {!tx.shipment && tx.status === "paid" && (
-                      <>
-                        <button className="order-action-btn" onClick={() => handleOpenRatePicker(tx.id)}>
-                          <Truck size={13} /> Generar etiqueta de envío
-                        </button>
-                        <p className="order-hint">O si quedáis en persona, que @{tx.buyer.username} lo confirme desde su lado</p>
-                      </>
-                    )}
-                    {tx.shipment && tx.shipment.trackingCode && (
-                      <p className="order-hint">Nº de seguimiento: {tx.shipment.trackingCode}</p>
-                    )}
-                    {tx.shipment && tx.shipment.labelUrl && (
-                      <button className="order-action-btn" onClick={() => handleDownloadLabel(tx.id)}>
-                        <FileDown size={13} /> Descargar etiqueta (PDF)
-                      </button>
-                    )}
-                    {tx.status === "completed" && (
-                      <>
-                        <p className="order-delivery-tag">{tx.deliveryMethod === "in_person" ? "📍 Entregado en persona" : "📦 Entregado por correo"}</p>
-                        {tx.reviewedByMe ? (
-                          <p className="order-hint">✓ Ya has valorado a @{tx.buyer.username}</p>
-                        ) : (
-                          <button className="order-action-btn" onClick={() => setReviewingTx({ id: tx.id, otherUsername: tx.buyer.username })}>
-                            <Star size={13} /> Valorar a @{tx.buyer.username}
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        </div>
-      )}
 
       {disputingTx && (
         <div className="overlay" onClick={() => setDisputingTx(null)}>
@@ -4863,7 +4982,8 @@ export default function RopelinApp() {
                   if (!n.link) return;
                   setShowNotifs(false);
                   if (n.link === "/pedidos") {
-                    setShowOrders(true);
+                    setShowProfile(true);
+                    setProfileMenuView("pedidos");
                     return;
                   }
                   const match = n.link.match(/\/item\/(.+)/);
@@ -5291,6 +5411,20 @@ export default function RopelinApp() {
 
                 {!adminLoading && adminSection === "settings" && adminSettingsForm && (
                   <div className="admin-settings-form">
+                    <div className="maintenance-toggle-row">
+                      <div>
+                        <p className="maintenance-toggle-title">Modo mantenimiento</p>
+                        <p className="maintenance-toggle-sub">Muestra una pantalla de "volvemos enseguida" con lista de espera a todo el mundo (menos a moderadores/admins).</p>
+                      </div>
+                      <button
+                        type="button"
+                        className={"maintenance-toggle" + (adminSettingsForm.maintenanceMode ? " on" : "")}
+                        onClick={() => setAdminSettingsForm((prev) => ({ ...prev, maintenanceMode: !prev.maintenanceMode }))}
+                      >
+                        <span className="maintenance-toggle-knob" />
+                      </button>
+                    </div>
+
                     <label>Comisión de la plataforma (%)</label>
                     <input
                       type="number" step="0.1" className="input-plain"
@@ -5650,10 +5784,10 @@ export default function RopelinApp() {
 
 
       {showChat && chatItem && (
-        <div className="overlay" onClick={() => setShowChat(false)}>
+        <div className="overlay chat-overlay" onClick={() => setShowChat(false)}>
           <div className="modal chat-modal" onClick={(e) => e.stopPropagation()}>
             <div className="chat-header">
-              <button className="close-btn dark-close chat-close" onClick={() => setShowChat(false)}><X size={14} /></button>
+              <button className="chat-back-btn" onClick={() => setShowChat(false)}><ArrowLeft size={18} /></button>
               <div className="chat-avatar-ring">
                 <div className="mini-avatar seller-avatar" style={{ background: PALETTE[chatItem.seller.length % PALETTE.length] }}>
                   {chatItem.seller[0]?.toUpperCase()}
@@ -5675,6 +5809,10 @@ export default function RopelinApp() {
             </div>
 
             <div className="chat-thread">
+              <div className="chat-safety-banner">
+                <ShieldCheck size={14} />
+                <span>Compra y paga siempre dentro de Ropelin. No compartas datos bancarios ni pagues fuera de la app.</span>
+              </div>
               {(chatThreads[chatItem.id] || []).length === 0 && (
                 <p className="empty-tab">Aún no hay mensajes. Escribe el primero.</p>
               )}
@@ -5684,9 +5822,15 @@ export default function RopelinApp() {
                 const grouped = prev && prev.sender.username === m.sender.username;
                 return (
                   <div key={m.id} className={"chat-msg-row " + (mine ? "me" : "seller") + (grouped ? " grouped" : "")}>
-                    <div className={"chat-bubble " + (mine ? "me" : "seller") + (m.offerAmount ? " offer-bubble" : "")}>
-                      {m.offerAmount ? <><HandCoins size={13} style={{ marginRight: 5, verticalAlign: -2 }} />Oferta: {Number(m.offerAmount).toFixed(2)}€</> : m.content}
-                    </div>
+                    {m.imageUrl ? (
+                      <a href={m.imageUrl} target="_blank" rel="noopener noreferrer" className="chat-photo-bubble">
+                        <img src={m.imageUrl} alt="Foto enviada en el chat" />
+                      </a>
+                    ) : (
+                      <div className={"chat-bubble " + (mine ? "me" : "seller") + (m.offerAmount ? " offer-bubble" : "")}>
+                        {m.offerAmount ? <><HandCoins size={13} style={{ marginRight: 5, verticalAlign: -2 }} />Oferta: {Number(m.offerAmount).toFixed(2)}€</> : m.content}
+                      </div>
+                    )}
                     {m.offerAmount && (
                       <div className="offer-actions">
                         {m.offerStatus === "pending" && !mine && (
@@ -5726,7 +5870,20 @@ export default function RopelinApp() {
               })}
             </div>
 
+            <div className="chat-quick-replies">
+              {(chatItem.seller === username
+                ? ["Sí, sigue disponible", "Puedo enviarlo por correo", "¿Prefieres en persona?", "¡Gracias por tu interés!"]
+                : ["¿Sigue disponible?", "¿Aceptas envío?", "¿Tienes más fotos?", "¿Quedamos en persona?"]
+              ).map((phrase) => (
+                <button key={phrase} type="button" className="chat-quick-reply-chip" onClick={() => setChatInput(phrase)}>{phrase}</button>
+              ))}
+            </div>
+
             <form className="chat-input-row" onSubmit={sendChatMessage}>
+              <input type="file" accept="image/*" id="chat-photo-input" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) handleSendChatPhoto(e.target.files[0]); e.target.value = ""; }} />
+              <button type="button" className="chat-attach-btn" disabled={sendingChatPhoto} onClick={() => document.getElementById("chat-photo-input").click()}>
+                <ImagePlus size={17} />
+              </button>
               <input
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}

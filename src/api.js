@@ -252,7 +252,7 @@ export async function notifySaleBuyer(itemId, buyerUsername) {
     body: JSON.stringify({ buyerUsername }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo avisar al comprador");
-  return res.json();
+  return res.json(); // { ok, transactionId }
 }
 
 export async function respondToOffer(itemId, messageId, action, counterAmount) {
@@ -692,11 +692,11 @@ export async function fetchChatMessages(itemId) {
   return res.json();
 }
 
-export async function sendChatMessage(itemId, content, offerAmount) {
+export async function sendChatMessage(itemId, content, offerAmount, imageUrl) {
   const res = await fetch(`${API_URL}/messages/${itemId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ content, offerAmount }),
+    body: JSON.stringify({ content, offerAmount, imageUrl }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar el mensaje");
   return res.json();
