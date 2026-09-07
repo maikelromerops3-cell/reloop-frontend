@@ -2349,6 +2349,8 @@ export default function RopelinApp() {
         @keyframes sheet-up { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .sheet-handle { width: 36px; height: 4px; border-radius: 4px; background: var(--input-border); margin: 0 auto 14px; }
         .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .sheet-box-note { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--sub); background: var(--card-alt); border: 2px solid var(--border); border-radius: 10px; padding: 8px 10px; margin: -4px 0 14px; line-height: 1.4; }
+        .sheet-box-note svg { flex-shrink: 0; }
         .sheet-title { font-size: 16px; font-weight: 800; margin: 0; }
         .sheet-loading { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 30px 0; color: var(--faint); font-size: 13px; }
         .sheet-loading .spin { animation: spin 1s linear infinite; }
@@ -5845,6 +5847,7 @@ export default function RopelinApp() {
               <p className="sheet-title">Elige transportista</p>
               <button className="close-btn" onClick={() => setRatePicker(null)} disabled={ratePicker.purchasing}><X size={14} /></button>
             </div>
+            <p className="sheet-box-note"><Package size={12} /> Precios calculados para una caja de hasta 20×15×8cm y 0,5kg. Si tu artículo es más grande, el precio real puede variar.</p>
 
             {ratePicker.loading && (
               <div className="sheet-loading">
