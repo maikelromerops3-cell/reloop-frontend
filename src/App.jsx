@@ -463,9 +463,10 @@ export default function RopelinApp() {
     return () => window.removeEventListener("resize", updateCols);
   }, []);
   const [username, setUsername] = useState(getUsername());
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   useEffect(() => {
-    fetchPublicSettings().then(setPlatformSettings).catch(() => {});
+    fetchPublicSettings().then(setPlatformSettings).catch(() => {}).finally(() => setSettingsLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -2087,6 +2088,18 @@ export default function RopelinApp() {
             <button className="submit-btn" onClick={() => navigate("/")}>Ir a Ropelin</button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (!settingsLoaded) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#FFF8EC", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: "50%", border: "3px solid #1A1A1A22",
+          borderTopColor: "#FF4D8D", animation: "soon-spin 0.7s linear infinite",
+        }} />
+        <style>{`@keyframes soon-spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
