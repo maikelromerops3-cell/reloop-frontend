@@ -280,6 +280,8 @@ export default function RopelinApp() {
   const [showMaintenanceLogin, setShowMaintenanceLogin] = useState(false);
   const [maintenanceLoginEmail, setMaintenanceLoginEmail] = useState("");
   const [maintenanceLoginPassword, setMaintenanceLoginPassword] = useState("");
+  const [maintenanceLoginError, setMaintenanceLoginError] = useState(null);
+  const [newsletterError, setNewsletterError] = useState(null);
   const [cropperState, setCropperState] = useState(null); // { imageSrc, target, aspect, queue } | null
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -2121,24 +2123,28 @@ export default function RopelinApp() {
           {newsletterSubscribed ? (
             <p className="soon-success"><CheckCircle size={16} /> ¡Apuntado! Te avisaremos por email en cuanto abramos.</p>
           ) : (
-            <form
-              className="soon-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!/^\S+@\S+\.\S+$/.test(newsletterEmail)) { toast.error("Escribe un email válido"); return; }
-                subscribeNewsletter(newsletterEmail)
-                  .then(() => setNewsletterSubscribed(true))
-                  .catch((err) => toast.error(err.message));
-              }}
-            >
-              <input
-                type="email"
-                placeholder="tu@email.com"
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-              />
-              <button type="submit">Avísame</button>
-            </form>
+            <>
+              <form
+                className="soon-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setNewsletterError(null);
+                  if (!/^\S+@\S+\.\S+$/.test(newsletterEmail)) { setNewsletterError("Escribe un email válido"); return; }
+                  subscribeNewsletter(newsletterEmail)
+                    .then(() => setNewsletterSubscribed(true))
+                    .catch((err) => setNewsletterError(err.message || "No se pudo apuntar"));
+                }}
+              >
+                <input
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                />
+                <button type="submit">Avísame</button>
+              </form>
+              {newsletterError && <p style={{ color: "#FF4D8D", fontSize: 12.5, fontWeight: 700, marginTop: 10 }}>{newsletterError}</p>}
+            </>
           )}
         </div>
 
@@ -2164,9 +2170,10 @@ export default function RopelinApp() {
               className="soon-login-form"
               onSubmit={(e) => {
                 e.preventDefault();
+                setMaintenanceLoginError(null);
                 apiLogin(maintenanceLoginEmail, maintenanceLoginPassword)
                   .then(() => window.location.reload())
-                  .catch((err) => toast.error(err.message));
+                  .catch((err) => setMaintenanceLoginError(err.message || "No se pudo iniciar sesión"));
               }}
             >
               <input
@@ -2181,6 +2188,7 @@ export default function RopelinApp() {
                 value={maintenanceLoginPassword}
                 onChange={(e) => setMaintenanceLoginPassword(e.target.value)}
               />
+              {maintenanceLoginError && <p style={{ color: "#FF4D8D", fontSize: 12, fontWeight: 700, margin: "-2px 0 2px" }}>{maintenanceLoginError}</p>}
               <button type="submit">Entrar</button>
             </form>
           ) : (
