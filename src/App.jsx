@@ -281,6 +281,15 @@ export default function RopelinApp() {
   const [maintenanceLoginEmail, setMaintenanceLoginEmail] = useState("");
   const [maintenanceLoginPassword, setMaintenanceLoginPassword] = useState("");
   const [maintenanceLoginError, setMaintenanceLoginError] = useState(null);
+
+  async function handleMaintenanceGoogleCredential(response) {
+    try {
+      await loginWithGoogle(response.credential);
+      window.location.reload();
+    } catch (err) {
+      setMaintenanceLoginError(err.message?.includes("pattern") ? "No se pudo completar el inicio de sesión con Google." : err.message);
+    }
+  }
   const [newsletterError, setNewsletterError] = useState(null);
   const [cropperState, setCropperState] = useState(null); // { imageSrc, target, aspect, queue } | null
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -877,6 +886,18 @@ export default function RopelinApp() {
   const [supportMessage, setSupportMessage] = useState("");
   const [mySupportMessages, setMySupportMessages] = useState([]);
   const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo"), instagramUrl: "", tiktokUrl: "", facebookUrl: "", twitterUrl: "", updatesText: "", maintenanceMode: false });
+
+  useEffect(() => {
+    if (!(platformSettings.maintenanceMode && !isModerator)) return;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId || !window.google) return;
+    window.google.accounts.id.initialize({ client_id: clientId, callback: handleMaintenanceGoogleCredential, itp_support: true, ux_mode: "popup" });
+    const el = document.getElementById("google-signin-btn-maintenance");
+    if (el) {
+      el.innerHTML = "";
+      window.google.accounts.id.renderButton(el, { theme: "filled_black", size: "large", width: 280, text: "continue_with" });
+    }
+  }, [platformSettings.maintenanceMode, isModerator]);
   const footerEl = (
     <footer className="site-footer-rich">
       <div className="footer-inner">
@@ -2104,7 +2125,10 @@ export default function RopelinApp() {
           .soon-step-text { font-size: 13px; color: #5A5450; line-height: 1.5; margin: 0; }
           .soon-footer { text-align: center; padding: 24px; color: #8A7FA0; font-size: 12px; }
           .soon-admin-link { background: none; border: none; color: #8A7FA0; font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer; font-family: inherit; margin-top: 10px; }
-          .soon-login-form { display: flex; flex-direction: column; gap: 8px; max-width: 280px; margin: 14px auto 0; }
+          .soon-admin-title { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #8A7FA0; margin: 20px 0 0; }
+          .soon-google-btn { display: flex; justify-content: center; margin-top: 10px; }
+          .soon-or-divider { font-size: 11px; color: #8A7FA0; text-align: center; margin: 10px 0 0; }
+          .soon-login-form { display: flex; flex-direction: column; gap: 8px; max-width: 280px; margin: 10px auto 0; }
           .soon-login-form input { border: 2px solid #1A1A1A; border-radius: 10px; padding: 10px 12px; font-size: 16px; font-family: inherit; background: #fff; color: #1A1A1A; }
           .soon-login-form button { border: 2px solid #1A1A1A; background: #1A1A1A; color: #FFF8EC; border-radius: 10px; padding: 10px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; }
           @media (max-width: 480px) { .soon-title { font-size: 27px; } .soon-form { flex-direction: column; } .soon-form input, .soon-form button { width: 100%; } }
@@ -2165,35 +2189,34 @@ export default function RopelinApp() {
 
         <div className="soon-footer">
           <p style={{ margin: 0 }}>© Ropelin {new Date().getFullYear()}</p>
-          {showMaintenanceLogin ? (
-            <form
-              className="soon-login-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setMaintenanceLoginError(null);
-                apiLogin(maintenanceLoginEmail, maintenanceLoginPassword)
-                  .then(() => window.location.reload())
-                  .catch((err) => setMaintenanceLoginError(err.message || "No se pudo iniciar sesión"));
-              }}
-            >
-              <input
-                type="email"
-                placeholder="Tu email de admin"
-                value={maintenanceLoginEmail}
-                onChange={(e) => setMaintenanceLoginEmail(e.target.value)}
-              />
-              <input
-                type="password"
-                placeholder="Contraseña"
-                value={maintenanceLoginPassword}
-                onChange={(e) => setMaintenanceLoginPassword(e.target.value)}
-              />
-              {maintenanceLoginError && <p style={{ color: "#FF4D8D", fontSize: 12, fontWeight: 700, margin: "-2px 0 2px" }}>{maintenanceLoginError}</p>}
-              <button type="submit">Entrar</button>
-            </form>
-          ) : (
-            <button className="soon-admin-link" onClick={() => setShowMaintenanceLogin(true)}>¿Eres admin? Inicia sesión</button>
-          )}
+          <p className="soon-admin-title">Acceso de administrador</p>
+          <div id="google-signin-btn-maintenance" className="soon-google-btn"></div>
+          <p className="soon-or-divider">o con tu email</p>
+          <form
+            className="soon-login-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setMaintenanceLoginError(null);
+              apiLogin(maintenanceLoginEmail, maintenanceLoginPassword)
+                .then(() => window.location.reload())
+                .catch((err) => setMaintenanceLoginError(err.message || "No se pudo iniciar sesión"));
+            }}
+          >
+            <input
+              type="email"
+              placeholder="Tu email de admin"
+              value={maintenanceLoginEmail}
+              onChange={(e) => setMaintenanceLoginEmail(e.target.value)}
+            />
+            <input
+              type="password"
+              placeholder="Contraseña"
+              value={maintenanceLoginPassword}
+              onChange={(e) => setMaintenanceLoginPassword(e.target.value)}
+            />
+            {maintenanceLoginError && <p style={{ color: "#FF4D8D", fontSize: 12, fontWeight: 700, margin: "-2px 0 2px" }}>{maintenanceLoginError}</p>}
+            <button type="submit">Entrar</button>
+          </form>
         </div>
       </div>
     );
@@ -2216,19 +2239,23 @@ export default function RopelinApp() {
       <Toaster
         position="bottom-center"
         toastOptions={{
-          style: { background: "#1A1A1E", color: "#F2F2F0", border: "1px solid #29292f", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: "13px" },
-          success: { iconTheme: { primary: "#7FD8D0", secondary: "#1A1A1E" } },
-          error: { iconTheme: { primary: "#FF4D8D", secondary: "#1A1A1E" } },
+          style: theme === "light"
+            ? { background: "#FFFFFF", color: "#1A1A1A", border: "2px solid #1A1A1A", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: "13px", fontWeight: 600 }
+            : { background: "#1A1A1E", color: "#F2F2F0", border: "1px solid #29292f", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: "13px" },
+          success: { iconTheme: { primary: "#7FD8D0", secondary: theme === "light" ? "#1A1A1A" : "#1A1A1E" } },
+          error: { iconTheme: { primary: "#FF4D8D", secondary: theme === "light" ? "#1A1A1A" : "#1A1A1E" } },
         }}
       />
       <style>{`
         :root {
           --bg: #1C1620; --bg-translucent: #1C1620ee; --card: #26202B; --card-alt: #221C26; --surface: #322A38; --surface2: #2C2530;
           --border: #3D3542; --input-border: #4A414F; --text: #FFF8EC; --body: #E4D9EA; --sub: #B8A9C9; --faint: #8A7FA0;
+          --shimmer-highlight: #423851;
         }
         [data-theme="light"] {
           --bg: #FFF8EC; --bg-translucent: #FFF8ECee; --card: #FFFFFF; --card-alt: #FFF3D6; --surface: #F5EFE0; --surface2: #FFF3D6;
           --border: #1A1A1A; --input-border: #1A1A1A; --text: #1A1A1A; --body: #2E2A22; --sub: #8A7FA0; --faint: #B8A9C9;
+          --shimmer-highlight: #FFFFFF;
         }
         * { box-sizing: border-box; }
         html, body { overflow-x: hidden; margin: 0; background: var(--bg); }
@@ -2682,10 +2709,10 @@ export default function RopelinApp() {
         .own-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; }
         .own-actions button { border: none; background: #00000088; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        .skeleton-card { background: var(--card); border-radius: 18px; overflow: hidden; border: 1px solid var(--border); padding-bottom: 12px; }
+        .skeleton-card { background: var(--card); border-radius: 18px; overflow: hidden; border: 2px solid var(--border); padding-bottom: 12px; }
         .skeleton-media { height: 150px; }
         .skeleton-line { height: 10px; border-radius: 5px; margin: 10px 14px 0; }
-        .shimmer { background: linear-gradient(100deg, var(--surface2) 30%, #2A2A30 50%, var(--surface2) 70%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+        .shimmer { background: linear-gradient(100deg, var(--surface2) 30%, var(--shimmer-highlight) 50%, var(--surface2) 70%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
         @keyframes shimmer { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
 
         .load-more-row { display: flex; justify-content: center; padding: 24px 0 8px; }
