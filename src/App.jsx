@@ -277,6 +277,9 @@ export default function RopelinApp() {
   const [cookieChoice, setCookieChoice] = useState(() => localStorage.getItem("reloop_cookie_consent") || null);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+  const [showMaintenanceLogin, setShowMaintenanceLogin] = useState(false);
+  const [maintenanceLoginEmail, setMaintenanceLoginEmail] = useState("");
+  const [maintenanceLoginPassword, setMaintenanceLoginPassword] = useState("");
   const [cropperState, setCropperState] = useState(null); // { imageSrc, target, aspect, queue } | null
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -2065,29 +2068,61 @@ export default function RopelinApp() {
   }
 
   if (platformSettings.maintenanceMode && !isModerator) {
+    const comingSoonSteps = [
+      { color: "#FF4D8D", title: "Encuentra o publica una prenda", text: "Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio." },
+      { color: "#B49CE8", title: "Habla, oferta o compra directamente", text: "Pregunta al vendedor, haz una oferta más baja, o compra al precio marcado. El pago se hace dentro de Ropelin con Stripe — nunca por fuera, para que quede constancia de todo." },
+      { color: "#7FD8D0", title: "El vendedor envía o quedáis en persona", text: "Tras el pago, el vendedor genera una etiqueta de envío con un par de clics, o podéis quedar en persona si os viene mejor." },
+      { color: "#FFC24D", title: "Confirmas que lo has recibido", text: "En cuanto te llegue, confirmas la recepción desde tu perfil — así queda cerrado el pedido para las dos partes." },
+      { color: "#FF8A4D", title: "Valorad la compra", text: "Al confirmar la entrega, comprador y vendedor podéis valoraros mutuamente — así se construye la confianza de la comunidad." },
+    ];
+
     return (
-      <div className="maintenance-page">
+      <div className="soon-page">
         <style>{`
-          .maintenance-page { min-height: 100vh; background: #FFF8EC; display: flex; align-items: center; justify-content: center; padding: 24px; font-family: Arial, Helvetica, sans-serif; }
-          .maintenance-card { max-width: 380px; text-align: center; background: #fff; border: 2.5px solid #1A1A1A; border-radius: 20px; padding: 32px 28px; }
-          .maintenance-logo { width: 64px; height: 64px; border-radius: 18px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); border: 3px solid #1A1A1A; color: #1A1A1E; font-weight: 900; font-size: 32px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
-          .maintenance-title { font-size: 20px; font-weight: 900; color: #1A1A1A; margin: 0 0 8px; }
-          .maintenance-text { font-size: 13.5px; color: #5A5450; line-height: 1.5; margin: 0 0 22px; }
-          .maintenance-form { display: flex; flex-direction: column; gap: 10px; }
-          .maintenance-form input { border: 2px solid #1A1A1A; border-radius: 12px; padding: 12px 14px; font-size: 16px; font-family: inherit; background: #FFF8EC; color: #1A1A1A; }
-          .maintenance-form input:focus { outline: none; border-color: #FF4D8D; }
-          .maintenance-form .submit-btn { border: 2px solid #1A1A1A; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #1A1A1A; border-radius: 12px; padding: 12px; font-weight: 900; font-size: 13.5px; cursor: pointer; font-family: inherit; }
-          .maintenance-success { display: flex; align-items: center; justify-content: center; gap: 8px; color: #04342C; background: #7FD8D0; border: 2px solid #1A1A1A; border-radius: 12px; padding: 12px; font-weight: 800; font-size: 13.5px; margin: 0; }
+          .soon-page { min-height: 100vh; background: #FFF8EC; font-family: Arial, Helvetica, sans-serif; color: #1A1A1A; }
+          .soon-header { display: flex; align-items: center; gap: 10px; padding: 22px 24px; max-width: 720px; margin: 0 auto; }
+          .soon-logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); border: 2px solid #1A1A1A; color: #1A1A1E; font-weight: 900; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+          .soon-header-name { font-size: 18px; font-weight: 900; margin: 0; }
+          .soon-hero { max-width: 720px; margin: 0 auto; padding: 20px 24px 56px; text-align: center; }
+          .soon-badge { display: inline-block; background: #1A1A1A; color: #FFF8EC; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 16px; border-radius: 999px; margin-bottom: 20px; }
+          .soon-title { font-size: 34px; font-weight: 900; line-height: 1.15; margin: 0 0 14px; }
+          .soon-title .accent { background: linear-gradient(135deg, #FF4D8D, #B49CE8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+          .soon-subtitle { font-size: 15px; color: #5A5450; line-height: 1.55; max-width: 480px; margin: 0 auto 28px; }
+          .soon-form { display: flex; gap: 10px; max-width: 420px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
+          .soon-form input { flex: 1; min-width: 220px; border: 2px solid #1A1A1A; border-radius: 12px; padding: 13px 16px; font-size: 16px; font-family: inherit; background: #fff; color: #1A1A1A; }
+          .soon-form input:focus { outline: none; border-color: #FF4D8D; }
+          .soon-form button { border: 2px solid #1A1A1A; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #1A1A1A; border-radius: 12px; padding: 13px 22px; font-weight: 900; font-size: 13.5px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+          .soon-success { display: inline-flex; align-items: center; gap: 8px; color: #04342C; background: #7FD8D0; border: 2px solid #1A1A1A; border-radius: 12px; padding: 13px 20px; font-weight: 800; font-size: 13.5px; }
+          .soon-section { max-width: 720px; margin: 0 auto; padding: 0 24px 56px; }
+          .soon-section-title { font-size: 22px; font-weight: 900; text-align: center; margin: 0 0 28px; }
+          .soon-steps { display: flex; flex-direction: column; gap: 12px; }
+          .soon-step-card { display: flex; align-items: flex-start; gap: 14px; background: #fff; border: 2.5px solid #1A1A1A; border-radius: 16px; padding: 16px 18px; }
+          .soon-step-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: #1A1A1A; border: 2px solid #1A1A1A; flex-shrink: 0; }
+          .soon-step-title { font-size: 14px; font-weight: 800; margin: 0 0 4px; }
+          .soon-step-text { font-size: 13px; color: #5A5450; line-height: 1.5; margin: 0; }
+          .soon-footer { text-align: center; padding: 24px; color: #8A7FA0; font-size: 12px; }
+          .soon-admin-link { background: none; border: none; color: #8A7FA0; font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer; font-family: inherit; margin-top: 10px; }
+          .soon-login-form { display: flex; flex-direction: column; gap: 8px; max-width: 280px; margin: 14px auto 0; }
+          .soon-login-form input { border: 2px solid #1A1A1A; border-radius: 10px; padding: 10px 12px; font-size: 16px; font-family: inherit; background: #fff; color: #1A1A1A; }
+          .soon-login-form button { border: 2px solid #1A1A1A; background: #1A1A1A; color: #FFF8EC; border-radius: 10px; padding: 10px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; }
+          @media (max-width: 480px) { .soon-title { font-size: 27px; } .soon-form { flex-direction: column; } .soon-form input, .soon-form button { width: 100%; } }
         `}</style>
-        <div className="maintenance-card">
-          <div className="maintenance-logo">R</div>
-          <p className="maintenance-title">Volvemos enseguida</p>
-          <p className="maintenance-text">Estamos haciendo mejoras en Ropelin. Apúntate a la lista de espera y te avisamos en cuanto volvamos a estar disponibles.</p>
+
+        <div className="soon-header">
+          <div className="soon-logo">R</div>
+          <p className="soon-header-name">Ropelin</p>
+        </div>
+
+        <div className="soon-hero">
+          <span className="soon-badge">Próximamente</span>
+          <p className="soon-title">Lo que ya no usas,<br /><span className="accent">alguien lo está buscando.</span></p>
+          <p className="soon-subtitle">Ropelin es el sitio para comprar y vender de todo, de segunda mano: ropa, electrónica, hogar y mucho más. Estamos terminando los últimos detalles — apúntate y te avisamos en cuanto abramos.</p>
+
           {newsletterSubscribed ? (
-            <p className="maintenance-success"><CheckCircle size={16} /> ¡Apuntado! Te avisaremos por email.</p>
+            <p className="soon-success"><CheckCircle size={16} /> ¡Apuntado! Te avisaremos por email en cuanto abramos.</p>
           ) : (
             <form
-              className="maintenance-form"
+              className="soon-form"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!/^\S+@\S+\.\S+$/.test(newsletterEmail)) { toast.error("Escribe un email válido"); return; }
@@ -2102,8 +2137,54 @@ export default function RopelinApp() {
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
               />
-              <button type="submit" className="submit-btn">Apuntarme a la lista de espera</button>
+              <button type="submit">Avísame</button>
             </form>
+          )}
+        </div>
+
+        <div className="soon-section">
+          <p className="soon-section-title">Así funcionará</p>
+          <div className="soon-steps">
+            {comingSoonSteps.map((step, i) => (
+              <div className="soon-step-card" key={i}>
+                <span className="soon-step-num" style={{ background: step.color }}>{i + 1}</span>
+                <div>
+                  <p className="soon-step-title">{step.title}</p>
+                  <p className="soon-step-text">{step.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="soon-footer">
+          <p style={{ margin: 0 }}>© Ropelin {new Date().getFullYear()}</p>
+          {showMaintenanceLogin ? (
+            <form
+              className="soon-login-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                apiLogin(maintenanceLoginEmail, maintenanceLoginPassword)
+                  .then(() => window.location.reload())
+                  .catch((err) => toast.error(err.message));
+              }}
+            >
+              <input
+                type="email"
+                placeholder="Tu email de admin"
+                value={maintenanceLoginEmail}
+                onChange={(e) => setMaintenanceLoginEmail(e.target.value)}
+              />
+              <input
+                type="password"
+                placeholder="Contraseña"
+                value={maintenanceLoginPassword}
+                onChange={(e) => setMaintenanceLoginPassword(e.target.value)}
+              />
+              <button type="submit">Entrar</button>
+            </form>
+          ) : (
+            <button className="soon-admin-link" onClick={() => setShowMaintenanceLogin(true)}>¿Eres admin? Inicia sesión</button>
           )}
         </div>
       </div>
@@ -2146,7 +2227,7 @@ export default function RopelinApp() {
         .app { min-height: 100vh; max-width: 100vw; overflow-x: hidden; background: var(--bg); color: var(--text); font-family: 'Helvetica Neue', Arial, sans-serif; }
         header.top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; padding: 16px 20px; position: sticky; top: 0; background: var(--bg-translucent); backdrop-filter: blur(6px); z-index: 5; }
         .brand { display: flex; align-items: center; gap: 8px; }
-        .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #FF4D8D, #8C7CFF); display: flex; align-items: center; justify-content: center; }
+        .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); border: 2px solid #1A1A1A; display: flex; align-items: center; justify-content: center; }
         .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
         .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
         .mobile-bottom-nav { display: none; }
@@ -2806,27 +2887,27 @@ export default function RopelinApp() {
           .newsletter-form input { flex: 1; min-width: 0; width: auto; }
         }
 
-        .site-footer-rich { background: var(--card-alt); border-top: 1px solid var(--border); padding: 48px 40px 100px; }
+        .site-footer-rich { background: #FFF3D6; border-top: 3px solid var(--border); padding: 48px 40px 100px; }
         .footer-inner { max-width: 1100px; margin: 0 auto; }
-        .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 34px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
-        .footer-brand-line { font-size: 12px; letter-spacing: 1.5px; color: var(--body); text-transform: uppercase; margin: 0; font-weight: 700; }
-        .footer-social-row { display: flex; align-items: center; gap: 16px; }
-        .footer-social-label { font-size: 11px; letter-spacing: 1px; color: var(--faint); text-transform: uppercase; }
-        .footer-social-row a { color: var(--sub); display: flex; width: 30px; height: 30px; border-radius: 50%; background: var(--surface2); align-items: center; justify-content: center; transition: color .15s ease, background .15s ease; }
-        .footer-social-row a:hover { color: var(--text); background: var(--border); }
+        .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 34px; padding-bottom: 24px; border-bottom: 2.5px solid var(--border); }
+        .footer-brand-line { font-size: 13px; letter-spacing: 1.5px; color: var(--text); text-transform: uppercase; margin: 0; font-weight: 900; }
+        .footer-social-row { display: flex; align-items: center; gap: 10px; }
+        .footer-social-label { font-size: 11px; letter-spacing: 1px; color: var(--sub); text-transform: uppercase; font-weight: 800; }
+        .footer-social-row a { color: var(--text); display: flex; width: 34px; height: 34px; border-radius: 50%; background: var(--card); border: 2px solid var(--border); align-items: center; justify-content: center; transition: background .15s ease; }
+        .footer-social-row a:hover { background: #FF4D8D; color: #1A1A1A; }
         .footer-cols { display: flex; gap: 56px; flex-wrap: wrap; margin-bottom: 34px; }
         .footer-col { display: flex; flex-direction: column; gap: 12px; }
-        .footer-col-title { font-size: 11px; letter-spacing: 1.2px; color: var(--faint); text-transform: uppercase; margin: 0 0 4px; font-weight: 700; }
-        .footer-col button { background: none; border: none; color: var(--body); font-size: 13.5px; cursor: pointer; font-family: inherit; text-align: left; padding: 0; transition: color .15s ease; }
-        .footer-col button:hover { color: #FF8A8F; }
-        .footer-bottom-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 22px; border-top: 1px solid var(--border); color: var(--faint); font-size: 11.5px; }
-        .footer-bottom-bar button { background: none; border: none; color: var(--faint); font-size: 11.5px; cursor: pointer; font-family: inherit; text-decoration: none; }
+        .footer-col-title { font-size: 11px; letter-spacing: 1.2px; color: #FF4D8D; text-transform: uppercase; margin: 0 0 4px; font-weight: 900; }
+        .footer-col button { background: none; border: none; color: var(--body); font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; text-align: left; padding: 0; transition: color .15s ease; }
+        .footer-col button:hover { color: #FF4D8D; }
+        .footer-bottom-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 22px; border-top: 2.5px solid var(--border); color: var(--sub); font-size: 11.5px; font-weight: 600; }
+        .footer-bottom-bar button { background: none; border: none; color: var(--sub); font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; text-decoration: none; }
         .footer-bottom-bar button:hover { color: var(--text); text-decoration: underline; }
-        .footer-link-accent { color: #FF4D8D !important; font-weight: 600; }
-        .footer-link-plain { color: var(--body); font-size: 13.5px; text-decoration: none; }
+        .footer-link-accent { color: #FF4D8D !important; font-weight: 800; }
+        .footer-link-plain { color: var(--body); font-size: 13.5px; font-weight: 600; text-decoration: none; }
         .footer-link-plain:hover { color: var(--text); }
-        .footer-trust-badge { display: flex; align-items: center; gap: 5px; background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; margin-left: auto; font-size: 11px; }
-        .footer-trust-badge strong { color: #635BFF; font-weight: 800; }
+        .footer-trust-badge { display: flex; align-items: center; gap: 5px; background: #7FD8D0; color: #04342C; border: 2px solid var(--border); border-radius: 999px; padding: 5px 12px; margin-left: auto; font-size: 11px; font-weight: 800; }
+        .footer-trust-badge strong { color: #04342C; font-weight: 900; }
         @media (max-width: 640px) { .footer-trust-badge { margin-left: 0; } }
         @media (max-width: 640px) {
           .site-footer-rich { padding: 36px 20px 100px; }
@@ -2979,7 +3060,10 @@ export default function RopelinApp() {
       <header className="top">
         <div className="brand" onClick={goHome} style={{ cursor: "pointer" }}>
           <div className="brand-mark">
-            <span style={{ color: "#1A1A1E", fontWeight: 900, fontSize: 15, fontFamily: "Arial, Helvetica, sans-serif", lineHeight: 1 }}>R</span>
+            <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="82.5" cy="17.5" r="5.5" fill="#1A1A1E" />
+              <text x="47" y="72" fontFamily="Poppins, Arial, sans-serif" fontSize="62" fontWeight="700" fill="#1A1A1E" textAnchor="middle">R</text>
+            </svg>
           </div>
           <h1>Ropelin</h1>
         </div>
@@ -4789,7 +4873,12 @@ export default function RopelinApp() {
             <button className="close-btn" onClick={() => setShowAuth(false)}><X size={14} /></button>
 
             <div className="auth-brand">
-              <div className="brand-mark auth-mark"><Zap size={18} color="#121214" /></div>
+              <div className="brand-mark auth-mark">
+                <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="82.5" cy="17.5" r="5.5" fill="#1A1A1E" />
+                  <text x="47" y="72" fontFamily="Poppins, Arial, sans-serif" fontSize="62" fontWeight="700" fill="#1A1A1E" textAnchor="middle">R</text>
+                </svg>
+              </div>
               <p className="auth-title">{authMode === "login" ? "Bienvenido de vuelta" : "Únete a Ropelin"}</p>
               <p className="auth-subtitle">{authMode === "login" ? "Entra para seguir comprando y vendiendo" : "Crea tu cuenta en unos segundos"}</p>
             </div>
