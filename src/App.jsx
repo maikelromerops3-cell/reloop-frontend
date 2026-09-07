@@ -278,6 +278,7 @@ export default function RopelinApp() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
   const [showMaintenanceLogin, setShowMaintenanceLogin] = useState(false);
+  const [secretTapCount, setSecretTapCount] = useState(0);
   const [maintenanceLoginEmail, setMaintenanceLoginEmail] = useState("");
   const [maintenanceLoginPassword, setMaintenanceLoginPassword] = useState("");
   const [maintenanceLoginError, setMaintenanceLoginError] = useState(null);
@@ -888,7 +889,7 @@ export default function RopelinApp() {
   const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo"), instagramUrl: "", tiktokUrl: "", facebookUrl: "", twitterUrl: "", updatesText: "", maintenanceMode: false });
 
   useEffect(() => {
-    if (!(platformSettings.maintenanceMode && !isModerator)) return;
+    if (!(platformSettings.maintenanceMode && !isModerator && showMaintenanceLogin)) return;
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId || !window.google) return;
     window.google.accounts.id.initialize({ client_id: clientId, callback: handleMaintenanceGoogleCredential, itp_support: true, ux_mode: "popup" });
@@ -897,7 +898,7 @@ export default function RopelinApp() {
       el.innerHTML = "";
       window.google.accounts.id.renderButton(el, { theme: "filled_black", size: "large", width: 280, text: "continue_with" });
     }
-  }, [platformSettings.maintenanceMode, isModerator]);
+  }, [platformSettings.maintenanceMode, isModerator, showMaintenanceLogin]);
   const footerEl = (
     <footer className="site-footer-rich">
       <div className="footer-inner">
@@ -2188,35 +2189,48 @@ export default function RopelinApp() {
         </div>
 
         <div className="soon-footer">
-          <p style={{ margin: 0 }}>© Ropelin {new Date().getFullYear()}</p>
-          <p className="soon-admin-title">Acceso de administrador</p>
-          <div id="google-signin-btn-maintenance" className="soon-google-btn"></div>
-          <p className="soon-or-divider">o con tu email</p>
-          <form
-            className="soon-login-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setMaintenanceLoginError(null);
-              apiLogin(maintenanceLoginEmail, maintenanceLoginPassword)
-                .then(() => window.location.reload())
-                .catch((err) => setMaintenanceLoginError(err.message || "No se pudo iniciar sesión"));
+          <p
+            style={{ margin: 0, cursor: "default", userSelect: "none" }}
+            onClick={() => {
+              const next = secretTapCount + 1;
+              setSecretTapCount(next);
+              if (next >= 5) setShowMaintenanceLogin(true);
             }}
           >
-            <input
-              type="email"
-              placeholder="Tu email de admin"
-              value={maintenanceLoginEmail}
-              onChange={(e) => setMaintenanceLoginEmail(e.target.value)}
-            />
-            <input
-              type="password"
-              placeholder="Contraseña"
-              value={maintenanceLoginPassword}
-              onChange={(e) => setMaintenanceLoginPassword(e.target.value)}
-            />
-            {maintenanceLoginError && <p style={{ color: "#FF4D8D", fontSize: 12, fontWeight: 700, margin: "-2px 0 2px" }}>{maintenanceLoginError}</p>}
-            <button type="submit">Entrar</button>
-          </form>
+            © Ropelin {new Date().getFullYear()}
+          </p>
+          {showMaintenanceLogin && (
+            <>
+              <p className="soon-admin-title">Acceso de administrador</p>
+              <div id="google-signin-btn-maintenance" className="soon-google-btn"></div>
+              <p className="soon-or-divider">o con tu email</p>
+              <form
+                className="soon-login-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setMaintenanceLoginError(null);
+                  apiLogin(maintenanceLoginEmail, maintenanceLoginPassword)
+                    .then(() => window.location.reload())
+                    .catch((err) => setMaintenanceLoginError(err.message || "No se pudo iniciar sesión"));
+                }}
+              >
+                <input
+                  type="email"
+                  placeholder="Tu email de admin"
+                  value={maintenanceLoginEmail}
+                  onChange={(e) => setMaintenanceLoginEmail(e.target.value)}
+                />
+                <input
+                  type="password"
+                  placeholder="Contraseña"
+                  value={maintenanceLoginPassword}
+                  onChange={(e) => setMaintenanceLoginPassword(e.target.value)}
+                />
+                {maintenanceLoginError && <p style={{ color: "#FF4D8D", fontSize: 12, fontWeight: 700, margin: "-2px 0 2px" }}>{maintenanceLoginError}</p>}
+                <button type="submit">Entrar</button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     );
