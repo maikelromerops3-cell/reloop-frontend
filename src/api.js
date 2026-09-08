@@ -317,11 +317,14 @@ export async function fetchStripeStatus() {
 
 // --- Checkout de compra ---
 
-export async function startCheckout(itemId) {
+export async function startCheckout(itemId, servicePoint) {
   const res = await fetch(`${API_URL}/stripe/checkout`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ itemId }),
+    body: JSON.stringify({
+      itemId,
+      ...(servicePoint ? { servicePointId: servicePoint.id, servicePointName: servicePoint.name, servicePointAddress: servicePoint.address } : {}),
+    }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo iniciar el pago");
   const data = await res.json();
