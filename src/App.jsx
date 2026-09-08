@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, FileDown, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight, Clock, Download } from "lucide-react";
 import {
   fetchItems, fetchItem, createItem, updateItem, deleteItem,
@@ -9,6 +11,7 @@ import {
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, fetchShippingRates, createShipmentLabel, downloadShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
+  searchServicePoints, setServicePoint,
   fetchProfile, updateMyLocation, updateShippingAddress, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
   fetchSavedSearches, saveSearch, deleteSavedSearch,
   fetchPushPublicKey, subscribeToPush, unsubscribeFromPush,
@@ -252,6 +255,8 @@ export default function RopelinApp() {
   const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState({ purchases: [], sales: [] });
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [pedidosTab, setPedidosTab] = useState("ventas"); // "ventas" | "compras"
+  const [pedidosSubTab, setPedidosSubTab] = useState("curso"); // "curso" | "completadas"
   const [reviewingTx, setReviewingTx] = useState(null); // transacción que se está valorando
   const [disputingTx, setDisputingTx] = useState(null);
   const [disputeReason, setDisputeReason] = useState("");
@@ -570,10 +575,11 @@ export default function RopelinApp() {
   }
 
   async function handleOpenRatePicker(transactionId) {
-    setRatePicker({ transactionId, rates: [], loading: true, purchasing: false, selectedRateId: null });
+    setRatePicker({ transactionId, rates: [], loading: true, purchasing: false, selectedRateId: null, buyerServicePoint: null });
     try {
-      const { rates } = await fetchShippingRates(transactionId);
-      setRatePicker({ transactionId, rates, loading: false, purchasing: false, selectedRateId: rates[0]?.rateId || null });
+      const { rates, buyerServicePoint } = await fetchShippingRates(transactionId);
+      const defaultRate = rates.find((r) => !r.requiresServicePoint || buyerServicePoint) || rates[0];
+      setRatePicker({ transactionId, rates, loading: false, purchasing: false, selectedRateId: defaultRate?.rateId || null, buyerServicePoint });
     } catch (err) {
       toast.error(err.message);
       setRatePicker(null);
@@ -583,9 +589,13 @@ export default function RopelinApp() {
   async function handleConfirmRate() {
     const chosen = ratePicker.rates.find((r) => r.rateId === ratePicker.selectedRateId);
     if (!chosen) return;
+    if (chosen.requiresServicePoint && !ratePicker.buyerServicePoint) {
+      toast.error("El comprador todavía no ha elegido su punto de recogida para esta opción");
+      return;
+    }
     setRatePicker((prev) => ({ ...prev, purchasing: true }));
     try {
-      await createShipmentLabel(ratePicker.transactionId, chosen.rateId, chosen.provider);
+      await createShipmentLabel(ratePicker.transactionId, chosen.rateId, chosen.provider, chosen.requiresServicePoint);
       toast.success("Etiqueta de envío generada");
       setRatePicker(null);
       loadOrders();
@@ -615,6 +625,110 @@ export default function RopelinApp() {
     }
   }
 
+  const [lockerPicker, setLockerPicker] = useState(null); // { transactionId, postalCode, city, points, loading, searched, center }
+  const lockerMapRef = useRef(null);
+  const lockerMapInstance = useRef(null);
+  const lockerMarkers = useRef([]);
+
+  function openLockerPicker(transactionId) {
+    setLockerPicker({ transactionId, postalCode: "", city: "", points: [], loading: false, searched: false, center: null });
+  }
+
+  async function handleSearchLockers() {
+    if (!lockerPicker.postalCode.trim() || !lockerPicker.city.trim()) {
+      toast.error("Escribe tu código postal y tu ciudad");
+      return;
+    }
+    setLockerPicker((prev) => ({ ...prev, loading: true }));
+    try {
+      const { points } = await searchServicePoints({ postalCode: lockerPicker.postalCode.trim(), city: lockerPicker.city.trim() });
+      const center = points[0] ? { lat: points[0].latitude, lng: points[0].longitude } : null;
+      setLockerPicker((prev) => ({ ...prev, points, loading: false, searched: true, center }));
+    } catch (err) {
+      toast.error(err.message);
+      setLockerPicker((prev) => ({ ...prev, loading: false, searched: true, points: [] }));
+    }
+  }
+
+  function handleUseMyLocation() {
+    if (!navigator.geolocation) { toast.error("Tu navegador no permite compartir la ubicación"); return; }
+    setLockerPicker((prev) => ({ ...prev, loading: true }));
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const { points } = await searchServicePoints({ latitude, longitude });
+          setLockerPicker((prev) => ({ ...prev, points, loading: false, searched: true, center: { lat: latitude, lng: longitude } }));
+        } catch (err) {
+          toast.error(err.message);
+          setLockerPicker((prev) => ({ ...prev, loading: false, searched: true, points: [] }));
+        }
+      },
+      () => {
+        toast.error("No se pudo obtener tu ubicación");
+        setLockerPicker((prev) => ({ ...prev, loading: false }));
+      }
+    );
+  }
+
+  async function handleChooseLocker(point) {
+    try {
+      await setServicePoint(lockerPicker.transactionId, point.id, point.name, point.address);
+      toast.success("Punto de recogida guardado");
+      setLockerPicker(null);
+      loadOrders();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  // Dibuja el mapa y los marcadores cada vez que cambian los resultados de la búsqueda de taquillas
+  useEffect(() => {
+    if (!lockerPicker || !lockerPicker.center || !lockerMapRef.current) return;
+
+    if (!lockerMapInstance.current) {
+      lockerMapInstance.current = L.map(lockerMapRef.current).setView([lockerPicker.center.lat, lockerPicker.center.lng], 14);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(lockerMapInstance.current);
+    } else {
+      lockerMapInstance.current.setView([lockerPicker.center.lat, lockerPicker.center.lng], 14);
+    }
+
+    lockerMarkers.current.forEach((m) => m.remove());
+    lockerMarkers.current = [];
+
+    const pinIcon = L.divIcon({
+      className: "locker-pin",
+      html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#FF4D8D,#FF8A4D);border:2.5px solid #1A1A1A;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;"><div style="transform:rotate(45deg);width:8px;height:8px;border-radius:50%;background:#1A1A1A;"></div></div>`,
+      iconSize: [30, 30],
+      iconAnchor: [15, 30],
+    });
+
+    lockerPicker.points.forEach((p) => {
+      if (p.latitude == null || p.longitude == null) return;
+      const marker = L.marker([p.latitude, p.longitude], { icon: pinIcon }).addTo(lockerMapInstance.current);
+      const popupEl = document.createElement("div");
+      popupEl.innerHTML = `<p style="font-weight:800;font-size:12.5px;margin:0 0 3px;">${p.name}</p><p style="font-size:11px;color:#5A5450;margin:0 0 8px;">${p.address}</p>`;
+      const btn = document.createElement("button");
+      btn.textContent = "Elegir este punto";
+      btn.style.cssText = "border:2px solid #1A1A1A;background:linear-gradient(135deg,#FF4D8D,#FF8A4D);color:#1A1A1A;border-radius:8px;padding:6px 12px;font-weight:800;font-size:11px;cursor:pointer;font-family:inherit;";
+      btn.onclick = () => handleChooseLocker(p);
+      popupEl.appendChild(btn);
+      marker.bindPopup(popupEl);
+      lockerMarkers.current.push(marker);
+    });
+  }, [lockerPicker?.center, lockerPicker?.points]);
+
+  // Limpia el mapa al cerrar el buscador de taquillas, para poder crear uno limpio la próxima vez
+  useEffect(() => {
+    if (!lockerPicker && lockerMapInstance.current) {
+      lockerMapInstance.current.remove();
+      lockerMapInstance.current = null;
+      lockerMarkers.current = [];
+    }
+  }, [lockerPicker]);
+
   function renderPurchaseCard(tx) {
     return (
       <div key={tx.id} className="order-card">
@@ -622,7 +736,7 @@ export default function RopelinApp() {
           <div className="order-thumb" style={{ backgroundImage: `url(${tx.item.images?.[0] || ""})` }} />
           <div className="order-top-info">
             <p className="order-title">{tx.item.title}</p>
-            <p className="order-price">{(Number(tx.amount) + Number(tx.shippingFee || 3.5)).toFixed(2)}€</p>
+            <p className="order-price">{(Number(tx.amount) + Number(tx.commission || 0) + Number(tx.shippingFee || 3.5)).toFixed(2)}€</p>
             <p className="order-seller">Vendedor: @{tx.seller.username}</p>
           </div>
         </div>
@@ -640,6 +754,13 @@ export default function RopelinApp() {
         {!tx.shipment && tx.status === "paid" && (
           <>
             <p className="order-hint">Esperando a que @{tx.seller.username} genere el envío, o quedad en persona</p>
+            {tx.buyerServicePointId ? (
+              <p className="order-hint">📍 Recogerás en: {tx.buyerServicePointName}</p>
+            ) : (
+              <button className="order-action-btn secondary" onClick={() => openLockerPicker(tx.id)}>
+                <MapPin size={13} /> Elegir punto de recogida InPost (opcional)
+              </button>
+            )}
             <button className="order-action-btn secondary" onClick={() => handleCompleteInPerson(tx.id)}>
               Ya lo he recibido en persona
             </button>
@@ -2372,6 +2493,12 @@ export default function RopelinApp() {
         .sheet-rate-card { display: flex; align-items: center; gap: 10px; width: 100%; background: var(--surface2); border: 2px solid var(--border); border-radius: 14px; padding: 12px 14px; cursor: pointer; font-family: inherit; color: var(--body); text-align: left; }
         .sheet-rate-card.selected { border-color: #FF4D8D; background: #FF4D8D14; }
         .sheet-rate-card:disabled { opacity: 0.5; cursor: default; }
+        .locker-search-row { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+        .locker-location-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border: 2px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 12px; padding: 11px; font-weight: 800; font-size: 12.5px; cursor: pointer; font-family: inherit; margin-bottom: 8px; }
+        .locker-location-btn:disabled { opacity: 0.5; cursor: default; }
+        .locker-or-divider { text-align: center; font-size: 11px; color: var(--faint); margin: 0 0 12px; }
+        .locker-map { width: 100%; height: 200px; border-radius: 14px; border: 2px solid var(--border); margin-bottom: 14px; overflow: hidden; }
+        .locker-map .leaflet-popup-content-wrapper { border-radius: 12px; border: 2px solid #1A1A1A; }
         .sheet-rate-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--sub); }
         .sheet-rate-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
         .sheet-rate-provider { font-size: 13px; font-weight: 800; text-transform: capitalize; }
@@ -2387,7 +2514,12 @@ export default function RopelinApp() {
         .settings-subheading { font-size: 13px; font-weight: 700; margin: 0 0 10px; color: var(--text); }
         .settings-menu-list { border-top: 1px solid var(--border); padding-top: 6px; }
         .stats-row { display: flex; gap: 10px; margin-bottom: 18px; }
-        .stat-box { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .stat-box { flex: 1; background: var(--bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .stat-box-clickable { font-family: inherit; cursor: pointer; transition: transform .1s ease, background .15s ease; }
+        .stat-box-clickable:hover { background: var(--card-alt); }
+        .stat-box-clickable:active { transform: scale(0.97); }
+        .stat-box strong { color: var(--text); }
+        .stat-box span { color: var(--sub); }
         .stat-box strong { display: block; font-size: 18px; }
         .stat-box span { font-size: 10px; color: var(--sub); text-transform: uppercase; letter-spacing: .5px; }
         .profile-tabs { margin-bottom: 16px; }
@@ -2729,10 +2861,12 @@ export default function RopelinApp() {
         .delete-confirm-actions .btn { flex: 1; }
         .delete-confirm-actions .danger-zone-btn { flex: 1; }
         .checkout-modal { max-width: 380px; }
-        .checkout-summary { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin: 16px 0; }
+        .checkout-summary { background: var(--bg); border: 2px solid var(--border); border-radius: 14px; padding: 12px 14px; margin: 16px 0; }
         .checkout-note { font-size: 11px; color: var(--faint); margin: 0; line-height: 1.4; }
         .checkout-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--sub); padding: 4px 0; }
-        .checkout-row.total { color: var(--text); font-weight: 700; font-size: 14px; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 10px; }
+        .checkout-row.total { color: var(--text); font-weight: 700; font-size: 14px; border-top: 2px solid var(--border); margin-top: 6px; padding-top: 10px; }
+        .checkout-row-commission { color: var(--faint); }
+        .checkout-row-commission em { font-style: normal; font-size: 10.5px; }
         .checkout-sub { font-size: 12px; color: var(--sub); text-align: center; font-weight: 400; }
         .own-card { position: relative; }
         .own-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; }
@@ -3071,6 +3205,9 @@ export default function RopelinApp() {
         .tabs { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 4px; margin-bottom: 24px; }
         .tab { flex: 1; border: none; background: transparent; color: var(--sub); padding: 11px; border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
         .tab.active { background: var(--text); color: var(--bg); }
+        .pedidos-subtabs { display: flex; gap: 8px; margin-bottom: 18px; }
+        .pedidos-subtab { border: 2px solid var(--border); background: var(--card); color: var(--sub); padding: 7px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .pedidos-subtab.active { background: #FF4D8D; color: #1A1A1A; border-color: var(--border); }
         .auth-modal label { margin: 18px 0 7px; }
         .auth-modal label:first-of-type { margin-top: 0; }
         .input-icon { display: flex; align-items: center; gap: 10px; border: 1px solid var(--input-border); border-radius: 13px; padding: 0 14px; background: var(--bg); transition: border-color 0.15s; }
@@ -3464,22 +3601,22 @@ export default function RopelinApp() {
               </div>
 
               <div className="stats-row">
-                <div className="stat-box">
+                <button className="stat-box stat-box-clickable" onClick={() => setProfileMenuView("venta")}>
                   <Tag size={13} color="#9A9AA3" />
                   <strong>{profileItems.length}</strong>
                   <span>En venta</span>
-                </div>
-                <div className="stat-box">
+                </button>
+                <button className="stat-box stat-box-clickable" onClick={() => setProfileMenuView("vendidos")}>
                   <CheckCircle size={13} color="#9A9AA3" />
                   <strong>{profileSold.length}</strong>
                   <span>Vendidos</span>
-                </div>
+                </button>
                 {isOwnProfile && (
-                  <div className="stat-box">
+                  <button className="stat-box stat-box-clickable" onClick={() => setProfileMenuView("favoritos")}>
                     <Heart size={13} color="#9A9AA3" />
                     <strong>{saved.size}</strong>
                     <span>Favoritos</span>
-                  </div>
+                  </button>
                 )}
               </div>
 
@@ -3833,30 +3970,38 @@ export default function RopelinApp() {
                         <p className="empty-tab">Todavía no tienes compras ni ventas.</p>
                       )}
 
-                      {!ordersLoading && orders.sales.length > 0 && (() => {
-                        const enCurso = orders.sales.filter((tx) => tx.status !== "completed");
-                        const completadas = orders.sales.filter((tx) => tx.status === "completed");
-                        return (
-                          <>
-                            <p className="profile-section-title">Ventas</p>
-                            <p className="orders-subheading">En curso {enCurso.length > 0 && `(${enCurso.length})`}</p>
-                            {enCurso.length > 0 ? enCurso.map((tx) => renderSaleCard(tx)) : <p className="empty-tab">No tienes ventas en curso.</p>}
-                            <p className="orders-subheading">Completadas {completadas.length > 0 && `(${completadas.length})`}</p>
-                            {completadas.length > 0 ? completadas.map((tx) => renderSaleCard(tx)) : <p className="empty-tab">Aún no has completado ninguna venta.</p>}
-                          </>
-                        );
-                      })()}
+                      {!ordersLoading && (orders.sales.length > 0 || orders.purchases.length > 0) && (() => {
+                        const isVentas = pedidosTab === "ventas";
+                        const source = isVentas ? orders.sales : orders.purchases;
+                        const enCurso = source.filter((tx) => tx.status !== "completed");
+                        const completadas = source.filter((tx) => tx.status === "completed");
+                        const shown = pedidosSubTab === "curso" ? enCurso : completadas;
+                        const renderCard = isVentas ? renderSaleCard : renderPurchaseCard;
 
-                      {!ordersLoading && orders.purchases.length > 0 && (() => {
-                        const enCurso = orders.purchases.filter((tx) => tx.status !== "completed");
-                        const finalizadas = orders.purchases.filter((tx) => tx.status === "completed");
                         return (
                           <>
-                            <p className="profile-section-title">Compras</p>
-                            <p className="orders-subheading">En curso {enCurso.length > 0 && `(${enCurso.length})`}</p>
-                            {enCurso.length > 0 ? enCurso.map((tx) => renderPurchaseCard(tx)) : <p className="empty-tab">No tienes compras en curso.</p>}
-                            <p className="orders-subheading">Finalizadas {finalizadas.length > 0 && `(${finalizadas.length})`}</p>
-                            {finalizadas.length > 0 ? finalizadas.map((tx) => renderPurchaseCard(tx)) : <p className="empty-tab">Aún no has finalizado ninguna compra.</p>}
+                            <div className="tabs">
+                              <button className={"tab" + (isVentas ? " active" : "")} onClick={() => { setPedidosTab("ventas"); setPedidosSubTab("curso"); }}>Ventas</button>
+                              <button className={"tab" + (!isVentas ? " active" : "")} onClick={() => { setPedidosTab("compras"); setPedidosSubTab("curso"); }}>Compras</button>
+                            </div>
+                            <div className="pedidos-subtabs">
+                              <button className={"pedidos-subtab" + (pedidosSubTab === "curso" ? " active" : "")} onClick={() => setPedidosSubTab("curso")}>
+                                En curso {enCurso.length > 0 && `(${enCurso.length})`}
+                              </button>
+                              <button className={"pedidos-subtab" + (pedidosSubTab === "completadas" ? " active" : "")} onClick={() => setPedidosSubTab("completadas")}>
+                                {isVentas ? "Completadas" : "Finalizadas"} {completadas.length > 0 && `(${completadas.length})`}
+                              </button>
+                            </div>
+
+                            {shown.length > 0 ? (
+                              shown.map((tx) => renderCard(tx))
+                            ) : (
+                              <p className="empty-tab">
+                                {pedidosSubTab === "curso"
+                                  ? `No tienes ${isVentas ? "ventas" : "compras"} en curso.`
+                                  : `Aún no has ${isVentas ? "completado ninguna venta" : "finalizado ninguna compra"}.`}
+                              </p>
+                            )}
                           </>
                         );
                       })()}
@@ -5291,14 +5436,19 @@ export default function RopelinApp() {
 
             <div className="checkout-summary">
               <div className="checkout-row"><span>Precio artículo</span><span>{Number(openItem.price).toFixed(2)}€</span></div>
+              <div className="checkout-row">
+                <span>Tarifa Ropelin*</span>
+                <span>{(Number(openItem.price) * (platformSettings.commissionPercent / 100)).toFixed(2)}€</span>
+              </div>
               <div className="checkout-row"><span>Envío</span><span>{platformSettings.shippingFee.toFixed(2)}€</span></div>
-              <div className="checkout-row total"><span>Total a pagar</span><span>{(Number(openItem.price) + platformSettings.shippingFee).toFixed(2)}€</span></div>
+              <div className="checkout-row total"><span>Total a pagar</span><span>{(Number(openItem.price) * (1 + platformSettings.commissionPercent / 100) + platformSettings.shippingFee).toFixed(2)}€</span></div>
             </div>
+            <p className="checkout-note">*Cubre la protección de tu compra: si el artículo no llega o no es como se describía, te ayudamos a resolverlo. El vendedor recibe el precio íntegro del artículo.</p>
             <p className="checkout-note">El envío se genera automáticamente al confirmar el pago. Pago seguro procesado por Stripe.</p>
 
             {checkoutError && <p style={{ color: "#FF4D8D", fontSize: 12, margin: "10px 0 0" }}>{checkoutError}</p>}
 
-            <button className="submit-btn" onClick={confirmCheckout}>Pagar {(Number(openItem.price) + platformSettings.shippingFee).toFixed(2)}€ con Stripe</button>
+            <button className="submit-btn" onClick={confirmCheckout}>Pagar {(Number(openItem.price) * (1 + platformSettings.commissionPercent / 100) + platformSettings.shippingFee).toFixed(2)}€ con Stripe</button>
           </div>
         </div>
       )}
@@ -5877,19 +6027,22 @@ export default function RopelinApp() {
               <div className="sheet-rate-list">
                 {ratePicker.rates.map((r) => {
                   const selected = ratePicker.selectedRateId === r.rateId;
+                  const blocked = r.requiresServicePoint && !ratePicker.buyerServicePoint;
                   return (
                     <button
                       key={r.rateId}
                       className={"sheet-rate-card" + (selected ? " selected" : "")}
-                      disabled={ratePicker.purchasing}
-                      onClick={() => setRatePicker((prev) => ({ ...prev, selectedRateId: r.rateId }))}
+                      disabled={ratePicker.purchasing || blocked}
+                      onClick={() => !blocked && setRatePicker((prev) => ({ ...prev, selectedRateId: r.rateId }))}
                     >
                       <span className="sheet-rate-icon"><Truck size={16} /></span>
                       <span className="sheet-rate-info">
                         <span className="sheet-rate-provider">{r.provider}</span>
                         <span className="sheet-rate-meta">
-                          {r.servicelevel ? `${r.servicelevel} · ` : ""}
-                          {r.estimatedDays != null ? `${r.estimatedDays} día${r.estimatedDays === 1 ? "" : "s"}` : "Plazo estimado no disponible"}
+                          {r.requiresServicePoint
+                            ? (ratePicker.buyerServicePoint ? `📍 ${ratePicker.buyerServicePoint.name}` : "El comprador debe elegir punto de recogida antes")
+                            : <>{r.servicelevel ? `${r.servicelevel} · ` : ""}{r.estimatedDays != null ? `${r.estimatedDays} día${r.estimatedDays === 1 ? "" : "s"}` : "Plazo estimado no disponible"}</>
+                          }
                         </span>
                       </span>
                       <span className="sheet-rate-price">{Number(r.amount).toFixed(2)}{r.currency === "EUR" ? "€" : ` ${r.currency}`}</span>
@@ -5904,6 +6057,64 @@ export default function RopelinApp() {
               <button className="btn primary sheet-confirm-btn" onClick={handleConfirmRate} disabled={!ratePicker.selectedRateId || ratePicker.purchasing}>
                 {ratePicker.purchasing ? "Generando etiqueta…" : "Generar etiqueta"}
               </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {lockerPicker && (
+        <div className="overlay sheet-overlay" onClick={() => setLockerPicker(null)}>
+          <div className="sheet-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <p className="sheet-title">Elige tu punto de recogida</p>
+              <button className="close-btn" onClick={() => setLockerPicker(null)}><X size={14} /></button>
+            </div>
+
+            <button className="locker-location-btn" onClick={handleUseMyLocation} disabled={lockerPicker.loading}>
+              <MapPin size={13} /> Usar mi ubicación actual
+            </button>
+            <p className="locker-or-divider">o busca por dirección</p>
+
+            <div className="locker-search-row">
+              <div className="input-icon" style={{ flex: 1, marginBottom: 0 }}>
+                <input placeholder="Código postal" value={lockerPicker.postalCode} onChange={(e) => setLockerPicker((prev) => ({ ...prev, postalCode: e.target.value }))} />
+              </div>
+              <div className="input-icon" style={{ flex: 1, marginBottom: 0 }}>
+                <input placeholder="Ciudad" value={lockerPicker.city} onChange={(e) => setLockerPicker((prev) => ({ ...prev, city: e.target.value }))} />
+              </div>
+              <button className="btn primary" onClick={handleSearchLockers} disabled={lockerPicker.loading}>
+                {lockerPicker.loading ? "..." : "Buscar"}
+              </button>
+            </div>
+
+            {lockerPicker.loading && (
+              <div className="sheet-loading">
+                <RefreshCw size={18} className="spin" />
+                <p>Buscando taquillas cercanas…</p>
+              </div>
+            )}
+
+            {!lockerPicker.loading && lockerPicker.searched && lockerPicker.points.length === 0 && (
+              <p className="order-hint" style={{ padding: "20px 0" }}>No se encontraron puntos de recogida cerca. Prueba con otra ubicación.</p>
+            )}
+
+            {!lockerPicker.loading && lockerPicker.center && lockerPicker.points.length > 0 && (
+              <div ref={lockerMapRef} className="locker-map" />
+            )}
+
+            {!lockerPicker.loading && lockerPicker.points.length > 0 && (
+              <div className="sheet-rate-list">
+                {lockerPicker.points.map((p) => (
+                  <button key={p.id} className="sheet-rate-card" onClick={() => handleChooseLocker(p)}>
+                    <span className="sheet-rate-icon"><MapPin size={16} /></span>
+                    <span className="sheet-rate-info">
+                      <span className="sheet-rate-provider">{p.name}</span>
+                      <span className="sheet-rate-meta">{p.address}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>

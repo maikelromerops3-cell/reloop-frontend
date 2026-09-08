@@ -353,13 +353,39 @@ export async function fetchShippingRates(transactionId) {
   return res.json(); // { rates: [{ rateId, provider, servicelevel, amount, currency, estimatedDays }] }
 }
 
-export async function createShipmentLabel(transactionId, rateId, provider) {
+export async function createShipmentLabel(transactionId, rateId, provider, requiresServicePoint) {
   const res = await fetch(`${API_URL}/shipments/${transactionId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ rateId, provider }),
+    body: JSON.stringify({ rateId, provider, requiresServicePoint }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo generar la etiqueta");
+  return res.json();
+}
+
+export async function searchServicePoints({ postalCode, city, latitude, longitude, carrier } = {}) {
+  const params = new URLSearchParams({ ...(carrier ? { carrier } : {}) });
+  if (latitude != null && longitude != null) {
+    params.set("latitude", latitude);
+    params.set("longitude", longitude);
+  } else {
+    params.set("postal_code", postalCode);
+    params.set("city", city);
+  }
+  const res = await fetch(`${API_URL}/shipments/service-points?${params.toString()}`, {
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron buscar puntos de recogida");
+  return res.json(); // { points: [{ id, name, carrier, address, latitude, longitude }] }
+}
+
+export async function setServicePoint(transactionId, servicePointId, servicePointName, servicePointAddress) {
+  const res = await fetch(`${API_URL}/shipments/${transactionId}/service-point`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ servicePointId, servicePointName, servicePointAddress }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar el punto de recogida");
   return res.json();
 }
 
