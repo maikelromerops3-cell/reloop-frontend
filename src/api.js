@@ -317,18 +317,30 @@ export async function fetchStripeStatus() {
 
 // --- Checkout de compra ---
 
-export async function startCheckout(itemId, servicePoint) {
+export async function startCheckout(itemId, { shippingRateId, shippingProvider, shippingAmount, servicePoint } = {}) {
   const res = await fetch(`${API_URL}/stripe/checkout`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({
       itemId,
+      shippingRateId,
+      shippingProvider,
+      shippingAmount,
       ...(servicePoint ? { servicePointId: servicePoint.id, servicePointName: servicePoint.name, servicePointAddress: servicePoint.address } : {}),
     }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo iniciar el pago");
   const data = await res.json();
   return data.url; // redirige al usuario a Stripe Checkout
+}
+
+export async function fetchShippingQuote(itemId, postalCode, city) {
+  const params = new URLSearchParams({ itemId, postalCode, city });
+  const res = await fetch(`${API_URL}/shipments/quote?${params.toString()}`, {
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron consultar las tarifas de envío");
+  return res.json(); // { rates: [...] }
 }
 
 export async function boostItem(itemId) {
@@ -356,11 +368,10 @@ export async function fetchShippingRates(transactionId) {
   return res.json(); // { rates: [{ rateId, provider, servicelevel, amount, currency, estimatedDays }] }
 }
 
-export async function createShipmentLabel(transactionId, rateId, provider, requiresServicePoint) {
+export async function createShipmentLabel(transactionId) {
   const res = await fetch(`${API_URL}/shipments/${transactionId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ rateId, provider, requiresServicePoint }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo generar la etiqueta");
   return res.json();

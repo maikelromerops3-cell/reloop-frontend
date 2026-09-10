@@ -10,8 +10,8 @@ import {
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
   fetchFavorites, addFavorite, removeFavorite, uploadImage,
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
-  fetchTransactions, fetchShippingRates, createShipmentLabel, downloadShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
-  searchServicePoints, setServicePoint,
+  fetchTransactions, createShipmentLabel, downloadShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
+  searchServicePoints, setServicePoint, fetchShippingQuote,
   fetchProfile, updateMyLocation, updateShippingAddress, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
   fetchSavedSearches, saveSearch, deleteSavedSearch,
   fetchPushPublicKey, subscribeToPush, unsubscribeFromPush,
@@ -227,7 +227,11 @@ export default function RopelinApp() {
   const [showChat, setShowChat] = useState(false);
   const [showLeague, setShowLeague] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [checkoutDelivery, setCheckoutDelivery] = useState("domicilio"); // "domicilio" | "inpost"
+  const [checkoutPostalCode, setCheckoutPostalCode] = useState("");
+  const [checkoutCity, setCheckoutCity] = useState("");
+  const [checkoutRates, setCheckoutRates] = useState([]);
+  const [checkoutRatesLoading, setCheckoutRatesLoading] = useState(false);
+  const [checkoutSelectedRateId, setCheckoutSelectedRateId] = useState(null);
   const [checkoutServicePoint, setCheckoutServicePoint] = useState(null); // { id, name, address }
   const [showNotifs, setShowNotifs] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
@@ -561,7 +565,6 @@ export default function RopelinApp() {
   // Ventas pagadas por el comprador a las que todavía no se les ha generado el envío
   const pendingShipmentsCount = orders.sales.filter((tx) => tx.status === "paid" && !tx.shipment).length;
 
-  const [ratePicker, setRatePicker] = useState(null); // { transactionId, rates, loading, purchasing, selectedRateId }
 
   async function handleShare(url, title) {
     if (navigator.share) {
@@ -576,34 +579,17 @@ export default function RopelinApp() {
     }
   }
 
-  async function handleOpenRatePicker(transactionId) {
-    setRatePicker({ transactionId, rates: [], loading: true, purchasing: false, selectedRateId: null, buyerServicePoint: null });
+  const [generatingLabelFor, setGeneratingLabelFor] = useState(null);
+  async function handleGenerateLabel(transactionId) {
+    setGeneratingLabelFor(transactionId);
     try {
-      const { rates, buyerServicePoint } = await fetchShippingRates(transactionId);
-      const defaultRate = rates.find((r) => !r.requiresServicePoint || buyerServicePoint) || rates[0];
-      setRatePicker({ transactionId, rates, loading: false, purchasing: false, selectedRateId: defaultRate?.rateId || null, buyerServicePoint });
-    } catch (err) {
-      toast.error(err.message);
-      setRatePicker(null);
-    }
-  }
-
-  async function handleConfirmRate() {
-    const chosen = ratePicker.rates.find((r) => r.rateId === ratePicker.selectedRateId);
-    if (!chosen) return;
-    setRatePicker((prev) => ({ ...prev, purchasing: true }));
-    try {
-      const result = await createShipmentLabel(ratePicker.transactionId, chosen.rateId, chosen.provider, chosen.requiresServicePoint);
-      if (result.pending) {
-        toast.success("Avisado al comprador para que elija su punto de recogida. La etiqueta se generará sola en cuanto lo haga.");
-      } else {
-        toast.success("Etiqueta de envío generada");
-      }
-      setRatePicker(null);
+      await createShipmentLabel(transactionId);
+      toast.success("Etiqueta de envío generada");
       loadOrders();
     } catch (err) {
       toast.error(err.message);
-      setRatePicker((prev) => ({ ...prev, purchasing: false }));
+    } finally {
+      setGeneratingLabelFor(null);
     }
   }
 
@@ -761,13 +747,11 @@ export default function RopelinApp() {
         {!tx.shipment && tx.status === "paid" && (
           <>
             <p className="order-hint">Esperando a que @{tx.seller.username} genere el envío, o quedad en persona</p>
-            {tx.buyerServicePointId ? (
-              <p className="order-hint">📍 Recogerás en: {tx.buyerServicePointName}</p>
-            ) : tx.pendingProvider ? (
-              <button className="order-action-btn" onClick={() => openLockerPicker(tx.id)}>
-                <MapPin size={13} /> @{tx.seller.username} va a enviarlo por {tx.pendingProvider} — elige tu punto de recogida
+            {tx.buyerServicePointId && (
+              <button className="order-action-btn secondary" onClick={() => openLockerPicker(tx.id)}>
+                <MapPin size={13} /> 📍 Recogerás en: {tx.buyerServicePointName} — cambiar
               </button>
-            ) : null}
+            )}
             <button className="order-action-btn secondary" onClick={() => handleCompleteInPerson(tx.id)}>
               Ya lo he recibido en persona
             </button>
@@ -819,13 +803,16 @@ export default function RopelinApp() {
           <div className={"order-step" + (tx.status === "completed" ? " done" : "")}><CheckCircle size={13} /><span>Recibido</span></div>
         </div>
 
-        {!tx.shipment && tx.status === "paid" && (
+        {!tx.shipment && tx.status === "paid" && tx.shippingRateId && (
           <>
-            <button className="order-action-btn" onClick={() => handleOpenRatePicker(tx.id)}>
-              <Truck size={13} /> Generar etiqueta de envío
+            <button className="order-action-btn" onClick={() => handleGenerateLabel(tx.id)} disabled={generatingLabelFor === tx.id}>
+              <Truck size={13} /> {generatingLabelFor === tx.id ? "Generando…" : `Generar etiqueta (${tx.shippingProvider || "envío"})`}
             </button>
             <p className="order-hint">O si quedáis en persona, que @{tx.buyer.username} lo confirme desde su lado</p>
           </>
+        )}
+        {!tx.shipment && tx.status === "paid" && !tx.shippingRateId && (
+          <p className="order-hint">@{tx.buyer.username} eligió quedar en persona — esperad a que confirme la entrega</p>
         )}
         {tx.shipment && tx.shipment.trackingCode && (
           <p className="order-hint">Nº de seguimiento: {tx.shipment.trackingCode}</p>
@@ -1713,14 +1700,44 @@ export default function RopelinApp() {
     }
   }
 
+  async function handleFetchCheckoutRates() {
+    if (!checkoutPostalCode.trim() || !checkoutCity.trim()) {
+      toast.error("Escribe tu código postal y tu ciudad");
+      return;
+    }
+    setCheckoutRatesLoading(true);
+    setCheckoutError(null);
+    try {
+      const { rates } = await fetchShippingQuote(openItem.id, checkoutPostalCode.trim(), checkoutCity.trim());
+      setCheckoutRates(rates);
+      setCheckoutSelectedRateId(rates.find((r) => !r.requiresServicePoint)?.rateId || rates[0]?.rateId || null);
+      setCheckoutServicePoint(null);
+    } catch (err) {
+      setCheckoutRates([]);
+      setCheckoutError(err.message);
+    } finally {
+      setCheckoutRatesLoading(false);
+    }
+  }
+
   async function confirmCheckout() {
     setCheckoutError(null);
-    if (checkoutDelivery === "inpost" && !checkoutServicePoint) {
-      setCheckoutError("Elige tu punto de recogida InPost antes de pagar");
+    const chosen = checkoutRates.find((r) => r.rateId === checkoutSelectedRateId);
+    if (!chosen) {
+      setCheckoutError("Elige un método de envío antes de pagar");
+      return;
+    }
+    if (chosen.requiresServicePoint && !checkoutServicePoint) {
+      setCheckoutError("Elige tu punto de recogida antes de pagar");
       return;
     }
     try {
-      const url = await startCheckout(openItem.id, checkoutDelivery === "inpost" ? checkoutServicePoint : null);
+      const url = await startCheckout(openItem.id, {
+        shippingRateId: chosen.rateId,
+        shippingProvider: chosen.provider,
+        shippingAmount: chosen.amount,
+        servicePoint: chosen.requiresServicePoint ? checkoutServicePoint : null,
+      });
       window.location.href = url; // redirige a la pasarela de pago de Stripe
     } catch (err) {
       setCheckoutError(err.message);
@@ -3049,6 +3066,7 @@ export default function RopelinApp() {
         .cropper-actions { display: flex; gap: 10px; margin-top: 14px; }
         .cropper-actions .btn { flex: 1; justify-content: center; }
         .overlay-top { z-index: 15; }
+        .overlay-top-most { z-index: 25; }
         .modal { background: var(--card); border: 1px solid var(--border); border-radius: 22px; max-width: 400px; width: 100%; padding: 26px; position: relative; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         .modal h3 { font-size: 19px; font-weight: 700; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
         .close-btn { position: absolute; top: 16px; right: 16px; background: var(--surface2); border: 2px solid var(--border); border-radius: 50%; width: 28px; height: 28px; color: var(--text); cursor: pointer; z-index: 5; display: flex; align-items: center; justify-content: center; }
@@ -3104,7 +3122,7 @@ export default function RopelinApp() {
           .newsletter-form input { flex: 1; min-width: 0; width: auto; }
         }
 
-        .site-footer-rich { background: #FFF3D6; border-top: 3px solid var(--border); padding: 48px 40px 100px; }
+        .site-footer-rich { background: var(--card-alt); border-top: 3px solid var(--border); padding: 48px 40px 100px; }
         .footer-inner { max-width: 1100px; margin: 0 auto; }
         .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 34px; padding-bottom: 24px; border-bottom: 2.5px solid var(--border); }
         .footer-brand-line { font-size: 13px; letter-spacing: 1.5px; color: var(--text); text-transform: uppercase; margin: 0; font-weight: 900; }
@@ -4317,7 +4335,7 @@ export default function RopelinApp() {
                   {openItem.sellerStripeOnboarded === false ? (
                     <button className="buy-btn" disabled title="Este vendedor todavía no puede recibir pagos por correo" style={{ opacity: 0.6 }}>No disponible por correo</button>
                   ) : (
-                    <button className="buy-btn" onClick={() => { if (loggedIn) { setCheckoutDelivery("domicilio"); setCheckoutServicePoint(null); setShowCheckout(true); } else { setShowAuth(true); } }}>Comprar</button>
+                    <button className="buy-btn" onClick={() => { if (loggedIn) { setCheckoutPostalCode(""); setCheckoutCity(""); setCheckoutRates([]); setCheckoutSelectedRateId(null); setCheckoutServicePoint(null); setShowCheckout(true); } else { setShowAuth(true); } }}>Comprar</button>
                   )}
                   <button
                     className="in-person-alt-btn"
@@ -4339,11 +4357,16 @@ export default function RopelinApp() {
               if (!sale) return null;
               return (
                 <div className="item-shipping-box">
-                  {!sale.shipment && sale.status === "paid" && (
+                  {!sale.shipment && sale.status === "paid" && sale.shippingRateId && (
                     <>
-                      <button className="chat-btn mark-sold-btn" onClick={() => handleOpenRatePicker(sale.id)}><Truck size={15} /> Generar etiqueta de envío</button>
+                      <button className="chat-btn mark-sold-btn" onClick={() => handleGenerateLabel(sale.id)} disabled={generatingLabelFor === sale.id}>
+                        <Truck size={15} /> {generatingLabelFor === sale.id ? "Generando…" : `Generar etiqueta (${sale.shippingProvider || "envío"})`}
+                      </button>
                       <p className="order-hint">O si quedáis en persona, que @{sale.buyer.username} lo confirme desde su lado</p>
                     </>
+                  )}
+                  {!sale.shipment && sale.status === "paid" && !sale.shippingRateId && (
+                    <p className="order-hint">@{sale.buyer.username} eligió quedar en persona — esperad a que confirme la entrega</p>
                   )}
                   {sale.shipment && sale.shipment.labelUrl && (
                     <button className="chat-btn mark-sold-btn" onClick={() => handleDownloadLabel(sale.id)} style={{ justifyContent: "center" }}>
@@ -5453,57 +5476,108 @@ export default function RopelinApp() {
             <p className="auth-title">Confirmar compra</p>
             <p className="auth-subtitle" style={{ marginBottom: 18 }}>{openItem.title}</p>
 
-            <p className="checkout-section-label">¿Cómo quieres recibirlo?</p>
-            <div className="delivery-toggle">
-              <button
-                className={"delivery-option" + (checkoutDelivery === "domicilio" ? " active" : "")}
-                onClick={() => setCheckoutDelivery("domicilio")}
-              >
-                <Truck size={15} /> A domicilio
-              </button>
-              <button
-                className={"delivery-option" + (checkoutDelivery === "inpost" ? " active" : "")}
-                onClick={() => setCheckoutDelivery("inpost")}
-              >
-                <MapPin size={15} /> Punto InPost
+            <p className="checkout-section-label">¿A dónde lo enviamos?</p>
+            <div className="locker-search-row">
+              <div className="input-icon" style={{ flex: 1, marginBottom: 0 }}>
+                <input placeholder="Código postal" value={checkoutPostalCode} onChange={(e) => setCheckoutPostalCode(e.target.value)} />
+              </div>
+              <div className="input-icon" style={{ flex: 1, marginBottom: 0 }}>
+                <input placeholder="Ciudad" value={checkoutCity} onChange={(e) => setCheckoutCity(e.target.value)} />
+              </div>
+              <button className="btn primary" onClick={handleFetchCheckoutRates} disabled={checkoutRatesLoading}>
+                {checkoutRatesLoading ? "..." : "Ver precios"}
               </button>
             </div>
 
-            {checkoutDelivery === "inpost" && (
-              checkoutServicePoint ? (
-                <div className="checkout-locker-chosen">
-                  <div>
-                    <p className="checkout-locker-name">📍 {checkoutServicePoint.name}</p>
-                    <p className="checkout-locker-address">{checkoutServicePoint.address}</p>
-                  </div>
-                  <button className="checkout-locker-change" onClick={() => setLockerPicker({ transactionId: "precheckout", postalCode: "", city: "", points: [], loading: false, searched: false, center: null })}>Cambiar</button>
-                </div>
-              ) : (
-                <button
-                  className="order-action-btn secondary"
-                  style={{ marginBottom: 14 }}
-                  onClick={() => setLockerPicker({ transactionId: "precheckout", postalCode: "", city: "", points: [], loading: false, searched: false, center: null })}
-                >
-                  <MapPin size={13} /> Elegir punto de recogida InPost
-                </button>
-              )
+            {checkoutRatesLoading && (
+              <div className="sheet-loading">
+                <RefreshCw size={18} className="spin" />
+                <p>Consultando tarifas disponibles…</p>
+              </div>
             )}
 
-            <div className="checkout-summary">
-              <div className="checkout-row"><span>Precio artículo</span><span>{Number(openItem.price).toFixed(2)}€</span></div>
-              <div className="checkout-row">
-                <span>Tarifa Ropelin*</span>
-                <span>{(Number(openItem.price) * (platformSettings.commissionPercent / 100)).toFixed(2)}€</span>
-              </div>
-              <div className="checkout-row"><span>Envío</span><span>{platformSettings.shippingFee.toFixed(2)}€</span></div>
-              <div className="checkout-row total"><span>Total a pagar</span><span>{(Number(openItem.price) * (1 + platformSettings.commissionPercent / 100) + platformSettings.shippingFee).toFixed(2)}€</span></div>
-            </div>
-            <p className="checkout-note">*Cubre la protección de tu compra: si el artículo no llega o no es como se describía, te ayudamos a resolverlo. El vendedor recibe el precio íntegro del artículo.</p>
-            <p className="checkout-note">{checkoutDelivery === "inpost" ? "El vendedor enviará tu pedido a la taquilla que has elegido." : "El envío se genera automáticamente al confirmar el pago."} Pago seguro procesado por Stripe.</p>
+            {!checkoutRatesLoading && checkoutRates.length > 0 && (() => {
+              const chosen = checkoutRates.find((r) => r.rateId === checkoutSelectedRateId);
+              return (
+                <>
+                  <div className="sheet-rate-list" style={{ marginBottom: 14 }}>
+                    {checkoutRates.map((r) => {
+                      const selected = checkoutSelectedRateId === r.rateId;
+                      return (
+                        <button
+                          key={r.rateId}
+                          className={"sheet-rate-card" + (selected ? " selected" : "")}
+                          onClick={() => setCheckoutSelectedRateId(r.rateId)}
+                        >
+                          <span className="sheet-rate-icon"><Truck size={16} /></span>
+                          <span className="sheet-rate-info">
+                            <span className="sheet-rate-provider">{r.provider}</span>
+                            <span className="sheet-rate-meta">
+                              {r.requiresServicePoint
+                                ? "Recogida en punto InPost"
+                                : <>{r.servicelevel ? `${r.servicelevel} · ` : ""}{r.estimatedDays != null ? `${r.estimatedDays} día${r.estimatedDays === 1 ? "" : "s"}` : "Plazo no disponible"}</>
+                              }
+                            </span>
+                          </span>
+                          <span className="sheet-rate-price">{Number(r.amount).toFixed(2)}€</span>
+                          <span className={"sheet-rate-radio" + (selected ? " on" : "")} />
+                        </button>
+                      );
+                    })}
+                  </div>
 
-            {checkoutError && <p style={{ color: "#FF4D8D", fontSize: 12, margin: "10px 0 0" }}>{checkoutError}</p>}
+                  {chosen?.requiresServicePoint && (
+                    checkoutServicePoint ? (
+                      <div className="checkout-locker-chosen">
+                        <div>
+                          <p className="checkout-locker-name">📍 {checkoutServicePoint.name}</p>
+                          <p className="checkout-locker-address">{checkoutServicePoint.address}</p>
+                        </div>
+                        <button className="checkout-locker-change" onClick={() => setLockerPicker({ transactionId: "precheckout", postalCode: checkoutPostalCode, city: checkoutCity, points: [], loading: false, searched: false, center: null })}>Cambiar</button>
+                      </div>
+                    ) : (
+                      <button
+                        className="order-action-btn secondary"
+                        style={{ marginBottom: 14 }}
+                        onClick={() => setLockerPicker({ transactionId: "precheckout", postalCode: checkoutPostalCode, city: checkoutCity, points: [], loading: false, searched: false, center: null })}
+                      >
+                        <MapPin size={13} /> Elegir tu punto de recogida InPost
+                      </button>
+                    )
+                  )}
+                </>
+              );
+            })()}
 
-            <button className="submit-btn" onClick={confirmCheckout}>Pagar {(Number(openItem.price) * (1 + platformSettings.commissionPercent / 100) + platformSettings.shippingFee).toFixed(2)}€ con Stripe</button>
+            {!checkoutRatesLoading && checkoutRates.length > 0 && (() => {
+              const chosen = checkoutRates.find((r) => r.rateId === checkoutSelectedRateId);
+              const shippingAmount = chosen ? Number(chosen.amount) : 0;
+              const itemTotal = Number(openItem.price) * (1 + platformSettings.commissionPercent / 100);
+              const total = itemTotal + shippingAmount;
+              return (
+                <>
+                  <div className="checkout-summary">
+                    <div className="checkout-row"><span>Precio artículo</span><span>{Number(openItem.price).toFixed(2)}€</span></div>
+                    <div className="checkout-row">
+                      <span>Tarifa Ropelin*</span>
+                      <span>{(Number(openItem.price) * (platformSettings.commissionPercent / 100)).toFixed(2)}€</span>
+                    </div>
+                    <div className="checkout-row"><span>Envío{chosen ? ` (${chosen.provider})` : ""}</span><span>{shippingAmount.toFixed(2)}€</span></div>
+                    <div className="checkout-row total"><span>Total a pagar</span><span>{total.toFixed(2)}€</span></div>
+                  </div>
+                  <p className="checkout-note">*Cubre la protección de tu compra: si el artículo no llega o no es como se describía, te ayudamos a resolverlo. El vendedor recibe el precio íntegro del artículo.</p>
+                  <p className="checkout-note">Pago seguro procesado por Stripe.</p>
+
+                  {checkoutError && <p style={{ color: "#FF4D8D", fontSize: 12, margin: "10px 0 0" }}>{checkoutError}</p>}
+
+                  <button className="submit-btn" onClick={confirmCheckout} disabled={!chosen}>Pagar {total.toFixed(2)}€ con Stripe</button>
+                </>
+              );
+            })()}
+
+            {!checkoutRatesLoading && checkoutRates.length === 0 && checkoutError && (
+              <p style={{ color: "#FF4D8D", fontSize: 12, margin: "10px 0 0" }}>{checkoutError}</p>
+            )}
           </div>
         </div>
       )}
@@ -6057,71 +6131,8 @@ export default function RopelinApp() {
         </div>
       )}
 
-      {ratePicker && (
-        <div className="overlay sheet-overlay" onClick={() => !ratePicker.purchasing && setRatePicker(null)}>
-          <div className="sheet-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="sheet-handle" />
-            <div className="sheet-header">
-              <p className="sheet-title">Elige transportista</p>
-              <button className="close-btn" onClick={() => setRatePicker(null)} disabled={ratePicker.purchasing}><X size={14} /></button>
-            </div>
-            <p className="sheet-box-note"><Package size={12} /> Precios calculados para una caja de hasta 20×15×8cm y 0,5kg. Si tu artículo es más grande, el precio real puede variar.</p>
-
-            {ratePicker.loading && (
-              <div className="sheet-loading">
-                <RefreshCw size={18} className="spin" />
-                <p>Consultando tarifas disponibles…</p>
-              </div>
-            )}
-
-            {!ratePicker.loading && ratePicker.rates.length === 0 && (
-              <p className="order-hint" style={{ padding: "20px 0" }}>No hay tarifas disponibles para este envío ahora mismo.</p>
-            )}
-
-            {!ratePicker.loading && ratePicker.rates.length > 0 && (
-              <div className="sheet-rate-list">
-                {ratePicker.rates.map((r) => {
-                  const selected = ratePicker.selectedRateId === r.rateId;
-                  return (
-                    <button
-                      key={r.rateId}
-                      className={"sheet-rate-card" + (selected ? " selected" : "")}
-                      disabled={ratePicker.purchasing}
-                      onClick={() => setRatePicker((prev) => ({ ...prev, selectedRateId: r.rateId }))}
-                    >
-                      <span className="sheet-rate-icon"><Truck size={16} /></span>
-                      <span className="sheet-rate-info">
-                        <span className="sheet-rate-provider">{r.provider}</span>
-                        <span className="sheet-rate-meta">
-                          {r.requiresServicePoint
-                            ? (ratePicker.buyerServicePoint ? `📍 ${ratePicker.buyerServicePoint.name}` : "Reparte en taquillas — se le pedirá al comprador su punto")
-                            : <>{r.servicelevel ? `${r.servicelevel} · ` : ""}{r.estimatedDays != null ? `${r.estimatedDays} día${r.estimatedDays === 1 ? "" : "s"}` : "Plazo estimado no disponible"}</>
-                          }
-                        </span>
-                      </span>
-                      <span className="sheet-rate-price">{Number(r.amount).toFixed(2)}{r.currency === "EUR" ? "€" : ` ${r.currency}`}</span>
-                      <span className={"sheet-rate-radio" + (selected ? " on" : "")} />
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {!ratePicker.loading && ratePicker.rates.length > 0 && (() => {
-              const chosen = ratePicker.rates.find((r) => r.rateId === ratePicker.selectedRateId);
-              const willBePending = chosen?.requiresServicePoint && !ratePicker.buyerServicePoint;
-              return (
-                <button className="btn primary sheet-confirm-btn" onClick={handleConfirmRate} disabled={!ratePicker.selectedRateId || ratePicker.purchasing}>
-                  {ratePicker.purchasing ? "Un momento…" : willBePending ? "Avisar al comprador" : "Generar etiqueta"}
-                </button>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-
       {lockerPicker && (
-        <div className="overlay sheet-overlay" onClick={() => setLockerPicker(null)}>
+        <div className="overlay sheet-overlay overlay-top-most" onClick={() => setLockerPicker(null)}>
           <div className="sheet-modal" onClick={(e) => e.stopPropagation()}>
             <div className="sheet-handle" />
             <div className="sheet-header">
