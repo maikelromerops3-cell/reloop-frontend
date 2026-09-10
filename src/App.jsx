@@ -2507,7 +2507,7 @@ export default function RopelinApp() {
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .edit-profile-btn:hover { border-color: #7FD8D0; color: #7FD8D0; }
         .sheet-overlay { align-items: flex-end; padding: 0; }
-        .sheet-modal { width: 100%; max-width: 480px; margin: 0 auto; background: var(--card); border-radius: 20px 20px 0 0; border: 2.5px solid var(--border); border-bottom: none; padding: 10px 20px 24px; max-height: 80vh; display: flex; flex-direction: column; animation: sheet-up .2s ease; }
+        .sheet-modal { width: 100%; max-width: 480px; margin: 0 auto; background: var(--card); border-radius: 20px 20px 0 0; border: 2.5px solid var(--border); border-bottom: none; padding: 10px 20px 24px; max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column; animation: sheet-up .2s ease; }
         @keyframes sheet-up { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .sheet-handle { width: 36px; height: 4px; border-radius: 4px; background: var(--input-border); margin: 0 auto 14px; }
         .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -3250,7 +3250,7 @@ export default function RopelinApp() {
         .input-icon { display: flex; align-items: center; gap: 10px; border: 1px solid var(--input-border); border-radius: 13px; padding: 0 14px; background: var(--bg); transition: border-color 0.15s; }
         .input-icon:focus-within { border-color: #FF4D8D88; }
         .input-icon svg { color: var(--faint); flex-shrink: 0; }
-        .input-icon input { border: none; padding: 13px 0; background: transparent; }
+        .input-icon input { border: none; padding: 13px 0; background: transparent; font-size: 16px; }
         .auth-modal .submit-btn { margin-top: 26px; padding: 15px; font-size: 14px; border-radius: 14px; }
         .auth-modal .toggle-link { margin-top: 16px; font-size: 12.5px; }
         .post-modal { max-width: 400px; }
