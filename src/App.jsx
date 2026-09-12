@@ -1131,10 +1131,18 @@ export default function RopelinApp() {
       <div className="footer-inner">
       <div className="footer-top-row">
         <div className="footer-brand-group">
-          <div className="brand-mark footer-brand-mark">
-            <svg width="18" height="18" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="82.5" cy="17.5" r="5.5" fill="#1A1A1E" />
-              <text x="47" y="72" fontFamily="Poppins, Arial, sans-serif" fontSize="62" fontWeight="700" fill="#1A1A1E" textAnchor="middle">R</text>
+          <div className="footer-brand-mark">
+            <svg width="32" height="32" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="footerLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FF4D8D" />
+                  <stop offset="100%" stopColor="#FF8A4D" />
+                </linearGradient>
+              </defs>
+              <path d="M 6 30 A 24 24 0 0 1 30 6 L 86 6 L 134 30 L 134 106 A 24 24 0 0 1 110 130 L 30 130 A 24 24 0 0 1 6 106 Z"
+                    fill="url(#footerLogoGrad)" stroke="#1A1A1E" strokeWidth="4" strokeLinejoin="round" />
+              <circle cx="112" cy="24" r="5.5" fill="#1A1A1E" />
+              <text x="66" y="98" fontFamily="Poppins, Arial, sans-serif" fontSize="76" fontWeight="700" fill="#1A1A1E" textAnchor="middle">R</text>
             </svg>
           </div>
           <p className="footer-brand-line">ROPELIN — COMPRA Y VENDE DE SEGUNDA MANO.</p>
@@ -3240,6 +3248,7 @@ export default function RopelinApp() {
         .rb-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
         .rb-fill { height: 100%; background: linear-gradient(90deg, #7FD8D0, #4DA8FF); border-radius: 3px; }
         .chat-modal { max-width: 380px; display: flex; flex-direction: column; height: 560px; max-height: 82vh; padding: 0; overflow: hidden; border: 2.5px solid var(--border); }
+        .chat-main-col { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100%; overflow: hidden; }
         .chat-header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 2px solid var(--border); position: relative; flex-shrink: 0; background: var(--card); }
         .chat-back-btn { background: none; border: none; padding: 4px; margin-right: 2px; color: var(--text); cursor: pointer; display: flex; align-items: center; flex-shrink: 0; }
         .chat-avatar-ring { padding: 2px; border-radius: 50%; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); flex-shrink: 0; }
@@ -3361,7 +3370,7 @@ export default function RopelinApp() {
         .footer-inner { max-width: 1100px; margin: 0 auto; }
         .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 34px; padding-bottom: 24px; border-bottom: 2.5px solid var(--border); }
         .footer-brand-group { display: flex; align-items: center; gap: 12px; }
-        .footer-brand-mark { width: 32px; height: 32px; flex-shrink: 0; }
+        .footer-brand-mark { width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .footer-brand-line { font-size: 13px; letter-spacing: 1.5px; color: var(--text); text-transform: uppercase; margin: 0; font-weight: 900; }
         .footer-social-row { display: flex; align-items: center; gap: 10px; }
         .footer-social-label { font-size: 11px; letter-spacing: 1px; color: var(--sub); text-transform: uppercase; font-weight: 800; }
@@ -3398,6 +3407,13 @@ export default function RopelinApp() {
           .item-page-info { background: var(--card-alt); border: 1px solid #24242a; border-radius: 22px; padding: 26px 28px; }
           .item-page-gallery .detail-media { box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6); }
           .item-page .detail-price { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); -webkit-background-clip: text; background-clip: text; color: transparent; }
+          .chat-modal { max-width: 760px; width: 90vw; height: 640px; max-height: 86vh; flex-direction: row; }
+          .chat-item-strip { flex-direction: column; align-items: flex-start; width: 240px; flex-shrink: 0; height: 100%; padding: 22px 20px; gap: 14px; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; }
+          .chat-item-thumb { width: 100%; height: 200px; border-radius: 14px; }
+          .chat-item-strip-info { width: 100%; }
+          .chat-item-strip-title { white-space: normal; font-size: 14px; }
+          .chat-item-strip-price { font-size: 13px; }
+          .chat-item-strip-link { margin-top: auto; }
         }
         @media (max-width: 780px) {
           .item-page-grid { flex-direction: column; }
@@ -6639,8 +6655,19 @@ export default function RopelinApp() {
       {showChat && chatItem && (
         <div className="overlay chat-overlay" onClick={() => setShowChat(false)}>
           <div className="modal chat-modal" onClick={(e) => e.stopPropagation()}>
+
+            <div className="chat-item-strip" onClick={() => { setShowChat(false); viewItem(chatItem); }}>
+              <div className="chat-item-thumb" style={{ backgroundImage: `url(${(chatItem.images && chatItem.images[0]) || chatItem.photo})` }} />
+              <div className="chat-item-strip-info">
+                <p className="chat-item-strip-title">{chatItem.title}</p>
+                <p className="chat-item-strip-price">{chatItem.price}€</p>
+              </div>
+              <span className="chat-item-strip-link">Ver prenda ›</span>
+            </div>
+
+            <div className="chat-main-col">
             <div className="chat-header">
-              <button className="chat-back-btn" onClick={() => setShowChat(false)}><ArrowLeft size={18} /></button>
+              <button className="chat-back-btn" onClick={() => { setShowChat(false); viewItem(chatItem); }}><ArrowLeft size={18} /></button>
               <div className="chat-avatar-ring">
                 <div className="mini-avatar seller-avatar" style={{ background: PALETTE[chatItem.seller.length % PALETTE.length] }}>
                   {chatItem.seller[0]?.toUpperCase()}
@@ -6650,15 +6677,6 @@ export default function RopelinApp() {
                 <p className="chat-seller-name">@{chatItem.seller}</p>
                 <p className="chat-item-ref">Activo recientemente</p>
               </div>
-            </div>
-
-            <div className="chat-item-strip" onClick={() => { setShowChat(false); viewItem(chatItem); }}>
-              <div className="chat-item-thumb" style={{ backgroundImage: `url(${(chatItem.images && chatItem.images[0]) || chatItem.photo})` }} />
-              <div className="chat-item-strip-info">
-                <p className="chat-item-strip-title">{chatItem.title}</p>
-                <p className="chat-item-strip-price">{chatItem.price}€</p>
-              </div>
-              <span className="chat-item-strip-link">Ver prenda ›</span>
             </div>
 
             <div className="chat-thread">
@@ -6744,6 +6762,7 @@ export default function RopelinApp() {
               />
               <button type="submit" className="chat-send-btn" disabled={!chatInput.trim()}><Send size={15} /></button>
             </form>
+            </div>
           </div>
         </div>
       )}
