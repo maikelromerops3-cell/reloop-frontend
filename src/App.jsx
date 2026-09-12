@@ -21,7 +21,9 @@ import {
   fetchChatMessages, sendChatMessage as sendChatMessage_,
   fetchNotifications, markAllNotificationsRead,
   disputeTransaction,
-  fetchAdminUsers, fetchAdminStats, fetchAdminDisputes, refundTransaction,
+  fetchAdminUsers, fetchAdminStats, fetchAdminDisputes, refundTransaction, rejectDispute, respondToDispute, requestReturn, markReturned, confirmReturnReceived,
+  submitIdentityVerification, fetchAdminVerifications, approveVerification, rejectVerification,
+  blockUser, unblockUser, fetchBlockedUsers, fetchSellerBalance, refundTransactionPartial,
   banUser, unbanUser, adminDeleteItem, fetchAdminReports, resolveReport, fetchAdminLogs, fetchAdminTop, fetchAdminTimeseries, submitReport,
   submitSupportMessage, fetchMySupportMessages, fetchAdminSupport, replySupportMessage,
   fetchPublicSettings, fetchAdminSettings, updateAdminSettings, adminEditItem, exportUsersCsv, exportTransactionsCsv, changeUserRole,
@@ -237,6 +239,10 @@ export default function RopelinApp() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [myEmailVerified, setMyEmailVerified] = useState(true);
+  const [myIdVerification, setMyIdVerification] = useState({ status: null, uploading: false });
+  const [blockedUsernames, setBlockedUsernames] = useState(new Set());
+  const [sellerBalance, setSellerBalance] = useState(null);
+  const [partialRefundAmounts, setPartialRefundAmounts] = useState({});
   const [shippingStreetInput, setShippingStreetInput] = useState("");
   const [shippingPostalInput, setShippingPostalInput] = useState("");
   const [shippingPhoneInput, setShippingPhoneInput] = useState("");
@@ -266,15 +272,46 @@ export default function RopelinApp() {
   const [reviewingTx, setReviewingTx] = useState(null); // transacción que se está valorando
   const [disputingTx, setDisputingTx] = useState(null);
   const [disputeReason, setDisputeReason] = useState("");
+  const [disputeEvidence, setDisputeEvidence] = useState(null); // { url, uploading }
+  const [respondingTx, setRespondingTx] = useState(null);
+  const [sellerResponseText, setSellerResponseText] = useState("");
+
+  async function handleDisputeEvidenceUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDisputeEvidence({ url: null, uploading: true });
+    try {
+      const { url } = await uploadImage(file);
+      setDisputeEvidence({ url, uploading: false });
+    } catch (err) {
+      toast.error(err.message);
+      setDisputeEvidence(null);
+    }
+  }
+
+  async function handleSubmitSellerResponse(e) {
+    e.preventDefault();
+    if (!sellerResponseText.trim()) return;
+    try {
+      await respondToDispute(respondingTx.id, sellerResponseText);
+      toast.success("Tu respuesta se ha enviado, la revisaremos junto con la reclamación");
+      setRespondingTx(null);
+      setSellerResponseText("");
+      loadOrders();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
 
   async function handleSubmitDispute(e) {
     e.preventDefault();
     if (!disputeReason.trim()) return;
     try {
-      await disputeTransaction(disputingTx.id, disputeReason);
+      await disputeTransaction(disputingTx.id, disputeReason, disputeEvidence?.url || null);
       toast.success("Reembolso solicitado, lo revisaremos en breve");
       setDisputingTx(null);
       setDisputeReason("");
+      setDisputeEvidence(null);
       loadOrders();
     } catch (err) {
       toast.error(err.message);
@@ -492,9 +529,13 @@ export default function RopelinApp() {
     if ((showSettings || showPost || showProfile) && loggedIn) {
       fetchStripeStatus().then(setStripeStatus).catch(() => {});
     }
+    if (showSettings && loggedIn) {
+      fetchSellerBalance().then(setSellerBalance).catch(() => {});
+    }
     if ((showSettings || showProfile) && loggedIn) {
       fetchProfile(username).then((data) => {
         setMyEmailVerified(data.emailVerified !== false);
+        setMyIdVerification((prev) => ({ ...prev, status: data.idVerificationStatus || null }));
         setShippingStreetInput(data.shippingStreet || "");
         setShippingPostalInput(data.shippingPostalCode || "");
         setShippingPhoneInput(data.shippingPhone || "");
@@ -603,6 +644,21 @@ export default function RopelinApp() {
     }
   }
 
+  async function handleUploadIdVerification(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setMyIdVerification((prev) => ({ ...prev, uploading: true }));
+    try {
+      const { url } = await uploadImage(file);
+      await submitIdentityVerification(url);
+      setMyIdVerification({ status: "pending", uploading: false });
+      toast.success("Documento enviado, lo revisaremos en breve");
+    } catch (err) {
+      toast.error(err.message);
+      setMyIdVerification((prev) => ({ ...prev, uploading: false }));
+    }
+  }
+
   async function handleCompleteInPerson(transactionId) {
     try {
       await completeInPerson(transactionId);
@@ -684,8 +740,14 @@ export default function RopelinApp() {
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(lockerMapInstance.current);
+      // El mapa se crea mientras el modal todavía se está deslizando hacia arriba (animación
+      // CSS de .2s) — en ese momento Leaflet mide mal el tamaño real del contenedor y el mapa
+      // se queda "roto" (tiles a medias) para siempre. Le decimos que vuelva a medirse una vez
+      // la animación ha terminado del todo.
+      setTimeout(() => lockerMapInstance.current?.invalidateSize(), 300);
     } else {
       lockerMapInstance.current.setView([lockerPicker.center.lat, lockerPicker.center.lng], 14);
+      lockerMapInstance.current.invalidateSize();
     }
 
     lockerMarkers.current.forEach((m) => m.remove());
@@ -740,6 +802,25 @@ export default function RopelinApp() {
           <div className={"order-step-line" + (tx.status === "completed" ? " done" : "")} />
           <div className={"order-step" + (tx.status === "completed" ? " done" : "")}><CheckCircle size={13} /><span>Recibido</span></div>
         </div>
+
+        {tx.status === "disputed" && (
+          <div className="seller-dispute-box">
+            <p className="admin-dispute-reason">Tu reclamación está en revisión: "{tx.disputeReason}"</p>
+            {tx.returnRequired && (
+              tx.returnMarkedSentAt ? (
+                <p className="order-hint">📦 Ya avisaste de que lo devolviste{tx.returnTrackingCode ? ` (seguimiento: ${tx.returnTrackingCode})` : ""} — esperando a que @{tx.seller.username} lo confirme.</p>
+              ) : (
+                <>
+                  <p className="order-hint">Tienes que devolver el artículo antes de que se procese el reembolso.</p>
+                  <div className="input-icon" style={{ marginTop: 8 }}>
+                    <input placeholder="Nº de seguimiento (opcional)" value={returnTrackingInput} onChange={(e) => setReturnTrackingInput(e.target.value)} />
+                  </div>
+                  <button className="order-action-btn" onClick={() => handleMarkReturned(tx.id)}>Ya lo he enviado de vuelta</button>
+                </>
+              )
+            )}
+          </div>
+        )}
 
         {tx.shipment && tx.shipment.trackingCode && (
           <p className="order-hint">Nº de seguimiento: {tx.shipment.trackingCode}</p>
@@ -802,6 +883,34 @@ export default function RopelinApp() {
           <div className={"order-step-line" + (tx.status === "completed" ? " done" : "")} />
           <div className={"order-step" + (tx.status === "completed" ? " done" : "")}><CheckCircle size={13} /><span>Recibido</span></div>
         </div>
+
+        {tx.status === "disputed" && (
+          <div className="seller-dispute-box">
+            <p className="admin-dispute-reason">⚠️ @{tx.buyer.username} ha abierto una reclamación: "{tx.disputeReason}"</p>
+            {tx.disputeEvidenceUrl && (
+              <img src={tx.disputeEvidenceUrl} alt="Prueba adjuntada" className="admin-dispute-evidence" onClick={() => window.open(tx.disputeEvidenceUrl, "_blank")} />
+            )}
+            {tx.returnRequired && (
+              tx.returnConfirmedAt ? (
+                <p className="order-hint">📦 Confirmaste la devolución — reembolso procesado.</p>
+              ) : tx.returnMarkedSentAt ? (
+                <>
+                  <p className="order-hint">@{tx.buyer.username} dice que ya te lo ha devuelto{tx.returnTrackingCode ? ` (seguimiento: ${tx.returnTrackingCode})` : ""}.</p>
+                  <button className="order-action-btn" onClick={() => handleConfirmReturnReceived(tx.id)}>Ya lo he recibido de vuelta</button>
+                </>
+              ) : (
+                <p className="order-hint">Le hemos pedido a @{tx.buyer.username} que te devuelva el artículo antes de reembolsarle.</p>
+              )
+            )}
+            {tx.sellerResponse ? (
+              <p className="order-hint">Ya has enviado tu versión: "{tx.sellerResponse}" — la estamos revisando.</p>
+            ) : (
+              <button className="order-action-btn" onClick={() => { setRespondingTx(tx); setSellerResponseText(""); }}>
+                Dar mi versión
+              </button>
+            )}
+          </div>
+        )}
 
         {!tx.shipment && tx.status === "paid" && tx.shippingRateId && (
           <>
@@ -913,6 +1022,7 @@ export default function RopelinApp() {
         if (data.coverUrl) { setMyCoverUrl(data.coverUrl); localStorage.setItem("reloop_cover", data.coverUrl); }
         if (data.bio) setMyBio(data.bio);
         setMyEmailVerified(data.emailVerified !== false);
+        setMyIdVerification((prev) => ({ ...prev, status: data.idVerificationStatus || null }));
         setMyProfileExtra({ badges: data.badges || [], avgSaleDays: data.avgSaleDays, followersCount: data.followersCount || 0, followingCount: data.followingCount || 0, freeBoosts: data.freeBoosts || 0 });
       }).catch(() => {});
       return;
@@ -986,6 +1096,7 @@ export default function RopelinApp() {
   const [adminUsers, setAdminUsers] = useState([]);
   const [adminStats, setAdminStats] = useState(null);
   const [adminDisputes, setAdminDisputes] = useState([]);
+  const [adminVerifications, setAdminVerifications] = useState([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminUserSearch, setAdminUserSearch] = useState("");
   const [adminReports, setAdminReports] = useState([]);
@@ -1019,7 +1130,15 @@ export default function RopelinApp() {
     <footer className="site-footer-rich">
       <div className="footer-inner">
       <div className="footer-top-row">
-        <p className="footer-brand-line">ROPELIN — COMPRA Y VENDE DE SEGUNDA MANO.</p>
+        <div className="footer-brand-group">
+          <div className="brand-mark footer-brand-mark">
+            <svg width="18" height="18" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="82.5" cy="17.5" r="5.5" fill="#1A1A1E" />
+              <text x="47" y="72" fontFamily="Poppins, Arial, sans-serif" fontSize="62" fontWeight="700" fill="#1A1A1E" textAnchor="middle">R</text>
+            </svg>
+          </div>
+          <p className="footer-brand-line">ROPELIN — COMPRA Y VENDE DE SEGUNDA MANO.</p>
+        </div>
         {(platformSettings.instagramUrl || platformSettings.tiktokUrl || platformSettings.facebookUrl || platformSettings.twitterUrl) && (
           <div className="footer-social-row">
             <span className="footer-social-label">SÍGUENOS</span>
@@ -1138,6 +1257,14 @@ export default function RopelinApp() {
     if (!loggedIn) { setFollowing(new Set()); return; }
     fetchMyFollowing()
       .then((usernames) => setFollowing(new Set(usernames)))
+      .catch(() => {});
+  }, [loggedIn]);
+
+  // Carga a quién he bloqueado, para saber qué botón mostrar en cada perfil
+  useEffect(() => {
+    if (!loggedIn) { setBlockedUsernames(new Set()); return; }
+    fetchBlockedUsers()
+      .then((users) => setBlockedUsernames(new Set(users.map((u) => u.username))))
       .catch(() => {});
   }, [loggedIn]);
 
@@ -1561,6 +1688,28 @@ export default function RopelinApp() {
     });
   }
 
+  function toggleBlock(uname) {
+    const alreadyBlocked = blockedUsernames.has(uname);
+    if (alreadyBlocked || window.confirm(`¿Bloquear a @${uname}? No podréis escribiros, y dejaréis de seguiros mutuamente.`)) {
+      setBlockedUsernames((prev) => {
+        const next = new Set(prev);
+        alreadyBlocked ? next.delete(uname) : next.add(uname);
+        return next;
+      });
+      const action = alreadyBlocked ? unblockUser(uname) : blockUser(uname);
+      action
+        .then(() => toast.success(alreadyBlocked ? `Has desbloqueado a @${uname}` : `Has bloqueado a @${uname}`))
+        .catch((err) => {
+          setBlockedUsernames((prev) => {
+            const next = new Set(prev);
+            alreadyBlocked ? next.add(uname) : next.delete(uname);
+            return next;
+          });
+          toast.error(err.message);
+        });
+    }
+  }
+
   async function openChat(item) {
     if (!loggedIn) { setShowAuth(true); return; }
     setChatItem(item);
@@ -1891,6 +2040,7 @@ export default function RopelinApp() {
         setAdminTop(await fetchAdminTop());
       }
       if (tab === "disputes") setAdminDisputes(await fetchAdminDisputes());
+      if (tab === "verifications") setAdminVerifications(await fetchAdminVerifications());
       if (tab === "reports") setAdminReports(await fetchAdminReports());
       if (tab === "logs") setAdminLogs(await fetchAdminLogs());
       if (tab === "support") setAdminSupport(await fetchAdminSupport());
@@ -2083,11 +2233,80 @@ export default function RopelinApp() {
     }
   }
 
-  async function handleAdminRefund(transactionId) {
+  async function handleAdminRefund(transactionId, partialAmount) {
     try {
-      await refundTransaction(transactionId);
-      toast.success("Reembolso procesado");
+      if (partialAmount) {
+        await refundTransactionPartial(transactionId, Number(partialAmount));
+        toast.success(`Reembolso parcial de ${Number(partialAmount).toFixed(2)}€ procesado`);
+      } else {
+        await refundTransaction(transactionId);
+        toast.success("Reembolso procesado");
+      }
+      setPartialRefundAmounts((prev) => ({ ...prev, [transactionId]: "" }));
       loadAdminTab("disputes");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function handleAdminRejectDispute(transactionId) {
+    try {
+      await rejectDispute(transactionId);
+      toast.success("Reclamación rechazada, el pago se ha liberado al vendedor");
+      loadAdminTab("disputes");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function handleAdminRequestReturn(transactionId) {
+    try {
+      await requestReturn(transactionId);
+      toast.success("Hemos pedido al comprador que devuelva el artículo antes de reembolsar");
+      loadAdminTab("disputes");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function handleApproveVerification(userId) {
+    try {
+      await approveVerification(userId);
+      toast.success("Usuario verificado");
+      loadAdminTab("verifications");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function handleRejectVerification(userId) {
+    const reason = window.prompt("¿Por qué la rechazas? (se lo enviamos al usuario)") || "";
+    try {
+      await rejectVerification(userId, reason);
+      toast.success("Verificación rechazada");
+      loadAdminTab("verifications");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  const [returnTrackingInput, setReturnTrackingInput] = useState("");
+  async function handleMarkReturned(transactionId) {
+    try {
+      await markReturned(transactionId, returnTrackingInput || null);
+      toast.success("Avisado al vendedor de que ya lo has devuelto");
+      setReturnTrackingInput("");
+      loadOrders();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function handleConfirmReturnReceived(transactionId) {
+    try {
+      await confirmReturnReceived(transactionId);
+      toast.success("Devolución confirmada, reembolso procesado");
+      loadOrders();
     } catch (err) {
       toast.error(err.message);
     }
@@ -2735,6 +2954,18 @@ export default function RopelinApp() {
         .admin-stat-box.warning strong { color: #FF4D8D; }
         .admin-dispute-row { background: var(--bg); border: 1px solid #FF4D8D33; border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
         .admin-dispute-reason { font-size: 12px; color: var(--body); font-style: italic; margin: 8px 0; line-height: 1.5; }
+        .admin-dispute-evidence { width: 100%; max-width: 220px; border-radius: 10px; border: 1.5px solid var(--border); margin: 6px 0; cursor: pointer; display: block; }
+        .admin-dispute-seller-response { font-size: 12px; color: var(--body); background: var(--card-alt); border-radius: 10px; padding: 8px 12px; margin: 8px 0; line-height: 1.5; }
+        .admin-dispute-flag { font-size: 11.5px; color: #854F0B; background: #FAEEDA; border-radius: 8px; padding: 6px 10px; margin: 6px 0; font-weight: 700; }
+        .admin-dispute-chat { margin: 8px 0; font-size: 11.5px; }
+        .admin-dispute-chat summary { cursor: pointer; color: var(--sub); font-weight: 700; }
+        .admin-dispute-chat-msg { color: var(--body); margin: 6px 0 0; padding-left: 8px; border-left: 2px solid var(--border); line-height: 1.4; }
+        .seller-dispute-box { background: #FF4D8D14; border: 1.5px solid #FF4D8D55; border-radius: 14px; padding: 14px 16px; margin: 10px 0; }
+        .dispute-evidence-preview { position: relative; margin-top: 8px; }
+        .dispute-evidence-preview img { width: 100%; max-height: 160px; object-fit: cover; border-radius: 10px; border: 1.5px solid var(--border); }
+        .dispute-evidence-preview button { margin-top: 6px; }
+        .dispute-evidence-upload { display: flex; align-items: center; justify-content: center; gap: 6px; border: 1.5px dashed var(--input-border); border-radius: 12px; padding: 12px; font-size: 12.5px; color: var(--faint); cursor: pointer; margin-top: 8px; }
+        .dispute-evidence-upload:hover { border-color: #FF4D8D88; color: #FF4D8D; }
         .admin-refund-btn { width: 100%; margin-top: 10px; padding: 10px; font-size: 12.5px; }
         .admin-search-row { display: flex; gap: 8px; margin-bottom: 16px; margin-top: 4px; }
         .admin-filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -2783,7 +3014,7 @@ export default function RopelinApp() {
         .report-modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
         .report-modal-icon { width: 38px; height: 38px; border-radius: 12px; background: #FF4D8D18; display: flex; align-items: center; justify-content: center; color: #FF4D8D; flex-shrink: 0; }
         .report-submit-btn { width: 100%; margin-top: 10px; padding: 12px; font-size: 13px; font-weight: 700; border: none; border-radius: 14px; cursor: pointer; font-family: inherit; background: linear-gradient(135deg, #FF4D8D, #B23A55); color: var(--text); }
-        .admin-toolbar { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 8px 6px 14px; }
+        .admin-toolbar { display: inline-flex; align-items: center; gap: 8px; margin-top: 24px; margin-bottom: 28px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 8px 6px 14px; }
         .admin-toolbar-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--faint); }
         .admin-icon-action { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--border); color: var(--sub); display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .admin-icon-action:hover { background: var(--input-border); color: var(--text); }
@@ -2981,6 +3212,7 @@ export default function RopelinApp() {
         .cover-btn { position: absolute; bottom: 8px; right: 80px; display: flex; align-items: center; gap: 5px; background: #00000066; border: none; color: #fff; font-size: 10px; padding: 5px 10px; border-radius: 12px; cursor: pointer; font-family: inherit; }
         .share-profile-btn { position: absolute; bottom: 8px; right: 10px; background: #00000066; border: none; color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .milestone-badges { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
+        .verified-badge { margin-left: 6px; color: #0F6E56 !important; background: #E1F5EE !important; border-color: #5DCAA5 !important; }
         .mstone { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: var(--surface2); border: 1px solid var(--input-border); border-radius: 50%; font-size: 10px; color: #FFC24D; }
         .profile-meta-row { font-size: 11px; color: var(--sub); margin: 4px 0 0; }
         .streak-text { font-size: 11px; color: #FFC24D; margin: 4px 0 10px; font-weight: 600; }
@@ -3122,9 +3354,12 @@ export default function RopelinApp() {
           .newsletter-form input { flex: 1; min-width: 0; width: auto; }
         }
 
-        .site-footer-rich { background: var(--card-alt); border-top: 3px solid var(--border); padding: 48px 40px 100px; }
+        .site-footer-rich { position: relative; background: var(--card-alt); border-top: 1.5px solid var(--border); padding: 48px 40px 100px; margin-top: 32px; }
+        .site-footer-rich::before { content: ""; position: absolute; top: -1.5px; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #FF4D8D, #FF8A4D, #B49CE8, #7FD8D0); }
         .footer-inner { max-width: 1100px; margin: 0 auto; }
         .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 34px; padding-bottom: 24px; border-bottom: 2.5px solid var(--border); }
+        .footer-brand-group { display: flex; align-items: center; gap: 12px; }
+        .footer-brand-mark { width: 32px; height: 32px; flex-shrink: 0; }
         .footer-brand-line { font-size: 13px; letter-spacing: 1.5px; color: var(--text); text-transform: uppercase; margin: 0; font-weight: 900; }
         .footer-social-row { display: flex; align-items: center; gap: 10px; }
         .footer-social-label { font-size: 11px; letter-spacing: 1px; color: var(--sub); text-transform: uppercase; font-weight: 800; }
@@ -3146,7 +3381,7 @@ export default function RopelinApp() {
         @media (max-width: 640px) { .footer-trust-badge { margin-left: 0; } }
         @media (max-width: 640px) {
           .site-footer-rich { padding: 36px 20px 100px; }
-          .footer-cols { gap: 34px; }
+          .footer-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 20px; }
         }
         @media (max-width: 640px) {
           .community-impact { padding: 16px 20px; margin: 16px 16px 0; }
@@ -3586,6 +3821,9 @@ export default function RopelinApp() {
               )}
               <p className="profile-name">
                 @{profileUsername}
+                {(isOwnProfile ? myIdVerification.status : otherProfileData?.idVerificationStatus) === "approved" && (
+                  <span className="mstone verified-badge" title="Identidad verificada"><ShieldCheck size={11} /></span>
+                )}
                 {(isOwnProfile ? myProfileExtra.badges : otherProfileData?.badges || []).length > 0 && (
                   <span className="milestone-badges">
                     {(isOwnProfile ? myProfileExtra.badges : otherProfileData?.badges || []).map((b) => (
@@ -3616,9 +3854,14 @@ export default function RopelinApp() {
               )}
 
               {!isOwnProfile && (
-                <button className="report-flag-btn" style={{ marginBottom: 10 }} onClick={() => setShowReportForm({ targetType: "user", reportedUsername: profileUsername })}>
-                  <FileWarning size={12} /> Denunciar a @{profileUsername}
-                </button>
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  <button className="report-flag-btn" onClick={() => setShowReportForm({ targetType: "user", reportedUsername: profileUsername })}>
+                    <FileWarning size={12} /> Denunciar a @{profileUsername}
+                  </button>
+                  <button className="report-flag-btn" onClick={() => toggleBlock(profileUsername)}>
+                    <Shield size={12} /> {blockedUsernames.has(profileUsername) ? "Desbloquear" : "Bloquear"}
+                  </button>
+                </div>
               )}
 
               <div className="about-me-box">
@@ -4747,12 +4990,22 @@ export default function RopelinApp() {
                 <p className="auth-title">Términos y condiciones</p>
                 <div className="how-it-works-list">
                   {[
-                    { color: "#FF4D8D", title: "Objeto", text: "Ropelin es una plataforma que conecta a compradores y vendedores de artículos de segunda mano. No somos propietarios de los artículos publicados ni parte de la compraventa entre usuarios." },
-                    { color: "#B49CE8", title: "Registro", text: "Debes ser mayor de edad y aportar datos veraces al crear tu cuenta." },
-                    { color: "#7FD8D0", title: "Comisiones", text: "Ropelin cobra una comisión sobre cada venta completada a través de la plataforma, detallada antes de confirmar el pago." },
-                    { color: "#FFC24D", title: "Responsabilidad", text: "Cada vendedor es responsable de la veracidad de sus anuncios y del estado real de los artículos. Ropelin no garantiza la calidad de los productos." },
-                    { color: "#FF8A4D", title: "Envíos", text: "Los envíos se gestionan a través de transportistas externos; Ropelin facilita la generación de etiquetas pero no es responsable de incidencias del transportista." },
-                    { color: "#8C7CFF", title: "Cuenta", text: "Podemos suspender cuentas que incumplan estas condiciones o la normativa vigente." },
+                    { color: "#FF4D8D", title: "1. Objeto", text: "Ropelin es una plataforma que conecta a compradores y vendedores de artículos de segunda mano. Actuamos como intermediarios: no somos propietarios de los artículos publicados ni parte del contrato de compraventa entre usuarios, y no garantizamos la veracidad, calidad ni estado real de los artículos." },
+                    { color: "#B49CE8", title: "2. Quién puede usar Ropelin", text: "Debes ser mayor de 18 años y aportar datos veraces al crear tu cuenta. Solo puedes tener una cuenta activa. Eres responsable de la confidencialidad de tu contraseña." },
+                    { color: "#7FD8D0", title: "3. Cómo funciona la compraventa", text: "El vendedor publica el artículo; el comprador puede preguntar, ofertar o comprar directamente. El pago se hace a través de Stripe, y el envío se gestiona a un precio real elegido por el comprador antes de pagar (o queda en persona)." },
+                    { color: "#FFC24D", title: "4. Precio, comisiones y pago", text: "El vendedor fija el precio. Ropelin cobra una comisión sobre cada venta, mostrada antes de pagar, además del coste real del envío. No almacenamos datos de tarjetas ni cuentas bancarias — los procesa Stripe." },
+                    { color: "#FF8A4D", title: "5. Retención de fondos", text: "En envíos por correo, el pago se retiene 48 horas desde que el comprador confirma la recepción, por si quiere reclamar. En entregas en persona, se libera al vendedor al momento. Si hay una reclamación abierta, el pago queda retenido hasta resolverla." },
+                    { color: "#8C7CFF", title: "6. Reclamaciones y devoluciones", text: "El comprador puede reclamar con foto como prueba dentro de esas 48 horas. Podemos exigir que devuelva el artículo al vendedor (con etiqueta de devolución gratuita) antes de procesar cualquier reembolso. Ropelin decide en última instancia, revisando las pruebas de ambas partes." },
+                    { color: "#FF4D8D", title: "7. Envíos", text: "Los envíos se gestionan con transportistas externos (Correos, InPost...) a través de Sendcloud. Facilitamos la generación de etiquetas y el seguimiento, pero no respondemos de retrasos o daños causados por el transportista." },
+                    { color: "#B49CE8", title: "8. Verificación de identidad", text: "Podemos ofrecer o pedir la verificación de tu identidad (subiendo un documento) como medida antifraude. Es una comprobación interna nuestra, no una verificación legal o notarial." },
+                    { color: "#7FD8D0", title: "9. Conducta prohibida", text: "No se permite publicar artículos falsificados, robados o de venta restringida; manipular reseñas o crear cuentas falsas; abrir reclamaciones fraudulentas; ni acordar la venta fuera de la plataforma para eludir la comisión." },
+                    { color: "#FFC24D", title: "10. Suspensión de cuentas", text: "Podemos suspender, limitar o cerrar cuentas que incumplan estas condiciones, acumulen reclamaciones perdidas de forma reiterada, o muestren patrones de fraude." },
+                    { color: "#FF8A4D", title: "11. Bloqueo entre usuarios", text: "Cualquier usuario puede bloquear a otro. El bloqueo impide escribiros y deshace el seguimiento mutuo; no afecta a transacciones ya en curso." },
+                    { color: "#8C7CFF", title: "12. Propiedad intelectual", text: "Las fotos y descripciones que publiques deben ser tuyas o contar con tu autorización. Al publicarlas, nos concedes permiso para mostrarlas dentro del servicio y con fines promocionales del artículo." },
+                    { color: "#FF4D8D", title: "13. Limitación de responsabilidad", text: "Salvo lo relativo a pagos y reclamaciones descrito arriba, no respondemos de la calidad o legalidad real de los artículos, del comportamiento entre usuarios, ni de incidencias de terceros (Stripe, Sendcloud, transportistas)." },
+                    { color: "#B49CE8", title: "14. Modificaciones", text: "Podemos modificar estas condiciones en cualquier momento; los cambios importantes se avisarán a los usuarios registrados." },
+                    { color: "#7FD8D0", title: "15. Ley aplicable", text: "Estas condiciones se rigen por la legislación española, sometiéndonos a los juzgados y tribunales que correspondan según la normativa de consumidores aplicable." },
+                    { color: "#FFC24D", title: "16. Contacto", text: "Para cualquier duda sobre estas condiciones: hola@ropelin.com" },
                   ].map((s, i) => (
                     <div className="how-it-works-card" key={i}>
                       <span className="how-it-works-num" style={{ background: s.color }}>{i + 1}</span>
@@ -4762,7 +5015,7 @@ export default function RopelinApp() {
                       </div>
                     </div>
                   ))}
-                  <p style={{ color: "var(--faint)", fontSize: 11, marginTop: 4 }}>Este es un texto de ejemplo. Antes de operar de verdad, revísalo con un abogado o gestoría para adaptarlo a tu caso concreto.</p>
+                  <p style={{ color: "var(--faint)", fontSize: 11, marginTop: 4 }}>Este texto es un borrador. Antes de operar con usuarios reales, revísalo con un abogado o gestoría especializada en comercio electrónico y servicios de pago.</p>
                 </div>
               </>
             )}
@@ -4771,10 +5024,16 @@ export default function RopelinApp() {
                 <p className="auth-title">Política de privacidad</p>
                 <div className="how-it-works-list">
                   {[
-                    { color: "#FF4D8D", title: "Datos que recogemos", text: "Email, nombre de usuario, fotos que subas, mensajes de chat, y datos de pago (procesados por Stripe, nunca los almacenamos nosotros)." },
-                    { color: "#B49CE8", title: "Para qué los usamos", text: "Gestionar tu cuenta, procesar pagos y envíos, enviarte notificaciones sobre tus compras/ventas, y mejorar el servicio." },
-                    { color: "#7FD8D0", title: "Con quién los compartimos", text: "Stripe (pagos), Cloudinary (imágenes), Sendcloud (envíos) — solo lo necesario para prestar el servicio." },
-                    { color: "#FFC24D", title: "Tus derechos", text: "Puedes solicitar acceso, rectificación o eliminación de tus datos escribiendo a nuestro email de contacto." },
+                    { color: "#FF4D8D", title: "1. Responsable", text: "Ropelin es responsable del tratamiento de los datos personales recogidos a través de ropelin.com y la app. Contacto: hola@ropelin.com" },
+                    { color: "#B49CE8", title: "2. Qué datos recogemos", text: "Cuenta (email, usuario, contraseña cifrada), perfil (foto, bio, ciudad), dirección de envío, fotos y mensajes, reseñas, y — solo si te verificas o te lo pedimos por prevención de fraude — una foto de tu documento de identidad. Los datos de pago los procesa Stripe directamente; nosotros no los almacenamos." },
+                    { color: "#7FD8D0", title: "3. Base legal", text: "Tratamos tus datos para ejecutar el contrato de uso de la plataforma, con tu consentimiento (verificación voluntaria, notificaciones, cookies no esenciales), por interés legítimo (prevenir fraude, resolver disputas) y por obligación legal cuando aplica." },
+                    { color: "#FFC24D", title: "4. Para qué los usamos", text: "Gestionar tu cuenta y tus compras/ventas, procesar pagos y envíos, enviarte notificaciones, revisar reclamaciones y solicitudes de verificación, prevenir fraude, y cumplir obligaciones legales." },
+                    { color: "#FF8A4D", title: "5. Con quién los compartimos", text: "Stripe (pagos, verificación de vendedores, reembolsos), Sendcloud (etiquetas y seguimiento de envíos), y nuestros proveedores de alojamiento e imágenes — solo lo necesario para prestar el servicio. Nunca vendemos tus datos a terceros con fines publicitarios." },
+                    { color: "#8C7CFF", title: "6. Cuánto los conservamos", text: "Mientras tu cuenta esté activa, y el tiempo que exija la ley después de darte de baja (por ejemplo, datos fiscales de transacciones). Los documentos de identidad se conservan solo el tiempo necesario para revisar la solicitud." },
+                    { color: "#FF4D8D", title: "7. Tus derechos", text: "Puedes acceder, rectificar o suprimir tus datos, oponerte o limitar su uso, y pedir la portabilidad, escribiendo a hola@ropelin.com. También puedes reclamar ante la Agencia Española de Protección de Datos (AEPD)." },
+                    { color: "#B49CE8", title: "8. Seguridad", text: "Aplicamos medidas técnicas y organizativas razonables (cifrado de contraseñas, conexiones seguras) para proteger tus datos. Si detectamos una brecha que te afecte, te lo notificaremos conforme a la normativa aplicable." },
+                    { color: "#7FD8D0", title: "9. Menores de edad", text: "Ropelin no está dirigido a menores de 18 años y no recogemos conscientemente datos de menores." },
+                    { color: "#FFC24D", title: "10. Cambios y contacto", text: "Podemos actualizar esta política; los cambios importantes se avisarán a los usuarios registrados. Para cualquier duda: hola@ropelin.com" },
                   ].map((s, i) => (
                     <div className="how-it-works-card" key={i}>
                       <span className="how-it-works-num" style={{ background: s.color }}>{i + 1}</span>
@@ -4784,7 +5043,7 @@ export default function RopelinApp() {
                       </div>
                     </div>
                   ))}
-                  <p style={{ color: "var(--faint)", fontSize: 11, marginTop: 4 }}>Este es un texto de ejemplo. Antes de operar de verdad, revísalo con un abogado para cumplir el RGPD correctamente.</p>
+                  <p style={{ color: "var(--faint)", fontSize: 11, marginTop: 4 }}>Este texto es un borrador. Antes de operar con usuarios reales, revísalo con un abogado especializado en protección de datos para cumplir el RGPD correctamente.</p>
                 </div>
               </>
             )}
@@ -5191,10 +5450,41 @@ export default function RopelinApp() {
             <form onSubmit={handleSubmitDispute}>
               <label>Cuéntanos qué ha pasado</label>
               <div className="input-icon">
-                <input value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} placeholder="Ej. No coincide con la descripción..." />
+                <input value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} placeholder="Ej. No coincide con la descripción, parece falso..." />
               </div>
-              <p style={{ fontSize: 11, color: "#6A6A73", marginTop: 10 }}>Revisaremos tu caso y, si procede, se te devolverá el importe a través de Stripe.</p>
+              <label style={{ marginTop: 14 }}>Foto como prueba (recomendado)</label>
+              {disputeEvidence?.url ? (
+                <div className="dispute-evidence-preview">
+                  <img src={disputeEvidence.url} alt="Prueba" />
+                  <button type="button" className="checkout-locker-change" onClick={() => setDisputeEvidence(null)}>Quitar</button>
+                </div>
+              ) : (
+                <label className="dispute-evidence-upload">
+                  <input type="file" accept="image/*" onChange={handleDisputeEvidenceUpload} style={{ display: "none" }} />
+                  {disputeEvidence?.uploading ? "Subiendo…" : <><Camera size={14} /> Añadir foto del artículo recibido</>}
+                </label>
+              )}
+              <p style={{ fontSize: 11, color: "#6A6A73", marginTop: 10 }}>Revisaremos tu caso y, si procede, se te devolverá el importe a través de Stripe. Tienes 48h desde que confirmaste la entrega para reclamar.</p>
               <button className="submit-btn" type="submit">Enviar solicitud</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {respondingTx && (
+        <div className="overlay" onClick={() => setRespondingTx(null)}>
+          <div className="modal rating-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-btn" onClick={() => setRespondingTx(null)}><X size={14} /></button>
+            <p className="auth-title">Dar tu versión</p>
+            <p className="auth-subtitle" style={{ marginBottom: 18 }}>{respondingTx.item.title}</p>
+            <p className="admin-dispute-reason">Reclamación de @{respondingTx.buyer.username}: "{respondingTx.disputeReason}"</p>
+            <form onSubmit={handleSubmitSellerResponse}>
+              <label>Tu respuesta</label>
+              <div className="input-icon">
+                <input value={sellerResponseText} onChange={(e) => setSellerResponseText(e.target.value)} placeholder="Explica tu versión de lo ocurrido..." />
+              </div>
+              <p style={{ fontSize: 11, color: "#6A6A73", marginTop: 10 }}>Revisaremos las dos versiones antes de tomar una decisión — el pago se queda retenido mientras tanto.</p>
+              <button className="submit-btn" type="submit">Enviar mi versión</button>
             </form>
           </div>
         </div>
@@ -5435,6 +5725,66 @@ export default function RopelinApp() {
               )}
             </div>
 
+            {sellerBalance && (sellerBalance.pendingTotal > 0 || sellerBalance.releasedTotal > 0) && (
+              <div className="stripe-box">
+                <p className="stripe-title"><HandCoins size={14} /> Tu saldo de ventas</p>
+                <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                  <div className="referral-balance-box" style={{ flex: 1 }}>
+                    <div>
+                      <p className="referral-balance-num">{sellerBalance.pendingTotal.toFixed(2)}€</p>
+                      <p className="referral-balance-label">Retenido (por 48h de reclamación)</p>
+                    </div>
+                  </div>
+                  <div className="referral-balance-box" style={{ flex: 1 }}>
+                    <div>
+                      <p className="referral-balance-num">{sellerBalance.releasedTotal.toFixed(2)}€</p>
+                      <p className="referral-balance-label">Ya en tu cuenta</p>
+                    </div>
+                  </div>
+                </div>
+                {sellerBalance.pending.map((s) => (
+                  <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12 }}>
+                    <span>{s.itemTitle}</span>
+                    <span style={{ color: "var(--sub)" }}>
+                      {Number(s.amount).toFixed(2)}€{s.releaseEstimate ? ` · libre el ${new Date(s.releaseEstimate).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}` : s.status === "disputed" ? " · en disputa" : " · en persona"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="stripe-box">
+              <p className="stripe-title"><ShieldCheck size={14} /> Verificación de identidad</p>
+              {myIdVerification.status === "approved" ? (
+                <p className="stripe-status ok"><CheckCircle size={13} /> Identidad verificada</p>
+              ) : myIdVerification.status === "pending" ? (
+                <p className="stripe-status">Tu documento está en revisión, te avisaremos en cuanto lo veamos.</p>
+              ) : (
+                <>
+                  <p className="stripe-status">Verifica tu identidad para desbloquear compras de más valor desde el primer día y dar más confianza al vender.</p>
+                  {myIdVerification.status === "rejected" && (
+                    <p style={{ color: "#FF4D8D", fontSize: 12 }}>No se pudo verificar la última vez — puedes volver a intentarlo con otra foto.</p>
+                  )}
+                  <label className="dispute-evidence-upload">
+                    <input type="file" accept="image/*" onChange={handleUploadIdVerification} style={{ display: "none" }} />
+                    {myIdVerification.uploading ? "Subiendo…" : <><Camera size={14} /> Subir foto de un documento (DNI, pasaporte...)</>}
+                  </label>
+                </>
+              )}
+            </div>
+
+            {blockedUsernames.size > 0 && (
+              <div className="stripe-box">
+                <p className="stripe-title"><Shield size={14} /> Usuarios bloqueados</p>
+                {Array.from(blockedUsernames).map((u) => (
+                  <div key={u} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0" }}>
+                    <span style={{ fontSize: 13 }}>@{u}</span>
+                    <button className="checkout-locker-change" onClick={() => toggleBlock(u)}>Desbloquear</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <button className="submit-btn" onClick={handleSaveAccountSettings} disabled={savingAccountSettings}>
               {savingAccountSettings ? "Guardando..." : "Guardar cambios"}
             </button>
@@ -5625,6 +5975,14 @@ export default function RopelinApp() {
                     {adminDisputes.length > 0 && <span className="admin-menu-badge">{adminDisputes.length}</span>}
                     <span className="admin-menu-arrow">›</span>
                   </button>
+                  {isAdmin && (
+                    <button className="admin-menu-item" onClick={() => loadAdminTab("verifications")}>
+                      <span className="admin-menu-icon"><ShieldCheck size={17} /></span>
+                      <span className="admin-menu-label">Verificaciones</span>
+                      {adminVerifications.length > 0 && <span className="admin-menu-badge">{adminVerifications.length}</span>}
+                      <span className="admin-menu-arrow">›</span>
+                    </button>
+                  )}
                   <button className="admin-menu-item" onClick={() => loadAdminTab("reports")}>
                     <span className="admin-menu-icon"><FileWarning size={17} /></span>
                     <span className="admin-menu-label">Denuncias</span>
@@ -5658,7 +6016,7 @@ export default function RopelinApp() {
                 <div className="league-header">
                   <button className="admin-back-btn" onClick={() => setAdminSection(null)}><ArrowLeft size={16} /></button>
                   <p className="auth-title" style={{ margin: 0 }}>
-                    {{ users: "Usuarios", stats: "Ganancias", disputes: "Disputas", reports: "Denuncias", support: "Soporte", settings: "Configuración", logs: "Historial" }[adminSection]}
+                    {{ users: "Usuarios", stats: "Ganancias", disputes: "Disputas", verifications: "Verificaciones", reports: "Denuncias", support: "Soporte", settings: "Configuración", logs: "Historial" }[adminSection]}
                   </p>
                 </div>
 
@@ -5931,8 +6289,68 @@ export default function RopelinApp() {
                           <div key={d.id} className="admin-dispute-row">
                             <p className="admin-user-name">{d.item.title} — {Number(d.item.price).toFixed(2)}€</p>
                             <p className="admin-user-meta">Comprador: @{d.buyer.username} · Vendedor: @{d.seller.username}</p>
+                            {d.shipment && (
+                              <p className="admin-dispute-reason">🚚 Estado real del envío: <strong>{{ label_created: "Etiqueta generada", in_transit: "En camino", delivered: "Entregado", incident: "Incidencia" }[d.shipment.status] || d.shipment.status}</strong></p>
+                            )}
+                            {d.buyerFlag && <p className="admin-dispute-flag">⚠️ {d.buyerFlag} (comprador)</p>}
+                            {d.sellerFlag && <p className="admin-dispute-flag">⚠️ {d.sellerFlag} (vendedor)</p>}
                             {d.disputeReason && <p className="admin-dispute-reason">"{d.disputeReason}"</p>}
-                            <button className="btn primary admin-refund-btn" onClick={() => handleAdminRefund(d.id)}>Procesar reembolso</button>
+                            {d.disputeEvidenceUrl && (
+                              <img src={d.disputeEvidenceUrl} alt="Prueba adjuntada" className="admin-dispute-evidence" onClick={() => window.open(d.disputeEvidenceUrl, "_blank")} />
+                            )}
+                            {d.sellerResponse && (
+                              <p className="admin-dispute-seller-response"><strong>Respuesta del vendedor:</strong> "{d.sellerResponse}"</p>
+                            )}
+                            {d.returnRequired && (
+                              <p className="admin-dispute-reason">
+                                📦 Devolución pedida{d.returnMarkedSentAt ? ` — el comprador dice que ya la envió${d.returnTrackingCode ? ` (seguimiento: ${d.returnTrackingCode})` : ""}` : ", esperando a que el comprador la envíe"}
+                                {d.returnLabelUrl && <> · <a href={d.returnLabelUrl} target="_blank" rel="noreferrer" style={{ color: "#FF4D8D", fontWeight: 700 }}>etiqueta generada</a></>}
+                              </p>
+                            )}
+                            {d.stripeDisputeId && (
+                              <p className="admin-dispute-reason">⚠️ Además hay un contracargo bancario abierto en Stripe ({d.stripeDisputeStatus})</p>
+                            )}
+                            {d.messages && d.messages.length > 0 && (
+                              <details className="admin-dispute-chat">
+                                <summary>Ver conversación ({d.messages.length} mensajes)</summary>
+                                {d.messages.map((m) => (
+                                  <p key={m.id} className="admin-dispute-chat-msg"><strong>@{m.sender.username}:</strong> {m.content || (m.imageUrl ? "[foto]" : "")}{m.offerAmount ? ` — oferta ${Number(m.offerAmount).toFixed(2)}€` : ""}</p>
+                                ))}
+                              </details>
+                            )}
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}>
+                              {!d.returnRequired && (
+                                <button className="order-action-btn secondary" onClick={() => handleAdminRequestReturn(d.id)}>Pedir devolución antes</button>
+                              )}
+                              <input
+                                type="number" step="0.01" placeholder={`hasta ${Number(d.amount).toFixed(2)}€`}
+                                value={partialRefundAmounts[d.id] || ""}
+                                onChange={(e) => setPartialRefundAmounts((prev) => ({ ...prev, [d.id]: e.target.value }))}
+                                style={{ width: 90, padding: "6px 8px", borderRadius: 8, border: "1.5px solid var(--input-border)", background: "var(--bg)", color: "var(--text)", fontSize: 12 }}
+                              />
+                              <button className="btn primary admin-refund-btn" onClick={() => handleAdminRefund(d.id, partialRefundAmounts[d.id])}>
+                                {partialRefundAmounts[d.id] ? "Reembolso parcial" : "Reembolsar al comprador"}
+                              </button>
+                              <button className="danger-zone-btn" onClick={() => handleAdminRejectDispute(d.id)}>Rechazar, pagar al vendedor</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                )}
+
+                {!adminLoading && adminSection === "verifications" && (
+                  adminVerifications.length === 0
+                    ? <p className="empty-tab">No hay solicitudes de verificación pendientes.</p>
+                    : <div className="admin-user-list">
+                        {adminVerifications.map((v) => (
+                          <div key={v.id} className="admin-dispute-row">
+                            <p className="admin-user-name">@{v.username}</p>
+                            <p className="admin-user-meta">{v.email}</p>
+                            <img src={v.idVerificationUrl} alt="Documento" className="admin-dispute-evidence" onClick={() => window.open(v.idVerificationUrl, "_blank")} />
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                              <button className="btn primary admin-refund-btn" onClick={() => handleApproveVerification(v.id)}>Aprobar</button>
+                              <button className="danger-zone-btn" onClick={() => handleRejectVerification(v.id)}>Rechazar</button>
+                            </div>
                           </div>
                         ))}
                       </div>

@@ -658,12 +658,128 @@ export async function fetchAdminDisputes() {
   return res.json();
 }
 
+export async function submitIdentityVerification(documentUrl) {
+  const res = await fetch(`${API_URL}/users/me/verify-identity`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ documentUrl }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la verificación");
+  return res.json();
+}
+
+export async function fetchAdminVerifications() {
+  const res = await fetch(`${API_URL}/admin/verifications`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron cargar las verificaciones");
+  return res.json();
+}
+
+export async function approveVerification(userId) {
+  const res = await fetch(`${API_URL}/admin/verifications/${userId}/approve`, {
+    method: "POST",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo aprobar");
+  return res.json();
+}
+
+export async function rejectVerification(userId, reason) {
+  const res = await fetch(`${API_URL}/admin/verifications/${userId}/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo rechazar");
+  return res.json();
+}
+
+export async function blockUser(username) {
+  const res = await fetch(`${API_URL}/users/${username}/block`, { method: "POST", headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo bloquear");
+  return res.json();
+}
+
+export async function unblockUser(username) {
+  const res = await fetch(`${API_URL}/users/${username}/block`, { method: "DELETE", headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo desbloquear");
+  return res.json();
+}
+
+export async function fetchBlockedUsers() {
+  const res = await fetch(`${API_URL}/users/me/blocked`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar la lista");
+  return res.json();
+}
+
+export async function fetchSellerBalance() {
+  const res = await fetch(`${API_URL}/transactions/balance`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar el saldo");
+  return res.json();
+}
+
+export async function refundTransactionPartial(transactionId, amount) {
+  const res = await fetch(`${API_URL}/stripe/refund/${transactionId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ amount }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo procesar el reembolso");
+  return res.json();
+}
+
 export async function refundTransaction(transactionId) {
   const res = await fetch(`${API_URL}/stripe/refund/${transactionId}`, {
     method: "POST",
     headers: { ...authHeaders() },
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo procesar el reembolso");
+  return res.json();
+}
+
+export async function rejectDispute(transactionId) {
+  const res = await fetch(`${API_URL}/stripe/reject-dispute/${transactionId}`, {
+    method: "POST",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo rechazar la reclamación");
+  return res.json();
+}
+
+export async function requestReturn(transactionId) {
+  const res = await fetch(`${API_URL}/stripe/request-return/${transactionId}`, {
+    method: "POST",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo pedir la devolución");
+  return res.json();
+}
+
+export async function markReturned(transactionId, trackingCode) {
+  const res = await fetch(`${API_URL}/transactions/${transactionId}/mark-returned`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ trackingCode }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo confirmar la devolución");
+  return res.json();
+}
+
+export async function confirmReturnReceived(transactionId) {
+  const res = await fetch(`${API_URL}/transactions/${transactionId}/confirm-return-received`, {
+    method: "PATCH",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo confirmar la recepción");
+  return res.json();
+}
+
+export async function respondToDispute(transactionId, response) {
+  const res = await fetch(`${API_URL}/transactions/${transactionId}/respond-dispute`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ response }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar tu respuesta");
   return res.json();
 }
 
@@ -761,11 +877,11 @@ export async function markAllNotificationsRead() {
 
 // --- Disputas / reembolsos ---
 
-export async function disputeTransaction(transactionId, reason) {
+export async function disputeTransaction(transactionId, reason, evidenceUrl) {
   const res = await fetch(`${API_URL}/transactions/${transactionId}/dispute`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ reason }),
+    body: JSON.stringify({ reason, evidenceUrl }),
   });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo abrir la disputa");
   return res.json();
