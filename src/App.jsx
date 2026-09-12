@@ -36,7 +36,7 @@ function buildFaqItems(s) {
   return [
     { q: "¿Cómo publico una prenda?", a: "Dale al botón \"Vender\", añade fotos, título, precio y descripción, y publícala. Aparecerá al momento en el feed." },
     { q: "¿Cómo recibo el dinero de una venta?", a: "Conecta tu cuenta de Stripe desde Ajustes. En cuanto se confirme el pago del comprador, el dinero (menos la comisión) se transfiere a tu cuenta." },
-    { q: "¿Cuánto cobra Ropelin por cada venta?", a: `Una comisión del ${s.commissionPercent}% sobre el precio del artículo. El comprador paga además ${s.shippingFee.toFixed(2)}€ de gastos de envío fijos.` },
+    { q: "¿Cuánto cobra Ropelin por cada venta?", a: `Una comisión del ${s.commissionPercent}% sobre el precio del artículo. El comprador paga además el gasto de envío real, calculado con el transportista en el momento de pagar (varía según destino).` },
     { q: "¿Qué hago si el comprador no genera la etiqueta o no responde?", a: "Puedes contactar con el comprador desde el chat de la compra. Si no se resuelve, escríbenos desde \"Contactar\" y lo revisamos." },
     { q: "¿Puedo devolver un artículo si no era como esperaba?", a: "Contacta primero con el vendedor. Si no llegáis a un acuerdo, puedes abrir una disputa desde tus compras y nuestro equipo lo revisará." },
     { q: "¿Qué es \"Destacar\" una prenda?", a: `Por ${s.boostPrice.toFixed(2)}€ tu artículo aparece arriba del todo del feed durante ${s.boostDurationHours} horas, para que lo vea más gente.` },
@@ -3011,6 +3011,8 @@ export default function RopelinApp() {
         .report-textarea { width: 100%; background: var(--bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; color: var(--text); font-size: 16px; font-family: inherit; resize: none; margin-bottom: 10px; }
         .report-flag-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--sub); font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 8px 14px; border-radius: 20px; }
         .report-flag-btn:hover { color: #FF4D8D; border-color: #FF4D8D55; background: #FF4D8D0F; }
+        .report-flag-link { display: inline-flex; align-items: center; gap: 5px; background: none; border: none; color: var(--faint); font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 8px 0; margin-top: 6px; }
+        .report-flag-link:hover { color: #FF4D8D; text-decoration: underline; }
         .report-modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
         .report-modal-icon { width: 38px; height: 38px; border-radius: 12px; background: #FF4D8D18; display: flex; align-items: center; justify-content: center; color: #FF4D8D; flex-shrink: 0; }
         .report-submit-btn { width: 100%; margin-top: 10px; padding: 12px; font-size: 13px; font-weight: 700; border: none; border-radius: 14px; cursor: pointer; font-family: inherit; background: linear-gradient(135deg, #FF4D8D, #B23A55); color: var(--text); }
@@ -4510,17 +4512,11 @@ export default function RopelinApp() {
               </button>
             </div>
 
-            {loggedIn && openItem.seller !== username && (
-              <button className="report-flag-btn" onClick={() => setShowReportForm({ targetType: "item", itemId: openItem.id })}>
-                <FileWarning size={12} /> Denunciar este artículo
-              </button>
-            )}
-
             <div className="shipping-box">
               <Truck size={16} color="#9A9AA3" />
               <div>
                 <p className="shipping-title">Cómo se entrega</p>
-                <p className="shipping-sub">Por correo, con etiqueta de envío (~{platformSettings.shippingFee}€) o en mano si quedáis cerca — lo acordáis por chat</p>
+                <p className="shipping-sub">Por correo, con el precio real del transportista calculado al pagar (varía según destino), o en mano si quedáis cerca — lo acordáis por chat</p>
               </div>
             </div>
 
@@ -4633,6 +4629,12 @@ export default function RopelinApp() {
                   <Trash2 size={14} />
                 </button>
               </div>
+            )}
+
+            {loggedIn && openItem.seller !== username && (
+              <button className="report-flag-link" onClick={() => setShowReportForm({ targetType: "item", itemId: openItem.id })}>
+                <FileWarning size={11} /> Denunciar este artículo
+              </button>
             )}
           </>
         );
