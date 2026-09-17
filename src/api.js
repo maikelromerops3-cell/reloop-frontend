@@ -176,6 +176,16 @@ export async function updateShippingAddress({ shippingStreet, shippingPostalCode
   return res.json();
 }
 
+export async function updateMarketingOptIn(marketingOptIn) {
+  const res = await fetch(`${API_URL}/users/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ marketingOptIn }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la preferencia");
+  return res.json();
+}
+
 export async function deleteMyAccount() {
   const res = await fetch(`${API_URL}/users/me`, {
     method: "DELETE",
@@ -533,6 +543,22 @@ export async function resolveReport(id) {
 export async function fetchAdminLogs() {
   const res = await fetch(`${API_URL}/admin/logs`, { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar el historial");
+  return res.json();
+}
+
+export async function fetchAdminBroadcasts() {
+  const res = await fetch(`${API_URL}/admin/broadcast`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar el historial de avisos");
+  return res.json();
+}
+
+export async function sendAdminBroadcast({ title, message, link, channel }) {
+  const res = await fetch(`${API_URL}/admin/broadcast`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ title, message, link, channel }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar el aviso");
   return res.json();
 }
 

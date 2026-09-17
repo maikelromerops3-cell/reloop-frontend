@@ -1,15 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140" width="140" height="140">
-  <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF4D8D"/>
-      <stop offset="100%" stop-color="#FF8A4D"/>
-    </linearGradient>
-  </defs>
-  <rect width="140" height="140" fill="#FFF8EC"/>
-  <g transform="translate(18,18) scale(0.74)">
-    <path d="M 6 30 A 24 24 0 0 1 30 6 L 86 6 L 134 30 L 134 106 A 24 24 0 0 1 110 130 L 30 130 A 24 24 0 0 1 6 106 Z"
-          fill="url(#g)" stroke="#1A1A1E" stroke-width="4" stroke-linejoin="round"/>
-    <circle cx="112" cy="24" r="5.5" fill="#1A1A1E"/>
-    <text x="66" y="98" font-family="Poppins" font-size="76" font-weight="700" fill="#1A1A1E" text-anchor="middle">R</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#FFF8EC"/>
+  <g transform="translate(23,23) scale(0.77)">
+    <rect x="132" y="36" width="30" height="30" fill="#FF8A4D"/>
+    <text x="94" y="160" font-family="Manrope" font-size="150" font-weight="800" fill="#17171A" text-anchor="middle">R</text>
   </g>
 </svg>

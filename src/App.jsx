@@ -12,7 +12,7 @@ import {
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, downloadShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
   searchServicePoints, setServicePoint, fetchShippingQuote,
-  fetchProfile, updateMyLocation, updateShippingAddress, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
+  fetchProfile, updateMyLocation, updateShippingAddress, updateMarketingOptIn, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
   fetchSavedSearches, saveSearch, deleteSavedSearch,
   fetchPushPublicKey, subscribeToPush, unsubscribeFromPush,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
@@ -25,6 +25,7 @@ import {
   submitIdentityVerification, fetchAdminVerifications, approveVerification, rejectVerification,
   blockUser, unblockUser, fetchBlockedUsers, fetchSellerBalance, refundTransactionPartial,
   banUser, unbanUser, adminDeleteItem, fetchAdminReports, resolveReport, fetchAdminLogs, fetchAdminTop, fetchAdminTimeseries, submitReport,
+  fetchAdminBroadcasts, sendAdminBroadcast,
   submitSupportMessage, fetchMySupportMessages, fetchAdminSupport, replySupportMessage,
   fetchPublicSettings, fetchAdminSettings, updateAdminSettings, adminEditItem, exportUsersCsv, exportTransactionsCsv, changeUserRole,
 } from "./api";
@@ -34,12 +35,12 @@ const CATEGORY_COLORS = { "Todo": "#C8C8CE", "Moda": "#FF4D8D", "Electrónica": 
 const CATEGORIES = ["Todo", "Moda", "Electrónica", "Hogar", "Deporte", "Juguetes y ocio", "Vehículos", "Libros y música", "Belleza y cuidado personal", "Bebé e infantil", "Jardín y herramientas", "Instrumentos musicales", "Otros"];
 function buildFaqItems(s) {
   return [
-    { q: "¿Cómo publico una prenda?", a: "Dale al botón \"Vender\", añade fotos, título, precio y descripción, y publícala. Aparecerá al momento en el feed." },
+    { q: "¿Cómo publico un artículo?", a: "Dale al botón \"Vender\", añade fotos, título, precio y descripción, y publícalo. Aparecerá al momento en el feed." },
     { q: "¿Cómo recibo el dinero de una venta?", a: "Conecta tu cuenta de Stripe desde Ajustes. En cuanto se confirme el pago del comprador, el dinero (menos la comisión) se transfiere a tu cuenta." },
     { q: "¿Cuánto cobra Ropelin por cada venta?", a: `Una comisión del ${s.commissionPercent}% sobre el precio del artículo. El comprador paga además el gasto de envío real, calculado con el transportista en el momento de pagar (varía según destino).` },
     { q: "¿Qué hago si el comprador no genera la etiqueta o no responde?", a: "Puedes contactar con el comprador desde el chat de la compra. Si no se resuelve, escríbenos desde \"Contactar\" y lo revisamos." },
     { q: "¿Puedo devolver un artículo si no era como esperaba?", a: "Contacta primero con el vendedor. Si no llegáis a un acuerdo, puedes abrir una disputa desde tus compras y nuestro equipo lo revisará." },
-    { q: "¿Qué es \"Destacar\" una prenda?", a: `Por ${s.boostPrice.toFixed(2)}€ tu artículo aparece arriba del todo del feed durante ${s.boostDurationHours} horas, para que lo vea más gente.` },
+    { q: "¿Qué es \"Destacar\" un artículo?", a: `Por ${s.boostPrice.toFixed(2)}€ tu artículo aparece arriba del todo del feed durante ${s.boostDurationHours} horas, para que lo vea más gente.` },
   ];
 }
 const SIZES = ["XS", "S", "M", "L", "XL"];
@@ -323,6 +324,7 @@ export default function RopelinApp() {
   const [editingItem, setEditingItem] = useState(null);
   const [showLegal, setShowLegal] = useState(null); // "about" | "terms" | "privacy" | "cookies" | null
   const [cookieChoice, setCookieChoice] = useState(() => localStorage.getItem("reloop_cookie_consent") || null);
+  const [marketingOptIn, setMarketingOptIn] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
   const [showMaintenanceLogin, setShowMaintenanceLogin] = useState(false);
@@ -1051,7 +1053,7 @@ export default function RopelinApp() {
 
   // Bloquea el scroll de la página de fondo mientras haya cualquier ventana/modal abierto,
   // para que en móvil arrastrar dentro del modal no mueva el feed de detrás.
-  // El detalle de la prenda (openItem) solo cuenta como "modal" en móvil: en escritorio es la página normal, no una ventana flotante, y necesita su propio scroll.
+  // El detalle del artículo (openItem) solo cuenta como "modal" en móvil: en escritorio es la página normal, no una ventana flotante, y necesita su propio scroll.
   const legalPageOpen = !!showLegal;
   // En escritorio, cuando se muestra el detalle de un artículo, el formulario de publicar, o Quiénes somos/Novedades como página, se oculta el feed de detrás (en vez de quedar apilado debajo)
   const hidesFeedOnDesktop = numCols >= 3 && openItem;
@@ -1101,6 +1103,9 @@ export default function RopelinApp() {
   const [adminUserSearch, setAdminUserSearch] = useState("");
   const [adminReports, setAdminReports] = useState([]);
   const [adminLogs, setAdminLogs] = useState([]);
+  const [adminBroadcasts, setAdminBroadcasts] = useState([]);
+  const [broadcastForm, setBroadcastForm] = useState({ title: "", message: "", link: "", channel: "both" });
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
   const [adminTop, setAdminTop] = useState(null);
   const [adminTimeseries, setAdminTimeseries] = useState([]);
   const [adminSupport, setAdminSupport] = useState([]);
@@ -1133,16 +1138,9 @@ export default function RopelinApp() {
         <div className="footer-brand-group">
           <div className="footer-brand-mark">
             <svg width="32" height="32" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="footerLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#FF4D8D" />
-                  <stop offset="100%" stopColor="#FF8A4D" />
-                </linearGradient>
-              </defs>
-              <path d="M 6 30 A 24 24 0 0 1 30 6 L 86 6 L 134 30 L 134 106 A 24 24 0 0 1 110 130 L 30 130 A 24 24 0 0 1 6 106 Z"
-                    fill="url(#footerLogoGrad)" stroke="#1A1A1E" strokeWidth="4" strokeLinejoin="round" />
-              <circle cx="112" cy="24" r="5.5" fill="#1A1A1E" />
-              <text x="66" y="98" fontFamily="Poppins, Arial, sans-serif" fontSize="76" fontWeight="700" fill="#1A1A1E" textAnchor="middle">R</text>
+              <rect width="140" height="140" rx="30" fill="#FFF8EC" stroke="#1A1A1E" strokeWidth="2.5" />
+              <rect x="92" y="25" width="21" height="21" fill="#FF8A4D" />
+              <text x="66" y="112" fontFamily="Manrope, Arial, sans-serif" fontSize="105" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
             </svg>
           </div>
           <p className="footer-brand-line">ROPELIN — COMPRA Y VENDE DE SEGUNDA MANO.</p>
@@ -2051,12 +2049,33 @@ export default function RopelinApp() {
       if (tab === "verifications") setAdminVerifications(await fetchAdminVerifications());
       if (tab === "reports") setAdminReports(await fetchAdminReports());
       if (tab === "logs") setAdminLogs(await fetchAdminLogs());
+      if (tab === "broadcast") setAdminBroadcasts(await fetchAdminBroadcasts());
       if (tab === "support") setAdminSupport(await fetchAdminSupport());
       if (tab === "settings") setAdminSettingsForm(await fetchAdminSettings());
     } catch (err) {
       toast.error(err.message);
     } finally {
       setAdminLoading(false);
+    }
+  }
+
+  async function handleSendBroadcast(e) {
+    e.preventDefault();
+    if (!broadcastForm.title.trim() || !broadcastForm.message.trim()) {
+      toast.error("Escribe un título y un mensaje");
+      return;
+    }
+    if (!confirm(`¿Enviar este aviso a todos los usuarios que no hayan desactivado las comunicaciones? (canal: ${broadcastForm.channel})`)) return;
+    setSendingBroadcast(true);
+    try {
+      const { broadcast } = await sendAdminBroadcast(broadcastForm);
+      toast.success(`Enviado — ${broadcast.pushSent} notificaciones push, ${broadcast.emailSent} emails`);
+      setBroadcastForm({ title: "", message: "", link: "", channel: "both" });
+      setAdminBroadcasts((prev) => [broadcast, ...prev]);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSendingBroadcast(false);
     }
   }
 
@@ -2482,7 +2501,7 @@ export default function RopelinApp() {
 
   if (platformSettings.maintenanceMode && !isModerator) {
     const comingSoonSteps = [
-      { color: "#FF4D8D", title: "Encuentra o publica una prenda", text: "Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio." },
+      { color: "#FF4D8D", title: "Encuentra o publica un artículo", text: "Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio." },
       { color: "#B49CE8", title: "Habla, oferta o compra directamente", text: "Pregunta al vendedor, haz una oferta más baja, o compra al precio marcado. El pago se hace dentro de Ropelin con Stripe — nunca por fuera, para que quede constancia de todo." },
       { color: "#7FD8D0", title: "El vendedor envía o quedáis en persona", text: "Tras el pago, el vendedor genera una etiqueta de envío con un par de clics, o podéis quedar en persona si os viene mejor." },
       { color: "#FFC24D", title: "Confirmas que lo has recibido", text: "En cuanto te llegue, confirmas la recepción desde tu perfil — así queda cerrado el pedido para las dos partes." },
@@ -2665,7 +2684,7 @@ export default function RopelinApp() {
         .app { min-height: 100vh; max-width: 100vw; overflow-x: hidden; background: var(--bg); color: var(--text); font-family: 'Helvetica Neue', Arial, sans-serif; }
         header.top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; padding: 16px 20px; position: sticky; top: 0; background: var(--bg-translucent); backdrop-filter: blur(6px); z-index: 5; }
         .brand { display: flex; align-items: center; gap: 8px; }
-        .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); border: 2px solid #1A1A1A; display: flex; align-items: center; justify-content: center; }
+        .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: #FFF8EC; border: 2px solid #1A1A1A; display: flex; align-items: center; justify-content: center; }
         .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
         .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
         .mobile-bottom-nav { display: none; }
@@ -3015,6 +3034,12 @@ export default function RopelinApp() {
         .admin-category-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; }
         .admin-category-count { font-weight: 800; color: #7FD8D0; }
         .admin-log-row { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+        .broadcast-form { display: flex; flex-direction: column; }
+        .broadcast-form label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--faint); margin: 14px 0 6px; }
+        .broadcast-form label:first-child { margin-top: 0; }
+        .broadcast-channel-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .chip-toggle { background: var(--bg); border: 1.5px solid var(--border); color: var(--body); font-size: 12.5px; font-weight: 700; padding: 8px 14px; border-radius: 20px; cursor: pointer; font-family: inherit; }
+        .chip-toggle.active { background: #FF4D8D; border-color: #1A1A1A; color: #1A1A1A; }
         .admin-dispute-row.reviewed { opacity: 0.55; }
         .report-textarea { width: 100%; background: var(--bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; color: var(--text); font-size: 16px; font-family: inherit; resize: none; margin-bottom: 10px; }
         .report-flag-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--sub); font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 8px 14px; border-radius: 20px; }
@@ -3071,6 +3096,9 @@ export default function RopelinApp() {
         .location-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 16px; }
         .location-current { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin: 0; }
         .location-hint { font-size: 11px; color: var(--sub); margin: 4px 0 0; }
+        .cookie-pref-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 16px; }
+        .cookie-pref-current { font-size: 13px; font-weight: 600; margin: 0; }
+        .cookie-pref-hint { font-size: 11px; color: var(--sub); margin: 4px 0 0; }
         .stripe-box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 16px 0; }
         .referral-balance-box { display: flex; align-items: center; gap: 12px; background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 12px 16px; margin: 12px 0; }
         .referral-balance-num { font-size: 22px; font-weight: 900; color: var(--text); margin: 0; line-height: 1; }
@@ -3506,25 +3534,37 @@ export default function RopelinApp() {
         .input-icon input { border: none; padding: 13px 0; background: transparent; font-size: 16px; }
         .auth-modal .submit-btn { margin-top: 26px; padding: 15px; font-size: 14px; border-radius: 14px; }
         .auth-modal .toggle-link { margin-top: 16px; font-size: 12.5px; }
-        .post-modal { max-width: 400px; }
+        .post-modal { max-width: 400px; padding: 22px 18px; }
         .post-mobile-header { display: none; }
+        .post-section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text); font-weight: 800; margin: 24px 0 10px; display: flex; align-items: center; gap: 8px; }
+        .post-section-label:first-of-type { margin-top: 6px; }
+        .post-section-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #FF4D8D; display: inline-block; }
+        .post-step-num { display: none; }
+        .post-submit-bar { margin-top: 22px; }
         @media (max-width: 780px) {
-          .post-mobile-header { display: flex; align-items: center; padding: 16px 14px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card); z-index: 3; }
+          .post-mobile-header { display: flex; align-items: center; padding: 16px 14px; margin: -22px -18px 0; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card); z-index: 3; }
           .post-mobile-close { background: none; border: none; color: var(--text); display: flex; padding: 4px; cursor: pointer; }
           .post-mobile-title { flex: 1; text-align: center; margin: 0; font-size: 16px; font-weight: 700; margin-right: 26px; }
           .post-modal .close-btn { display: none; }
           .post-modal .auth-title, .post-modal .auth-subtitle { display: none; }
           .post-modal { padding-top: 0; }
+          .post-submit-bar { position: sticky; bottom: 0; left: 0; right: 0; background: var(--card); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); margin: 20px -18px -18px; border-top: 1.5px solid var(--border); box-shadow: 0 -8px 20px rgba(0,0,0,0.12); }
+          .post-submit-bar .submit-btn { margin: 0; }
+          .post-step-num { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #fff; font-size: 11px; font-weight: 900; flex-shrink: 0; }
+          .post-section-label { gap: 8px; font-size: 12.5px; }
+          .post-section-label::before { display: none; }
+          .post-form-card { box-shadow: 0 6px 18px -8px rgba(0,0,0,0.15); }
+          .pill { padding: 8px 14px; font-size: 12.5px; }
+          .pill.active { box-shadow: 0 4px 12px -4px #FF4D8D66; }
         }
         @media (min-width: 780px) {
           .post-modal { max-width: 760px; }
           .post-modal-grid { display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start; }
         }
-        .post-section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text); font-weight: 800; margin: 24px 0 10px; display: flex; align-items: center; gap: 6px; }
-        .post-section-label:first-of-type { margin-top: 6px; }
-        .post-section-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #FF4D8D; display: inline-block; }
-        .upload-box { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 2.5px dashed var(--border); border-radius: 16px; padding: 26px 16px; margin-bottom: 12px; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; background: var(--card); }
+        .upload-box { display: flex; flex-direction: column; align-items: center; gap: 8px; border: 2.5px dashed var(--border); border-radius: 18px; padding: 30px 16px; margin-bottom: 12px; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; background: var(--card); transition: border-color 0.15s, background 0.15s; }
         .upload-box:hover { border-color: #FF4D8D; background: #FF4D8D0d; }
+        .upload-icon-badge { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); display: flex; align-items: center; justify-content: center; margin-bottom: 2px; }
+        .upload-box-title { font-size: 14px; font-weight: 800; color: var(--text); }
         .image-preview-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
         .image-preview.uploading { display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--faint); }
         .spin { animation: spin 1s linear infinite; }
@@ -3552,8 +3592,8 @@ export default function RopelinApp() {
         <div className="brand" onClick={goHome} style={{ cursor: "pointer" }}>
           <div className="brand-mark">
             <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="82.5" cy="17.5" r="5.5" fill="#1A1A1E" />
-              <text x="47" y="72" fontFamily="Poppins, Arial, sans-serif" fontSize="62" fontWeight="700" fill="#1A1A1E" textAnchor="middle">R</text>
+              <rect x="66" y="18" width="15" height="15" fill="#FF8A4D" />
+              <text x="47" y="80" fontFamily="Manrope, Arial, sans-serif" fontSize="75" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
             </svg>
           </div>
           <h1>Ropelin</h1>
@@ -3671,7 +3711,7 @@ export default function RopelinApp() {
         <div className="search-box">
           <Search size={15} color="#9A9AA3" />
           <input
-            placeholder="Buscar prendas..."
+            placeholder="Buscar artículos..."
             value={query}
             onChange={(e) => { setQuery(e.target.value); if (openItem) closeItemView(); if (photoSearchResults) clearPhotoSearch(); }}
           />
@@ -4050,11 +4090,11 @@ export default function RopelinApp() {
                   ? (isOwnProfile ? (
                       <div className="empty-state-cta">
                         <span className="empty-state-icon"><Shirt size={22} /></span>
-                        <p className="empty-state-title">Aún no tienes prendas publicadas</p>
-                        <p className="empty-state-text">Publica tu primera prenda y empieza a sumar puntos en tu liga.</p>
-                        <button className="btn primary" onClick={openPostForm}><Plus size={14} /> Publicar prenda</button>
+                        <p className="empty-state-title">Aún no tienes artículos publicados</p>
+                        <p className="empty-state-text">Publica tu primer artículo y empieza a sumar puntos en tu liga.</p>
+                        <button className="btn primary" onClick={openPostForm}><Plus size={14} /> Publicar artículo</button>
                       </div>
-                    ) : <p className="empty-tab">Este vendedor no tiene prendas en venta ahora mismo.</p>)
+                    ) : <p className="empty-tab">Este vendedor no tiene artículos en venta ahora mismo.</p>)
                   : isOwnProfile
                   ? <div className="own-grid">
                       {profileItems.map((i, idx) => (
@@ -4119,7 +4159,7 @@ export default function RopelinApp() {
 
               {profileMenuView === "favoritos" && isOwnProfile && (
                 saved.size === 0
-                  ? <p className="empty-tab">Aún no has guardado ninguna prenda.</p>
+                  ? <p className="empty-tab">Aún no has guardado ningún artículo.</p>
                   : <div className="own-grid">
                       {allItems.filter((i) => saved.has(i.id)).map((i, idx) => (
                         <div key={i.id} className="own-grid-item" onClick={() => { setShowProfile(false); viewItem(i); }}>
@@ -4341,7 +4381,7 @@ export default function RopelinApp() {
                   {profileMenuView === "referido" && (
                     <div className="stripe-box" style={{ margin: 0 }}>
                       <p className="stripe-title"><UserPlus size={14} /> Invita y gana</p>
-                      <p className="stripe-status">Por cada amigo que se registre con tu enlace y publique su primera prenda, ganas <strong>1 destacado gratis</strong> para uno de tus artículos.</p>
+                      <p className="stripe-status">Por cada amigo que se registre con tu enlace y publique su primer artículo, ganas <strong>1 destacado gratis</strong> para uno de tus artículos.</p>
 
                       <div className="referral-balance-box">
                         <TrendingUp size={20} color="#FF4D8D" />
@@ -4536,7 +4576,7 @@ export default function RopelinApp() {
               </div>
             </div>
 
-            {sellerReviews && sellerReviews.reviews.length > 0 && (
+            {sellerReviews && sellerReviews.reviews && sellerReviews.reviews.length > 0 && (
               <div className="seller-reviews-box">
                 <p className="detail-section-label">Reseñas de @{openItem.seller} ({sellerReviews.total})</p>
                 <div className="reviews-list">
@@ -4933,7 +4973,7 @@ export default function RopelinApp() {
                 <p className="how-it-works-intro">Comprar y vender de segunda mano en Ropelin es sencillo y está protegido en cada paso.</p>
                 <div className="how-it-works-list">
                   {[
-                    { color: "#FF4D8D", title: "Encuentra o publica una prenda", text: "Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio." },
+                    { color: "#FF4D8D", title: "Encuentra o publica un artículo", text: "Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio." },
                     { color: "#B49CE8", title: "Habla, oferta o compra directamente", text: "Pregunta al vendedor, haz una oferta más baja, o compra al precio marcado. El pago se hace dentro de Ropelin con Stripe — nunca por fuera, para que quede constancia de todo." },
                     { color: "#7FD8D0", title: "El vendedor envía o quedáis en persona", text: "Tras el pago, el vendedor genera una etiqueta de envío con un par de clics, o podéis quedar en persona si os viene mejor." },
                     { color: "#FFC24D", title: "Confirmas que lo has recibido", text: "En cuanto te llegue, confirmas la recepción desde tu perfil — así queda cerrado el pedido para las dos partes." },
@@ -5070,8 +5110,10 @@ export default function RopelinApp() {
                 <p className="auth-title">Política de cookies</p>
                 <div className="how-it-works-list">
                   {[
-                    { color: "#FF4D8D", title: "Cookies esenciales", text: "Necesarias para que funcione el inicio de sesión y el carrito. No se pueden desactivar." },
-                    { color: "#7FD8D0", title: "Cookies de análisis (opcionales)", text: "Nos ayudan a entender cómo se usa la web, para mejorarla." },
+                    { color: "#FF4D8D", title: "Cookies esenciales", text: "Necesarias para que funcione el inicio de sesión, el carrito y la seguridad de la plataforma. No se pueden desactivar porque la web no funcionaría sin ellas." },
+                    { color: "#7FD8D0", title: "Cookies de preferencia", text: "Recuerdan cosas como el tema claro/oscuro o el idioma elegido, para no tener que configurarlo cada vez." },
+                    { color: "#FFC24D", title: "Cookies de análisis (opcionales)", text: "Nos ayudan a entender cómo se usa la web (páginas más visitadas, errores) para mejorarla. Solo se activan si aceptas todas las cookies." },
+                    { color: "#B49CE8", title: "Cómo elegir", text: "Al entrar en Ropelin puedes aceptar todas las cookies o solo las necesarias, con el mismo peso para ambas opciones. Puedes cambiar tu elección en cualquier momento desde Ajustes." },
                   ].map((s, i) => (
                     <div className="how-it-works-card" key={i}>
                       <span className="how-it-works-num" style={{ background: s.color }}>{i + 1}</span>
@@ -5081,7 +5123,7 @@ export default function RopelinApp() {
                       </div>
                     </div>
                   ))}
-                  <p style={{ color: "var(--faint)", fontSize: 11, marginTop: 4 }}>Este es un texto de ejemplo, revísalo antes de operar de verdad.</p>
+                  <p style={{ color: "var(--faint)", fontSize: 11, marginTop: 4 }}>Este texto es un borrador. Antes de operar con usuarios reales, revísalo con un abogado para cumplir la normativa de cookies (LSSI-CE) correctamente.</p>
                 </div>
               </>
             )}
@@ -5109,11 +5151,11 @@ export default function RopelinApp() {
         const postGridEl = (
           <div className="post-modal-grid">
             <div className="post-photos-col">
-              <p className="post-section-label">Fotos</p>
+              <p className="post-section-label"><span className="post-step-num">1</span>Fotos</p>
               <label htmlFor="photo-upload" className="upload-box">
-                <ImagePlus size={22} color="#6A6A73" />
-                <span>Añadir fotos</span>
-                <span className="upload-hint">Hasta 6 imágenes, formato JPG o PNG</span>
+                <span className="upload-icon-badge"><ImagePlus size={20} color="#fff" /></span>
+                <span className="upload-box-title">Añadir fotos</span>
+                <span className="upload-hint">Hasta 6 imágenes · JPG o PNG</span>
               </label>
               <input
                 id="photo-upload"
@@ -5146,7 +5188,7 @@ export default function RopelinApp() {
                 </div>
                 <div className="post-preview-body">
                   <p className="post-preview-price">{form.price ? `${form.price}€` : "0€"}</p>
-                  <p className="post-preview-title">{form.title || "Título de tu prenda"}</p>
+                  <p className="post-preview-title">{form.title || "Título de tu artículo"}</p>
                   <p className="post-preview-meta">
                     {form.category}{form.size ? ` · Talla ${form.size}` : ""} · {form.condition}
                   </p>
@@ -5156,7 +5198,7 @@ export default function RopelinApp() {
 
             <div className="post-form-col">
               <form onSubmit={handlePublish}>
-                <p className="post-section-label">Detalles</p>
+                <p className="post-section-label"><span className="post-step-num">2</span>Detalles</p>
                 <div className="post-form-card">
                   <label>Título</label>
                   <div className="input-icon">
@@ -5205,7 +5247,7 @@ export default function RopelinApp() {
                   </div>
                 </div>
 
-                <p className="post-section-label">Precio</p>
+                <p className="post-section-label"><span className="post-step-num">3</span>Precio</p>
                 <div className="post-form-card">
                   <label>Precio de venta</label>
                   <div className="input-icon price-input">
@@ -5214,10 +5256,12 @@ export default function RopelinApp() {
                   </div>
                 </div>
 
-                {postError && <p style={{ color: "#FF4D8D", fontSize: 12, marginTop: 10 }}>{postError}</p>}
-                <button className="submit-btn" type="submit" disabled={uploadingImages.length > 0}>
-                  {uploadingImages.length > 0 ? "Subiendo fotos..." : !loggedIn ? "Iniciar sesión para publicar" : editingItem ? "Guardar cambios" : "Publicar prenda"}
-                </button>
+                <div className="post-submit-bar">
+                  {postError && <p style={{ color: "#FF4D8D", fontSize: 12, margin: "0 0 8px" }}>{postError}</p>}
+                  <button className="submit-btn" type="submit" disabled={uploadingImages.length > 0}>
+                    {uploadingImages.length > 0 ? "Subiendo fotos..." : !loggedIn ? "Iniciar sesión para publicar" : editingItem ? "Guardar cambios" : "Publicar artículo"}
+                  </button>
+                </div>
               </form>
             </div>
           </div>
@@ -5237,8 +5281,8 @@ export default function RopelinApp() {
         return numCols >= 3 ? (
           <div className="post-page">
             <button className="back-btn" onClick={() => setShowPost(false)}><ArrowLeft size={16} /> Volver</button>
-            <p className="auth-title">{editingItem ? "Editar prenda" : "Nueva prenda"}</p>
-            <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu prenda" : "Rellena los datos y publícala en segundos"}</p>
+            <p className="auth-title">{editingItem ? "Editar artículo" : "Nuevo artículo"}</p>
+            <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu artículo" : "Rellena los datos y publícalo en segundos"}</p>
             {stripeReminderEl}
             {postGridEl}
           </div>
@@ -5250,8 +5294,8 @@ export default function RopelinApp() {
                 <p className="post-mobile-title">{editingItem ? "Editar" : "Vender"}</p>
               </div>
               <button className="close-btn" onClick={() => setShowPost(false)}><X size={14} /></button>
-              <p className="auth-title">{editingItem ? "Editar prenda" : "Nueva prenda"}</p>
-              <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu prenda" : "Rellena los datos y publícala en segundos"}</p>
+              <p className="auth-title">{editingItem ? "Editar artículo" : "Nuevo artículo"}</p>
+              <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu artículo" : "Rellena los datos y publícalo en segundos"}</p>
               {stripeReminderEl}
               {postGridEl}
             </div>
@@ -5286,7 +5330,7 @@ export default function RopelinApp() {
       {!loading && !loadError && items.length === 0 && (
         <div className="empty-state">
           <PackageOpen size={38} color="#3A3A40" />
-          <p className="empty-title">No hay prendas que coincidan</p>
+          <p className="empty-title">No hay artículos que coincidan</p>
           <p className="empty-sub">Prueba a cambiar los filtros, o sé el primero en publicar algo así.</p>
           <button className="btn primary" onClick={openPostForm}>
             <Plus size={14} /> Publicar la primera
@@ -5403,8 +5447,8 @@ export default function RopelinApp() {
             <div className="auth-brand">
               <div className="brand-mark auth-mark">
                 <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="82.5" cy="17.5" r="5.5" fill="#1A1A1E" />
-                  <text x="47" y="72" fontFamily="Poppins, Arial, sans-serif" fontSize="62" fontWeight="700" fill="#1A1A1E" textAnchor="middle">R</text>
+                  <rect x="66" y="18" width="15" height="15" fill="#FF8A4D" />
+                  <text x="47" y="80" fontFamily="Manrope, Arial, sans-serif" fontSize="75" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
                 </svg>
               </div>
               <p className="auth-title">{authMode === "login" ? "Bienvenido de vuelta" : "Únete a Ropelin"}</p>
@@ -5533,7 +5577,7 @@ export default function RopelinApp() {
 
             {buyerCandidates.length > 0 && (
               <>
-                <p className="post-section-label" style={{ marginTop: 0 }}>Ha hablado contigo por chat de esta prenda</p>
+                <p className="post-section-label" style={{ marginTop: 0 }}>Ha hablado contigo por chat de este artículo</p>
                 <div className="pill-group" style={{ marginBottom: 16 }}>
                   {buyerCandidates.map((u) => (
                     <button key={u} type="button" className="pill" onClick={() => confirmBuyerAndReview(pickingBuyerFor.itemId, u)}>@{u}</button>
@@ -5590,7 +5634,7 @@ export default function RopelinApp() {
             <p className="auth-subtitle" style={{ marginBottom: 16 }}>{saved.size} {saved.size === 1 ? "artículo guardado" : "artículos guardados"}</p>
 
             {saved.size === 0 ? (
-              <p className="empty-tab">Aún no has guardado ninguna prenda. Dale al corazón de cualquier artículo para verlo aquí.</p>
+              <p className="empty-tab">Aún no has guardado ningún artículo. Dale al corazón de cualquier artículo para verlo aquí.</p>
             ) : (
               <div className="favorites-grid">
                 {allItems.filter((i) => saved.has(i.id)).map((item, idx) => (
@@ -5702,6 +5746,32 @@ export default function RopelinApp() {
               <input type="checkbox" defaultChecked />
             </p>
 
+            <label>Privacidad</label>
+            <div className="cookie-pref-row">
+              <div>
+                <p className="cookie-pref-current">Cookies: {cookieChoice === "accepted" ? "todas aceptadas" : "solo necesarias"}</p>
+                <p className="cookie-pref-hint">Puedes cambiar tu elección cuando quieras.</p>
+              </div>
+              <button type="button" className="btn ghost" onClick={() => { setCookieChoice(null); localStorage.removeItem("reloop_cookie_consent"); }}>Cambiar</button>
+            </div>
+            <p className="settings-toggle-row">
+              <span>Avisos y novedades de Ropelin</span>
+              <input
+                type="checkbox"
+                checked={marketingOptIn}
+                onChange={async (e) => {
+                  const value = e.target.checked;
+                  setMarketingOptIn(value);
+                  try {
+                    await updateMarketingOptIn(value);
+                  } catch (err) {
+                    setMarketingOptIn(!value);
+                    toast.error(err.message);
+                  }
+                }}
+              />
+            </p>
+
             <label>Mi ubicación</label>
             <div className="location-box">
               <div>
@@ -5709,7 +5779,7 @@ export default function RopelinApp() {
                   <MapPin size={13} />
                   {myLocation ? (myLocation.city || "Ubicación guardada") : "Sin ubicación guardada"}
                 </p>
-                <p className="location-hint">Se usa para mostrarte prendas cerca de ti y quedar en persona sin envío.</p>
+                <p className="location-hint">Se usa para mostrarte artículos cerca de ti y quedar en persona sin envío.</p>
               </div>
               <button className="btn ghost" onClick={detectMyLocation} disabled={locatingMe}>
                 {locatingMe ? "Detectando..." : myLocation ? "Actualizar" : "Detectar"}
@@ -6014,6 +6084,13 @@ export default function RopelinApp() {
                     <span className="admin-menu-arrow">›</span>
                   </button>
                   {isAdmin && (
+                    <button className="admin-menu-item" onClick={() => loadAdminTab("broadcast")}>
+                      <span className="admin-menu-icon"><Send size={17} /></span>
+                      <span className="admin-menu-label">Notificaciones</span>
+                      <span className="admin-menu-arrow">›</span>
+                    </button>
+                  )}
+                  {isAdmin && (
                     <button className="admin-menu-item" onClick={() => loadAdminTab("settings")}>
                       <span className="admin-menu-icon"><Settings size={17} /></span>
                       <span className="admin-menu-label">Configuración</span>
@@ -6034,7 +6111,7 @@ export default function RopelinApp() {
                 <div className="league-header">
                   <button className="admin-back-btn" onClick={() => setAdminSection(null)}><ArrowLeft size={16} /></button>
                   <p className="auth-title" style={{ margin: 0 }}>
-                    {{ users: "Usuarios", stats: "Ganancias", disputes: "Disputas", verifications: "Verificaciones", reports: "Denuncias", support: "Soporte", settings: "Configuración", logs: "Historial" }[adminSection]}
+                    {{ users: "Usuarios", stats: "Ganancias", disputes: "Disputas", verifications: "Verificaciones", reports: "Denuncias", support: "Soporte", broadcast: "Notificaciones", settings: "Configuración", logs: "Historial" }[adminSection]}
                   </p>
                 </div>
 
@@ -6430,6 +6507,60 @@ export default function RopelinApp() {
                       </div>
                 )}
 
+                {!adminLoading && adminSection === "broadcast" && (
+                  <>
+                    <form onSubmit={handleSendBroadcast} className="broadcast-form">
+                      <label>Título</label>
+                      <input
+                        type="text" maxLength={60} placeholder="Ej: ¡Nueva función en Ropelin!"
+                        value={broadcastForm.title}
+                        onChange={(e) => setBroadcastForm((f) => ({ ...f, title: e.target.value }))}
+                      />
+                      <label>Mensaje</label>
+                      <textarea
+                        className="report-textarea" rows={4} placeholder="Escribe el aviso que verán tus usuarios..."
+                        value={broadcastForm.message}
+                        onChange={(e) => setBroadcastForm((f) => ({ ...f, message: e.target.value }))}
+                      />
+                      <label>Enlace (opcional)</label>
+                      <input
+                        type="text" placeholder="/item/123 o vacío"
+                        value={broadcastForm.link}
+                        onChange={(e) => setBroadcastForm((f) => ({ ...f, link: e.target.value }))}
+                      />
+                      <label>Canal</label>
+                      <div className="broadcast-channel-row">
+                        {[{ v: "push", l: "Solo push" }, { v: "email", l: "Solo email" }, { v: "both", l: "Push + email" }].map((c) => (
+                          <button
+                            type="button" key={c.v}
+                            className={`chip-toggle ${broadcastForm.channel === c.v ? "active" : ""}`}
+                            onClick={() => setBroadcastForm((f) => ({ ...f, channel: c.v }))}
+                          >
+                            {c.l}
+                          </button>
+                        ))}
+                      </div>
+                      <button type="submit" className="btn primary" disabled={sendingBroadcast} style={{ marginTop: 14 }}>
+                        {sendingBroadcast ? "Enviando..." : "Enviar aviso"}
+                      </button>
+                      <p className="auth-subtitle" style={{ marginTop: 8, fontSize: 11.5 }}>Solo llega a usuarios activos que no hayan desactivado las comunicaciones de Ropelin en Ajustes.</p>
+                    </form>
+
+                    <label style={{ marginTop: 22, display: "block" }}>Historial</label>
+                    {adminBroadcasts.length === 0
+                      ? <p className="empty-tab">Aún no has enviado ningún aviso.</p>
+                      : <div className="admin-user-list">
+                          {adminBroadcasts.map((b) => (
+                            <div key={b.id} className="admin-log-row">
+                              <p className="admin-user-meta">{new Date(b.createdAt).toLocaleString("es-ES")} · {b.channel} · {b.pushSent + b.emailSent} destinatarios</p>
+                              <p className="admin-user-name" style={{ fontSize: 12.5 }}>{b.title}</p>
+                            </div>
+                          ))}
+                        </div>
+                    }
+                  </>
+                )}
+
                 {!adminLoading && adminSection === "logs" && (
                   adminLogs.length === 0
                     ? <p className="empty-tab">Aún no hay ninguna acción registrada.</p>
@@ -6662,7 +6793,7 @@ export default function RopelinApp() {
                 <p className="chat-item-strip-title">{chatItem.title}</p>
                 <p className="chat-item-strip-price">{chatItem.price}€</p>
               </div>
-              <span className="chat-item-strip-link">Ver prenda ›</span>
+              <span className="chat-item-strip-link">Ver artículo ›</span>
             </div>
 
             <div className="chat-main-col">
