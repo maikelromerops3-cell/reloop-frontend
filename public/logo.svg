@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 140" width="560" height="140">
-  <rect x="6" y="6" width="128" height="128" rx="28" fill="#FFF8EC" stroke="#1A1A1E" stroke-width="2.5"/>
-  <rect x="90" y="30" width="20" height="20" fill="#FF8A4D"/>
+  <rect x="6" y="6" width="128" height="128" rx="28" fill="#FF8A4D" stroke="#1A1A1E" stroke-width="2.5"/>
+  <rect x="90" y="30" width="20" height="20" fill="#FF4D8D"/>
   <text x="65" y="108" font-family="Manrope" font-size="100" font-weight="800" fill="#17171A" text-anchor="middle">R</text>
   <text x="168" y="94" font-family="Manrope" font-size="62" font-weight="800" fill="#1A1A1E">Ropelin</text>
 </svg>

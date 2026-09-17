@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <rect width="200" height="200" fill="#FFF8EC"/>
+  <rect width="200" height="200" fill="#FF8A4D"/>
   <g transform="translate(23,23) scale(0.77)">
-    <rect x="132" y="36" width="30" height="30" fill="#FF8A4D"/>
+    <rect x="132" y="36" width="30" height="30" fill="#FF4D8D"/>
     <text x="94" y="160" font-family="Manrope" font-size="150" font-weight="800" fill="#17171A" text-anchor="middle">R</text>
   </g>
 </svg>

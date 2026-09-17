@@ -1138,8 +1138,8 @@ export default function RopelinApp() {
         <div className="footer-brand-group">
           <div className="footer-brand-mark">
             <svg width="32" height="32" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
-              <rect width="140" height="140" rx="30" fill="#FFF8EC" stroke="#1A1A1E" strokeWidth="2.5" />
-              <rect x="92" y="25" width="21" height="21" fill="#FF8A4D" />
+              <rect width="140" height="140" rx="30" fill="#FF8A4D" stroke="#1A1A1E" strokeWidth="2.5" />
+              <rect x="92" y="25" width="21" height="21" fill="#FF4D8D" />
               <text x="66" y="112" fontFamily="Manrope, Arial, sans-serif" fontSize="105" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
             </svg>
           </div>
@@ -2684,7 +2684,7 @@ export default function RopelinApp() {
         .app { min-height: 100vh; max-width: 100vw; overflow-x: hidden; background: var(--bg); color: var(--text); font-family: 'Helvetica Neue', Arial, sans-serif; }
         header.top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; padding: 16px 20px; position: sticky; top: 0; background: var(--bg-translucent); backdrop-filter: blur(6px); z-index: 5; }
         .brand { display: flex; align-items: center; gap: 8px; }
-        .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: #FFF8EC; border: 2px solid #1A1A1A; display: flex; align-items: center; justify-content: center; }
+        .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: #FF8A4D; border: 2px solid #1A1A1A; display: flex; align-items: center; justify-content: center; }
         .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
         .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
         .mobile-bottom-nav { display: none; }
@@ -3592,7 +3592,7 @@ export default function RopelinApp() {
         <div className="brand" onClick={goHome} style={{ cursor: "pointer" }}>
           <div className="brand-mark">
             <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <rect x="66" y="18" width="15" height="15" fill="#FF8A4D" />
+              <rect x="66" y="18" width="15" height="15" fill="#FF4D8D" />
               <text x="47" y="80" fontFamily="Manrope, Arial, sans-serif" fontSize="75" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
             </svg>
           </div>
@@ -5447,7 +5447,7 @@ export default function RopelinApp() {
             <div className="auth-brand">
               <div className="brand-mark auth-mark">
                 <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="66" y="18" width="15" height="15" fill="#FF8A4D" />
+                  <rect x="66" y="18" width="15" height="15" fill="#FF4D8D" />
                   <text x="47" y="80" fontFamily="Manrope, Arial, sans-serif" fontSize="75" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
                 </svg>
               </div>
