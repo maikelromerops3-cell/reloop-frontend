@@ -3346,7 +3346,7 @@ export default function RopelinApp() {
         .post-textarea { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 16px; background: var(--bg); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 4px; }
         .submit-btn { margin-top: 20px; width: 100%; border: none; border-radius: 14px; padding: 13px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); font-weight: 700; font-size: 13px; cursor: pointer; }
         .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .detail-price { font-size: 30px; font-weight: 800; margin: 10px 0 14px; }
+        .detail-price { font-size: 30px; font-weight: 800; margin: 10px 0 14px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .detail-price-old { font-size: 16px; font-weight: 600; color: var(--faint); text-decoration: line-through; margin-right: 8px; -webkit-text-fill-color: var(--faint); }
         .seller-row { font-size: 13px; color: var(--sub); margin-bottom: 18px; }
         .detail-modal { max-width: 400px; padding: 0; }
@@ -3394,6 +3394,7 @@ export default function RopelinApp() {
         }
 
         .site-footer-rich { position: relative; background: var(--card-alt); border-top: 1.5px solid var(--border); padding: 48px 40px 100px; margin-top: 32px; }
+        .detail-body .site-footer-rich { margin-left: -22px; margin-right: -22px; }
         .site-footer-rich::before { content: ""; position: absolute; top: -1.5px; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #FF4D8D, #FF8A4D, #B49CE8, #7FD8D0); }
         .footer-inner { max-width: 1100px; margin: 0 auto; }
         .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 34px; padding-bottom: 24px; border-bottom: 2.5px solid var(--border); }
@@ -3434,7 +3435,6 @@ export default function RopelinApp() {
         @media (min-width: 781px) {
           .item-page-info { background: var(--card-alt); border: 1px solid #24242a; border-radius: 22px; padding: 26px 28px; }
           .item-page-gallery .detail-media { box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6); }
-          .item-page .detail-price { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); -webkit-background-clip: text; background-clip: text; color: transparent; }
           .chat-modal { max-width: 760px; width: 90vw; height: 640px; max-height: 86vh; flex-direction: row; }
           .chat-item-strip { flex-direction: column; align-items: flex-start; width: 240px; flex-shrink: 0; height: 100%; padding: 22px 20px; gap: 14px; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; }
           .chat-item-thumb { width: 100%; height: 200px; border-radius: 14px; }
@@ -3465,7 +3465,7 @@ export default function RopelinApp() {
         .detail-modal .detail-price { margin: 0; white-space: nowrap; }
         .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 18px; }
         .info-tag { font-size: 11px; background: var(--bg); border: 1px solid var(--border); color: var(--body); padding: 5px 11px; border-radius: 20px; }
-        .seller-card { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; margin-bottom: 18px; }
+        .seller-card { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; margin-bottom: 18px; box-shadow: 0 8px 20px -12px rgba(0,0,0,0.35); }
         .seller-avatar { width: 34px; height: 34px; font-size: 14px; }
         .seller-name { font-size: 13px; font-weight: 700; margin: 0; }
         .seller-rating { font-size: 11px; color: var(--sub); margin: 2px 0 0; display: flex; align-items: center; gap: 4px; }
@@ -3475,7 +3475,7 @@ export default function RopelinApp() {
         .mini-map-note { font-size: 10.5px; color: var(--faint); text-align: center; padding: 6px 0; margin: 0; background: var(--bg); }
         .impact-title { font-size: 12px; font-weight: 700; margin: 0 0 3px; color: #7FD8D0; }
         .impact-sub { font-size: 11px; color: var(--sub); margin: 0; line-height: 1.4; }
-        .shipping-box { display: flex; gap: 10px; align-items: flex-start; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-bottom: 18px; }
+        .shipping-box { display: flex; gap: 10px; align-items: flex-start; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-bottom: 18px; box-shadow: 0 8px 20px -12px rgba(0,0,0,0.35); }
         .shipping-title { font-size: 12px; font-weight: 700; margin: 0 0 3px; color: var(--text); }
         .shipping-sub { font-size: 11px; color: var(--sub); margin: 0; line-height: 1.4; }
         .seller-reviews-box { margin-bottom: 18px; }
@@ -3502,7 +3502,7 @@ export default function RopelinApp() {
         .in-person-alt-btn:hover { color: #FF4D8D; }
         .mark-sold-btn { flex-basis: 100%; }
         .detail-actions .chat-btn { flex: 1; margin: 0; }
-        .buy-btn { flex: 1; border: none; border-radius: 14px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); font-weight: 700; font-size: 13px; cursor: pointer; }
+        .buy-btn { flex: 1.3; border: none; border-radius: 14px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 8px 20px -8px #FF4D8D66; }
         .chat-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: 1px solid var(--input-border); border-radius: 14px; background: transparent; color: var(--text); padding: 12px; font-weight: 600; font-size: 13px; cursor: pointer; }
         .chat-btn:hover { background: var(--border); }
         .empty { padding: 60px 26px; text-align: center; color: var(--faint); font-size: 13px; }

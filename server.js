@@ -23,13 +23,25 @@ const indexHtml = fs.readFileSync(path.join(DIST_DIR, "index.html"), "utf8");
 // Patrón de user-agents de robots que generan vistas previas de enlaces (no ejecutan JS)
 const BOT_UA_PATTERN = /facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|Pinterest|redditbot|vkShare|Googlebot/i;
 
+// Traduce el estado del artículo (tal como lo escribe el vendedor) al valor que entiende
+// Schema.org, para los datos estructurados de producto. Si no coincide con nada, se usa
+// UsedCondition por defecto — todo en Ropelin es de segunda mano.
+const CONDITION_SCHEMA = {
+  "Nuevo con etiquetas": "https://schema.org/NewCondition",
+  "Como nuevo": "https://schema.org/NewCondition",
+  "Muy bueno": "https://schema.org/UsedCondition",
+  "Bueno": "https://schema.org/UsedCondition",
+  "Aceptable": "https://schema.org/UsedCondition",
+};
+
 function escapeHtml(str = "") {
   return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-function withMeta(html, { title, description, image, url }) {
+function withMeta(html, { title, description, image, url, jsonLd }) {
   let out = html;
   out = out.replace(/<title>.*?<\/title>/, `<title>${escapeHtml(title)}</title>`);
+  out = out.replace(/<link rel="canonical" href=".*?" \/>/, `<link rel="canonical" href="${escapeHtml(url)}" />`);
   out = out.replace(/<meta property="og:title" content=".*?" \/>/, `<meta property="og:title" content="${escapeHtml(title)}" />`);
   out = out.replace(/<meta property="og:description" content=".*?" \/>/, `<meta property="og:description" content="${escapeHtml(description)}" />`);
   out = out.replace(/<meta property="og:url" content=".*?" \/>/, `<meta property="og:url" content="${escapeHtml(url)}" />`);
@@ -37,6 +49,9 @@ function withMeta(html, { title, description, image, url }) {
   out = out.replace(/<meta name="twitter:description" content=".*?" \/>/, `<meta name="twitter:description" content="${escapeHtml(description)}" />`);
   if (image) {
     out = out.replace("</head>", `<meta property="og:image" content="${escapeHtml(image)}" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:image" content="${escapeHtml(image)}" /></head>`);
+  }
+  if (jsonLd) {
+    out = out.replace("</head>", `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script></head>`);
   }
   return out;
 }
@@ -54,12 +69,58 @@ app.get("/item/:id", async (req, res, next) => {
       description: (item.description || "Segunda mano en Ropelin").slice(0, 200),
       image: item.images?.[0] || null,
       url: `${SITE_URL}/item/${item.id}`,
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: item.title,
+        description: (item.description || "").slice(0, 500),
+        image: item.images || [],
+        offers: {
+          "@type": "Offer",
+          price: item.price,
+          priceCurrency: "EUR",
+          availability: item.status === "sold" ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+          url: `${SITE_URL}/item/${item.id}`,
+        },
+        ...(item.condition ? { itemCondition: CONDITION_SCHEMA[item.condition] || "https://schema.org/UsedCondition" } : {}),
+      },
     });
     res.set("Content-Type", "text/html").send(html);
   } catch {
     next();
   }
 });
+
+// Páginas legales públicas de verdad (no dependen de abrir la app/React): esto es lo que
+// hace falta para poder poner un enlace válido en Google Play Console, en el pie de página
+// de emails, etc. — una URL que cualquiera pueda abrir sin instalar ni cargar JS.
+const privacidadHtml = fs.readFileSync(path.join(__dirname, "legal", "privacidad.html"), "utf8");
+const terminosHtml = fs.readFileSync(path.join(__dirname, "legal", "terminos.html"), "utf8");
+app.get("/sitemap.xml", async (req, res) => {
+  const staticUrls = [
+    { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0" },
+    { loc: `${SITE_URL}/privacidad`, changefreq: "monthly", priority: "0.3" },
+    { loc: `${SITE_URL}/terminos`, changefreq: "monthly", priority: "0.3" },
+  ];
+  let items = [];
+  try {
+    const r = await fetch(`${API_URL}/items/sitemap-list`);
+    if (r.ok) items = await r.json();
+  } catch {
+    // si el backend no responde, servimos igualmente el sitemap con las páginas fijas
+  }
+  const itemUrls = items.map(
+    (it) => `  <url>\n    <loc>${SITE_URL}/item/${it.id}</loc>\n    <lastmod>${new Date(it.createdAt).toISOString().slice(0, 10)}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>`
+  );
+  const staticXml = staticUrls.map(
+    (u) => `  <url>\n    <loc>${u.loc}</loc>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`
+  );
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticXml, ...itemUrls].join("\n")}\n</urlset>`;
+  res.set("Content-Type", "application/xml").send(xml);
+});
+
+app.get("/privacidad", (req, res) => res.set("Content-Type", "text/html").send(privacidadHtml));
+app.get("/terminos", (req, res) => res.set("Content-Type", "text/html").send(terminosHtml));
 
 app.use(express.static(DIST_DIR));
 
