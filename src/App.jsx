@@ -2922,13 +2922,13 @@ export default function RopelinApp() {
         .two-col { display: flex; gap: 14px; padding: 10px 20px 110px; align-items: flex-start; }
 
         @media (min-width: 780px) {
-          header.top, .hero, .search-row, .cat-scroll, .two-col {
+          header.top, .hero, .search-row, .cat-scroll, .two-col, .site-footer-rich .footer-inner {
             max-width: 1300px; margin-left: auto; margin-right: auto; width: 100%;
           }
           header.top { border-radius: 0 0 20px 20px; }
         }
         @media (min-width: 1500px) {
-          header.top, .hero, .search-row, .cat-scroll, .two-col {
+          header.top, .hero, .search-row, .cat-scroll, .two-col, .site-footer-rich .footer-inner {
             max-width: 1600px;
           }
         }
@@ -3406,10 +3406,10 @@ export default function RopelinApp() {
           .newsletter-form input { flex: 1; min-width: 0; width: auto; }
         }
 
-        .site-footer-rich { position: relative; background: var(--card-alt); border-top: 1.5px solid var(--border); padding: 48px 40px 100px; margin-top: 32px; }
+        .site-footer-rich { position: relative; background: var(--card-alt); border-top: 1.5px solid var(--border); padding: 48px 34px 100px; margin-top: 32px; }
         .detail-body .site-footer-rich { margin-left: -22px; margin-right: -22px; }
         .site-footer-rich::before { content: ""; position: absolute; top: -1.5px; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #FF4D8D, #FF8A4D, #B49CE8, #7FD8D0); }
-        .footer-inner { max-width: 1100px; margin: 0; }
+        .footer-inner { width: 100%; }
         .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 34px; padding-bottom: 24px; border-bottom: 2.5px solid var(--border); }
         .footer-brand-group { display: flex; align-items: center; gap: 12px; }
         .footer-brand-mark { width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
@@ -3433,7 +3433,7 @@ export default function RopelinApp() {
         .footer-trust-badge strong { color: #04342C; font-weight: 900; }
         @media (max-width: 640px) { .footer-trust-badge { margin-left: 0; } }
         @media (max-width: 640px) {
-          .site-footer-rich { padding: 36px 20px 100px; }
+          .site-footer-rich { padding: 36px 34px 100px; }
           .footer-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 20px; }
         }
         @media (max-width: 640px) {
