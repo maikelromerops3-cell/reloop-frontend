@@ -1181,9 +1181,9 @@ export default function RopelinApp() {
         </div>
         <div className="footer-col">
           <p className="footer-col-title">Legal</p>
-          <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
-          <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
-          <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+          <button onClick={() => openLegal("terms")}>Términos y condiciones</button>
+          <button onClick={() => openLegal("privacy")}>Privacidad</button>
+          <button onClick={() => openLegal("cookies")}>Cookies</button>
         </div>
         <div className="footer-col">
           <p className="footer-col-title">Contacto</p>
@@ -1194,11 +1194,11 @@ export default function RopelinApp() {
       <div className="footer-bottom-bar">
         <span>© Ropelin {new Date().getFullYear()}</span>
         <span>·</span>
-        <button onClick={() => setShowLegal("terms")}>Términos y condiciones</button>
+        <button onClick={() => openLegal("terms")}>Términos y condiciones</button>
         <span>·</span>
-        <button onClick={() => setShowLegal("privacy")}>Privacidad</button>
+        <button onClick={() => openLegal("privacy")}>Privacidad</button>
         <span>·</span>
-        <button onClick={() => setShowLegal("cookies")}>Cookies</button>
+        <button onClick={() => openLegal("cookies")}>Cookies</button>
         <span className="footer-trust-badge">🔒 Pagos seguros con <strong>stripe</strong></span>
       </div>
       </div>
@@ -1325,6 +1325,19 @@ export default function RopelinApp() {
     setOpenItem(item);
     setGalleryIndex(0);
     navigate(`/item/${item.id}`);
+  }
+
+  // Abre una página legal (Términos, Privacidad, Cookies, Quiénes somos...), cerrando antes
+  // cualquier artículo u otra pantalla abierta — si no, la página legal aparecía apilada
+  // debajo del artículo en vez de sustituirlo.
+  function openLegal(page) {
+    setOpenItem(null);
+    setShowPost(false);
+    setShowHelpCenter(false);
+    setShowLeague(false);
+    setShowProfile(false);
+    setShowLegal(page);
+    navigate("/");
   }
 
   // Abre el formulario para publicar un artículo nuevo, cerrando antes cualquier otra página abierta (para que no se apilen)
@@ -2650,7 +2663,7 @@ export default function RopelinApp() {
         <div className="cookie-banner">
           <p>
             Usamos cookies propias y de terceros para que la web funcione, recordar tu sesión y entender cómo la usas.{" "}
-            <button className="cookie-link" onClick={() => setShowLegal("cookies")}>Más información</button>
+            <button className="cookie-link" onClick={() => openLegal("cookies")}>Más información</button>
           </p>
           <div className="cookie-actions">
             <button className="btn ghost" onClick={() => handleCookieChoice("rejected")}>Solo necesarias</button>
@@ -3396,7 +3409,7 @@ export default function RopelinApp() {
         .site-footer-rich { position: relative; background: var(--card-alt); border-top: 1.5px solid var(--border); padding: 48px 40px 100px; margin-top: 32px; }
         .detail-body .site-footer-rich { margin-left: -22px; margin-right: -22px; }
         .site-footer-rich::before { content: ""; position: absolute; top: -1.5px; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #FF4D8D, #FF8A4D, #B49CE8, #7FD8D0); }
-        .footer-inner { max-width: 1100px; margin: 0 auto; }
+        .footer-inner { max-width: 1100px; margin: 0; }
         .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 34px; padding-bottom: 24px; border-bottom: 2.5px solid var(--border); }
         .footer-brand-group { display: flex; align-items: center; gap: 12px; }
         .footer-brand-mark { width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
