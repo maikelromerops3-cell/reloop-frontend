@@ -2752,12 +2752,12 @@ export default function RopelinApp() {
         .profile-modal { max-width: 400px; padding: 0; }
         .profile-top-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
         .icon-round-btn { background: var(--surface2); border: 2px solid var(--border); color: var(--text); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .profile-content { padding: 10px 22px 24px; text-align: center; position: relative; z-index: 2; }
-        .profile-avatar-lg { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: var(--bg); margin: 0 auto 10px; border: 5px solid var(--card); box-shadow: 0 0 0 2px var(--border), 0 4px 14px rgba(0,0,0,0.45); position: relative; z-index: 2; }
+        .profile-content { padding: 10px 22px 24px; text-align: left; position: relative; z-index: 2; }
+        .profile-avatar-lg { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: var(--bg); margin: 0 0 10px; border: 5px solid var(--card); box-shadow: 0 0 0 2px var(--border), 0 4px 14px rgba(0,0,0,0.45); position: relative; z-index: 2; }
         .edit-avatar-row { display: flex; align-items: center; gap: 14px; margin: 14px 0 6px; }
         .profile-name { font-size: 18px; font-weight: 700; margin: 0; }
-        .profile-sub { font-size: 12px; color: var(--sub); margin: 4px 0 14px; display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .profile-quick-actions { display: flex; justify-content: center; gap: 8px; margin: 4px 0 16px; }
+        .profile-sub { font-size: 12px; color: var(--sub); margin: 4px 0 14px; display: flex; align-items: center; justify-content: flex-start; gap: 4px; }
+        .profile-quick-actions { display: flex; justify-content: flex-start; gap: 8px; margin: 4px 0 16px; }
         .edit-profile-btn { border: 1px solid var(--input-border); background: var(--surface2); color: var(--body); border-radius: 20px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .about-me-box { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: left; background: var(--card); border: 2px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
         .about-me-heading { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--faint); margin: 0 0 8px; }
@@ -2922,13 +2922,13 @@ export default function RopelinApp() {
         .two-col { display: flex; gap: 14px; padding: 10px 20px 110px; align-items: flex-start; }
 
         @media (min-width: 780px) {
-          header.top, .hero, .search-row, .cat-scroll, .two-col, .site-footer-rich .footer-inner {
+          header.top, .hero, .search-row, .cat-scroll, .two-col {
             max-width: 1300px; margin-left: auto; margin-right: auto; width: 100%;
           }
           header.top { border-radius: 0 0 20px 20px; }
         }
         @media (min-width: 1500px) {
-          header.top, .hero, .search-row, .cat-scroll, .two-col, .site-footer-rich .footer-inner {
+          header.top, .hero, .search-row, .cat-scroll, .two-col {
             max-width: 1600px;
           }
         }
@@ -3379,7 +3379,7 @@ export default function RopelinApp() {
         }
         .post-page { padding: 20px 26px 100px; max-width: 900px; margin: 0 auto; }
         .legal-page { padding: 20px 26px 100px; max-width: 700px; margin: 0 auto; }
-        .legal-page.profile-page-wide { max-width: 1100px; }
+        .legal-page.profile-page-wide { max-width: 1100px; margin: 0; }
         @media (min-width: 1500px) {
           .legal-page.profile-page-wide { max-width: 1300px; }
         }
@@ -3406,10 +3406,10 @@ export default function RopelinApp() {
           .newsletter-form input { flex: 1; min-width: 0; width: auto; }
         }
 
-        .site-footer-rich { position: relative; background: var(--card-alt); border-top: 1.5px solid var(--border); padding: 48px 34px 100px; margin-top: 32px; }
+        .site-footer-rich { position: relative; background: var(--card-alt); border-top: 1.5px solid var(--border); padding: 48px 40px 100px; margin-top: 32px; }
         .detail-body .site-footer-rich { margin-left: -22px; margin-right: -22px; }
         .site-footer-rich::before { content: ""; position: absolute; top: -1.5px; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #FF4D8D, #FF8A4D, #B49CE8, #7FD8D0); }
-        .footer-inner { width: 100%; }
+        .footer-inner { max-width: 1100px; margin: 0 auto; }
         .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 34px; padding-bottom: 24px; border-bottom: 2.5px solid var(--border); }
         .footer-brand-group { display: flex; align-items: center; gap: 12px; }
         .footer-brand-mark { width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
@@ -3433,7 +3433,7 @@ export default function RopelinApp() {
         .footer-trust-badge strong { color: #04342C; font-weight: 900; }
         @media (max-width: 640px) { .footer-trust-badge { margin-left: 0; } }
         @media (max-width: 640px) {
-          .site-footer-rich { padding: 36px 34px 100px; }
+          .site-footer-rich { padding: 36px 20px 100px; }
           .footer-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 20px; }
         }
         @media (max-width: 640px) {
@@ -3986,14 +3986,8 @@ export default function RopelinApp() {
               {isOwnProfile ? (
                 numCols >= 3 ? (
                   <div className="profile-sidebar-menu">
-                    <button className={"profile-sidebar-item" + (profileMenuView === "pedidos" ? " active" : "")} onClick={() => setProfileMenuView("pedidos")}>
+                    <button className={"profile-sidebar-item" + ((profileMenuView || "pedidos") === "pedidos" ? " active" : "")} onClick={() => setProfileMenuView("pedidos")}>
                       <Package size={16} /> Mis pedidos
-                    </button>
-                    <button className={"profile-sidebar-item" + ((profileMenuView || "venta") === "venta" ? " active" : "")} onClick={() => setProfileMenuView("venta")}>
-                      <Tag size={16} /> En venta
-                    </button>
-                    <button className={"profile-sidebar-item" + (profileMenuView === "vendidos" ? " active" : "")} onClick={() => setProfileMenuView("vendidos")}>
-                      <CheckCircle size={16} /> Vendidos
                     </button>
                     <button className={"profile-sidebar-item" + (profileMenuView === "favoritos" ? " active" : "")} onClick={() => setProfileMenuView("favoritos")}>
                       <Heart size={16} /> Favoritos
@@ -4043,16 +4037,6 @@ export default function RopelinApp() {
                     <button className="profile-menu-row" onClick={() => setProfileMenuView("pedidos")}>
                       <span className="profile-menu-icon"><Package size={17} /></span>
                       <span className="profile-menu-label">Mis pedidos</span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button className="profile-menu-row" onClick={() => setProfileMenuView("venta")}>
-                      <span className="profile-menu-icon"><Tag size={17} /></span>
-                      <span className="profile-menu-label">En venta</span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button className="profile-menu-row" onClick={() => setProfileMenuView("vendidos")}>
-                      <span className="profile-menu-icon"><CheckCircle size={17} /></span>
-                      <span className="profile-menu-label">Vendidos</span>
                       <ChevronRight size={16} />
                     </button>
                     <button className="profile-menu-row" onClick={() => setProfileMenuView("favoritos")}>
@@ -4313,7 +4297,7 @@ export default function RopelinApp() {
                     </div>
                   )}
 
-                  {profileMenuView === "pedidos" && (
+                  {(profileMenuView === "pedidos" || (isOwnProfile && numCols >= 3 && !profileMenuView)) && (
                     <div style={{ textAlign: "left" }}>
                       {ordersLoading && <p className="empty-tab">Cargando...</p>}
 
