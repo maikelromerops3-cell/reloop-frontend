@@ -1168,8 +1168,6 @@ export default function RopelinApp() {
           <p className="footer-col-title">Ropelin</p>
           <button onClick={() => openLegalPage("about")}>Quiénes somos</button>
           <button onClick={() => openLegalPage("how-it-works")}>Cómo funciona</button>
-          <button onClick={() => openLegalPage("updates")}>Novedades</button>
-          <button onClick={openHelpCenter}>Ayuda</button>
         </div>
         <div className="footer-col">
           <p className="footer-col-title">Comprar y vender</p>
@@ -1360,6 +1358,30 @@ export default function RopelinApp() {
     setShowLeague(false);
     setShowProfile(false);
     setShowLegal(type);
+  }
+
+  // Menú lateral compartido (Centro de ayuda, legales, publicar) para escritorio — mismo patrón
+  // que el menú del perfil, para que estas páginas sueltas se sientan como un solo sitio y no
+  // como ventanas independientes cada vez que tocas un enlace del pie de página.
+  function infoSidebarEl(active) {
+    const items = [
+      { key: "help", label: "Centro de ayuda", icon: <Mail size={16} />, action: openHelpCenter },
+      { key: "post", label: "Publicar un artículo", icon: <Plus size={16} />, action: openPostForm },
+      { key: "about", label: "Quiénes somos", icon: <Sparkles size={16} />, action: () => openLegalPage("about") },
+      { key: "how-it-works", label: "Cómo funciona", icon: <RefreshCw size={16} />, action: () => openLegalPage("how-it-works") },
+      { key: "terms", label: "Términos y condiciones", icon: <FileCheck size={16} />, action: () => openLegal("terms") },
+      { key: "privacy", label: "Privacidad", icon: <ShieldCheck size={16} />, action: () => openLegal("privacy") },
+      { key: "cookies", label: "Cookies", icon: <Settings size={16} />, action: () => openLegal("cookies") },
+    ];
+    return (
+      <div className="profile-sidebar-menu info-sidebar">
+        {items.map((it) => (
+          <button key={it.key} className={"profile-sidebar-item" + (active === it.key ? " active" : "")} onClick={it.action}>
+            {it.icon} {it.label}
+          </button>
+        ))}
+      </div>
+    );
   }
 
   useEffect(() => {
@@ -4861,9 +4883,12 @@ export default function RopelinApp() {
         );
 
         return numCols >= 3 ? (
-          <div className="legal-page">
+          <div className="legal-page profile-page-wide">
             <button className="back-btn" onClick={() => setShowHelpCenter(false)}><ArrowLeft size={16} /> Volver</button>
-            {helpContentEl}
+            <div className="profile-desktop-flex has-sidebar">
+              {infoSidebarEl("help")}
+              <div className="profile-desktop-content">{helpContentEl}</div>
+            </div>
           </div>
         ) : (
           <div className="overlay" onClick={() => setShowHelpCenter(false)}>
@@ -5023,14 +5048,6 @@ export default function RopelinApp() {
                   </div>
 
                   <div className="about-block">
-                    <div className="about-block-icon" style={{ background: "#7FD8D0" }}><Sparkles size={16} color="#1A1A1A" /></div>
-                    <div>
-                      <p className="about-block-title">¿En qué estamos trabajando?</p>
-                      <button className="about-block-link" onClick={() => openLegalPage("updates")}>Ver las Novedades →</button>
-                    </div>
-                  </div>
-
-                  <div className="about-block">
                     <div className="about-block-icon" style={{ background: "#FFC24D" }}><Mail size={16} color="#1A1A1A" /></div>
                     <div>
                       <p className="about-block-title">¿Alguna duda?</p>
@@ -5130,9 +5147,12 @@ export default function RopelinApp() {
         const openAsPage = numCols >= 3;
 
         return openAsPage ? (
-          <div className="legal-page">
+          <div className="legal-page profile-page-wide">
             <button className="back-btn" onClick={() => setShowLegal(null)}><ArrowLeft size={16} /> Volver</button>
-            {legalContentEl}
+            <div className="profile-desktop-flex has-sidebar">
+              {infoSidebarEl(showLegal === "terms" ? "terms" : showLegal === "privacy" ? "privacy" : showLegal === "cookies" ? "cookies" : showLegal === "about" ? "about" : showLegal === "how-it-works" ? "how-it-works" : null)}
+              <div className="profile-desktop-content">{legalContentEl}</div>
+            </div>
           </div>
         ) : (
           <div className="overlay" onClick={() => setShowLegal(null)}>
@@ -5276,12 +5296,17 @@ export default function RopelinApp() {
         );
 
         return numCols >= 3 ? (
-          <div className="post-page">
+          <div className="post-page profile-page-wide">
             <button className="back-btn" onClick={() => setShowPost(false)}><ArrowLeft size={16} /> Volver</button>
-            <p className="auth-title">{editingItem ? "Editar artículo" : "Nuevo artículo"}</p>
-            <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu artículo" : "Rellena los datos y publícalo en segundos"}</p>
-            {stripeReminderEl}
-            {postGridEl}
+            <div className="profile-desktop-flex has-sidebar">
+              {infoSidebarEl("post")}
+              <div className="profile-desktop-content">
+                <p className="auth-title">{editingItem ? "Editar artículo" : "Nuevo artículo"}</p>
+                <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu artículo" : "Rellena los datos y publícalo en segundos"}</p>
+                {stripeReminderEl}
+                {postGridEl}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="overlay detail-overlay" onClick={() => setShowPost(false)}>
