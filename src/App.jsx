@@ -5302,7 +5302,7 @@ export default function RopelinApp() {
         );
 
         return numCols >= 3 ? (
-          <div className="post-page-solo">
+          <div className="post-page-solo profile-page-wide">
             <button className="back-btn" onClick={() => setShowPost(false)}><ArrowLeft size={16} /> Volver</button>
             <div className="post-solo-card">
               <div className="post-solo-header">
