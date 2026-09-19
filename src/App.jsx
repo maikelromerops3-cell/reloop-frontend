@@ -3379,9 +3379,9 @@ export default function RopelinApp() {
         }
         .post-page { padding: 20px 26px 100px; max-width: 900px; margin: 0 auto; }
         .legal-page { padding: 20px 26px 100px; max-width: 700px; margin: 0 auto; }
-        .legal-page.profile-page-wide { max-width: 1100px; margin: 0; }
+        .profile-page-wide { max-width: 1300px; margin: 0 auto; }
         @media (min-width: 1500px) {
-          .legal-page.profile-page-wide { max-width: 1300px; }
+          .profile-page-wide { max-width: 1600px; }
         }
         .legal-page .legal-text { max-height: none; }
         .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 0; margin-bottom: 16px; font-family: inherit; }
