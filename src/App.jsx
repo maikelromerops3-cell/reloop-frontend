@@ -2752,12 +2752,12 @@ export default function RopelinApp() {
         .profile-modal { max-width: 400px; padding: 0; }
         .profile-top-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
         .icon-round-btn { background: var(--surface2); border: 2px solid var(--border); color: var(--text); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .profile-content { padding: 10px 22px 24px; text-align: left; position: relative; z-index: 2; }
-        .profile-avatar-lg { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: var(--bg); margin: 0 0 10px; border: 5px solid var(--card); box-shadow: 0 0 0 2px var(--border), 0 4px 14px rgba(0,0,0,0.45); position: relative; z-index: 2; }
+        .profile-content { padding: 10px 22px 24px; text-align: center; position: relative; z-index: 2; }
+        .profile-avatar-lg { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: var(--bg); margin: 0 auto 10px; border: 5px solid var(--card); box-shadow: 0 0 0 2px var(--border), 0 4px 14px rgba(0,0,0,0.45); position: relative; z-index: 2; }
         .edit-avatar-row { display: flex; align-items: center; gap: 14px; margin: 14px 0 6px; }
         .profile-name { font-size: 18px; font-weight: 700; margin: 0; }
-        .profile-sub { font-size: 12px; color: var(--sub); margin: 4px 0 14px; display: flex; align-items: center; justify-content: flex-start; gap: 4px; }
-        .profile-quick-actions { display: flex; justify-content: flex-start; gap: 8px; margin: 4px 0 16px; }
+        .profile-sub { font-size: 12px; color: var(--sub); margin: 4px 0 14px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .profile-quick-actions { display: flex; justify-content: center; gap: 8px; margin: 4px 0 16px; }
         .edit-profile-btn { border: 1px solid var(--input-border); background: var(--surface2); color: var(--body); border-radius: 20px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .about-me-box { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: left; background: var(--card); border: 2px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
         .about-me-heading { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--faint); margin: 0 0 8px; }
