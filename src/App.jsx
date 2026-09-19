@@ -1366,7 +1366,6 @@ export default function RopelinApp() {
   function infoSidebarEl(active) {
     const items = [
       { key: "help", label: "Centro de ayuda", icon: <Mail size={16} />, action: openHelpCenter },
-      { key: "post", label: "Publicar un artículo", icon: <Plus size={16} />, action: openPostForm },
       { key: "about", label: "Quiénes somos", icon: <Sparkles size={16} />, action: () => openLegalPage("about") },
       { key: "how-it-works", label: "Cómo funciona", icon: <RefreshCw size={16} />, action: () => openLegalPage("how-it-works") },
       { key: "terms", label: "Términos y condiciones", icon: <FileCheck size={16} />, action: () => openLegal("terms") },
@@ -3400,6 +3399,10 @@ export default function RopelinApp() {
           .item-page { max-width: 1600px; }
         }
         .post-page { padding: 20px 26px 100px; max-width: 900px; margin: 0 auto; }
+        .post-page-solo { padding: 32px 34px 100px; }
+        .post-solo-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 32px 36px 36px; margin-top: 18px; max-width: 760px; box-shadow: 0 24px 60px -30px rgba(0,0,0,0.35); }
+        .post-solo-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1.5px solid var(--border); }
+        .post-solo-icon { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
         .legal-page { padding: 20px 26px 100px; max-width: 700px; margin: 0 auto; }
         .profile-page-wide { max-width: 1300px; margin: 0 auto; }
         @media (min-width: 1500px) {
@@ -3573,6 +3576,9 @@ export default function RopelinApp() {
         .post-mobile-header { display: none; }
         .post-section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text); font-weight: 800; margin: 24px 0 10px; display: flex; align-items: center; gap: 8px; }
         .post-section-label:first-of-type { margin-top: 6px; }
+        @media (max-width: 780px) {
+          .post-section-label:first-of-type { margin-top: 22px; }
+        }
         .post-section-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #FF4D8D; display: inline-block; }
         .post-step-num { display: none; }
         .post-submit-bar { margin-top: 22px; }
@@ -5296,16 +5302,18 @@ export default function RopelinApp() {
         );
 
         return numCols >= 3 ? (
-          <div className="post-page profile-page-wide">
+          <div className="post-page-solo">
             <button className="back-btn" onClick={() => setShowPost(false)}><ArrowLeft size={16} /> Volver</button>
-            <div className="profile-desktop-flex has-sidebar">
-              {infoSidebarEl("post")}
-              <div className="profile-desktop-content">
-                <p className="auth-title">{editingItem ? "Editar artículo" : "Nuevo artículo"}</p>
-                <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu artículo" : "Rellena los datos y publícalo en segundos"}</p>
-                {stripeReminderEl}
-                {postGridEl}
+            <div className="post-solo-card">
+              <div className="post-solo-header">
+                <span className="post-solo-icon"><Tag size={20} /></span>
+                <div>
+                  <p className="auth-title" style={{ margin: 0 }}>{editingItem ? "Editar artículo" : "Publicar un artículo"}</p>
+                  <p className="auth-subtitle" style={{ margin: "2px 0 0" }}>{editingItem ? "Actualiza los datos de tu artículo" : "Rellena los datos y publícalo en segundos"}</p>
+                </div>
               </div>
+              {stripeReminderEl}
+              {postGridEl}
             </div>
           </div>
         ) : (
