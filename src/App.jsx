@@ -602,7 +602,11 @@ export default function RopelinApp() {
     setOrdersLoading(true);
     try {
       const data = await fetchTransactions();
-      setOrders(data);
+      // Nos defendemos de una respuesta con forma inesperada (un fallo del servidor, una
+      // respuesta vacía...) — antes esto rompía toda la app con una pantalla en blanco justo
+      // al intentar comprar, porque el código daba por hecho que "sales"/"purchases" siempre
+      // existían.
+      setOrders({ sales: Array.isArray(data?.sales) ? data.sales : [], purchases: Array.isArray(data?.purchases) ? data.purchases : [] });
     } catch {
       toast.error("No se pudieron cargar tus pedidos");
     } finally {
@@ -641,7 +645,7 @@ export default function RopelinApp() {
   }, [loggedIn, loadOrders]);
 
   // Ventas pagadas por el comprador a las que todavía no se les ha generado el envío
-  const pendingShipmentsCount = orders.sales.filter((tx) => tx.status === "paid" && !tx.shipment).length;
+  const pendingShipmentsCount = (orders.sales || []).filter((tx) => tx.status === "paid" && !tx.shipment).length;
 
 
   async function handleShare(url, title) {
