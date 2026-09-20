@@ -186,6 +186,28 @@ export async function updateMarketingOptIn(marketingOptIn) {
   return res.json();
 }
 
+export async function fetchMyStats() {
+  const res = await fetch(`${API_URL}/items/mine/stats`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron cargar las estadísticas");
+  return res.json();
+}
+
+export async function fetchMyPreferences() {
+  const res = await fetch(`${API_URL}/users/me/preferences`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron cargar las preferencias");
+  return res.json();
+}
+
+export async function updateNotifPreference(field, value) {
+  const res = await fetch(`${API_URL}/users/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ [field]: value }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la preferencia");
+  return res.json();
+}
+
 export async function deleteMyAccount() {
   const res = await fetch(`${API_URL}/users/me`, {
     method: "DELETE",

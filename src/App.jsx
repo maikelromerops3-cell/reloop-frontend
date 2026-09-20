@@ -12,7 +12,7 @@ import {
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, downloadShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
   searchServicePoints, setServicePoint, fetchShippingQuote,
-  fetchProfile, updateMyLocation, updateShippingAddress, updateMarketingOptIn, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
+  fetchProfile, updateMyLocation, updateShippingAddress, updateMarketingOptIn, updateNotifPreference, fetchMyPreferences, fetchMyStats, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
   fetchSavedSearches, saveSearch, deleteSavedSearch,
   fetchPushPublicKey, subscribeToPush, unsubscribeFromPush,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
@@ -209,6 +209,8 @@ export default function RopelinApp() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [query, setQuery] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [category, setCategory] = useState("Para ti");
   const [priceFilter, setPriceFilter] = useState({ min: "", max: "" });
   const [sizeFilter, setSizeFilter] = useState("");
@@ -267,6 +269,8 @@ export default function RopelinApp() {
   const [stripeStatus, setStripeStatus] = useState(null);
   const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState({ purchases: [], sales: [] });
+  const [myStats, setMyStats] = useState(null);
+  const [myStatsLoading, setMyStatsLoading] = useState(false);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [pedidosTab, setPedidosTab] = useState("ventas"); // "ventas" | "compras"
   const [pedidosSubTab, setPedidosSubTab] = useState("curso"); // "curso" | "completadas"
@@ -325,6 +329,9 @@ export default function RopelinApp() {
   const [showLegal, setShowLegal] = useState(null); // "about" | "terms" | "privacy" | "cookies" | null
   const [cookieChoice, setCookieChoice] = useState(() => localStorage.getItem("reloop_cookie_consent") || null);
   const [marketingOptIn, setMarketingOptIn] = useState(true);
+  const [messageAlerts, setMessageAlerts] = useState(true);
+  const [offerAlerts, setOfferAlerts] = useState(true);
+  const [priceDropAlerts, setPriceDropAlerts] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
   const [showMaintenanceLogin, setShowMaintenanceLogin] = useState(false);
@@ -545,6 +552,12 @@ export default function RopelinApp() {
         setLastNameInput(data.lastName || "");
         setCityInput(data.city || "");
       }).catch(() => {});
+      fetchMyPreferences().then((prefs) => {
+        setMarketingOptIn(prefs.marketingOptIn !== false);
+        setMessageAlerts(prefs.messageAlerts !== false);
+        setOfferAlerts(prefs.offerAlerts !== false);
+        setPriceDropAlerts(prefs.priceDropAlerts !== false);
+      }).catch(() => {});
     }
     if (showProfile) {
       fetchLeague().then(setLeaderboard).catch(() => {});
@@ -600,6 +613,28 @@ export default function RopelinApp() {
   useEffect(() => {
     if (showOrders) loadOrders();
   }, [showOrders, loadOrders]);
+
+  useEffect(() => {
+    if (profileMenuView === "stats" && loggedIn) {
+      setMyStatsLoading(true);
+      fetchMyStats().then(setMyStats).catch((err) => toast.error(err.message)).finally(() => setMyStatsLoading(false));
+    }
+  }, [profileMenuView, loggedIn]);
+
+  // Autocompletar de la búsqueda: espera un momento tras dejar de escribir (para no lanzar una
+  // petición por cada letra), y sugiere títulos reales de artículos que ya existen.
+  useEffect(() => {
+    if (!query || query.trim().length < 2) {
+      setSearchSuggestions([]);
+      return;
+    }
+    const handle = setTimeout(() => {
+      fetchItems({ query: query.trim() })
+        .then((results) => setSearchSuggestions(results.slice(0, 6)))
+        .catch(() => setSearchSuggestions([]));
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [query]);
 
   useEffect(() => {
     if (loggedIn) loadOrders();
@@ -2935,6 +2970,15 @@ export default function RopelinApp() {
         .cat-circle.active .cat-icon-wrap.forYou { border-color: #FF4D8D; }
         .cat-circle:hover .cat-icon-wrap { border-color: #4A4A52; }
         .search-box { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--input-border); border-radius: 20px; padding: 10px 16px; flex: 1; min-width: 200px; }
+        .search-box-wrap { position: relative; }
+        .search-suggestions { position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; box-shadow: 0 16px 40px -16px rgba(0,0,0,0.35); overflow: hidden; z-index: 20; }
+        .search-suggestion-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 14px; background: none; border: none; border-bottom: 1px solid var(--border); cursor: pointer; text-align: left; font-family: inherit; }
+        .search-suggestion-row:last-child { border-bottom: none; }
+        .search-suggestion-row:hover { background: var(--surface2); }
+        .search-suggestion-thumb { width: 34px; height: 34px; border-radius: 8px; background-size: cover; background-position: center; flex-shrink: 0; background-color: var(--bg); }
+        .search-suggestion-text { display: flex; flex-direction: column; min-width: 0; }
+        .search-suggestion-title { font-size: 12.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .search-suggestion-price { font-size: 11px; color: var(--sub); font-weight: 700; }
         .search-box input { border: none; outline: none; background: transparent; color: var(--text); font-size: 16px; width: 100%; font-family: inherit; }
         .chip { border: 1px solid var(--input-border); background: var(--surface2); color: var(--body); border-radius: 20px; padding: 8px 14px; font-size: 12px; cursor: pointer; font-family: inherit; }
         .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
@@ -3562,6 +3606,14 @@ export default function RopelinApp() {
         .tab { flex: 1; border: none; background: transparent; color: var(--sub); padding: 11px; border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
         .tab.active { background: var(--text); color: var(--bg); }
         .pedidos-subtabs { display: flex; gap: 8px; margin-bottom: 18px; }
+        .stats-list { display: flex; flex-direction: column; gap: 10px; }
+        .stats-row { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+        .stats-row-thumb { width: 52px; height: 52px; border-radius: 10px; background-color: var(--bg); background-size: cover; background-position: center; flex-shrink: 0; }
+        .stats-row-info { flex: 1; min-width: 0; }
+        .stats-row-title { font-size: 13.5px; font-weight: 700; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stats-row-meta { font-size: 11.5px; color: var(--sub); margin: 0; display: flex; align-items: center; gap: 4px; }
+        .stats-row-tip { font-size: 11px; color: #FF4D8D; font-weight: 600; margin: 5px 0 0; display: flex; align-items: center; gap: 4px; }
+        .stats-row-price { font-size: 14px; font-weight: 800; flex-shrink: 0; }
         .pedidos-subtab { border: 2px solid var(--border); background: var(--card); color: var(--sub); padding: 7px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
         .pedidos-subtab.active { background: #FF4D8D; color: #1A1A1A; border-color: var(--border); }
         .auth-modal label { margin: 18px 0 7px; }
@@ -3749,13 +3801,32 @@ export default function RopelinApp() {
       )}
 
       <div className="search-row">
-        <div className="search-box">
+        <div className="search-box search-box-wrap">
           <Search size={15} color="#9A9AA3" />
           <input
             placeholder="Buscar artículos..."
             value={query}
-            onChange={(e) => { setQuery(e.target.value); if (openItem) closeItemView(); if (photoSearchResults) clearPhotoSearch(); }}
+            onChange={(e) => { setQuery(e.target.value); setShowSuggestions(true); if (openItem) closeItemView(); if (photoSearchResults) clearPhotoSearch(); }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
           />
+          {showSuggestions && searchSuggestions.length > 0 && (
+            <div className="search-suggestions">
+              {searchSuggestions.map((it) => (
+                <button
+                  key={it.id}
+                  className="search-suggestion-row"
+                  onMouseDown={() => { setQuery(it.title); setShowSuggestions(false); viewItem(normalizeItem(it)); }}
+                >
+                  <span className="search-suggestion-thumb" style={{ backgroundImage: `url(${(it.images && it.images[0]) || it.photo})` }} />
+                  <span className="search-suggestion-text">
+                    <span className="search-suggestion-title">{it.title}</span>
+                    <span className="search-suggestion-price">{it.price}€</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <input
           type="file"
@@ -4017,6 +4088,9 @@ export default function RopelinApp() {
                     <button className={"profile-sidebar-item" + ((profileMenuView || "pedidos") === "pedidos" ? " active" : "")} onClick={() => setProfileMenuView("pedidos")}>
                       <Package size={16} /> Mis pedidos
                     </button>
+                    <button className={"profile-sidebar-item" + (profileMenuView === "stats" ? " active" : "")} onClick={() => setProfileMenuView("stats")}>
+                      <TrendingUp size={16} /> Estadísticas
+                    </button>
                     <button className={"profile-sidebar-item" + (profileMenuView === "favoritos" ? " active" : "")} onClick={() => setProfileMenuView("favoritos")}>
                       <Heart size={16} /> Favoritos
                     </button>
@@ -4065,6 +4139,11 @@ export default function RopelinApp() {
                     <button className="profile-menu-row" onClick={() => setProfileMenuView("pedidos")}>
                       <span className="profile-menu-icon"><Package size={17} /></span>
                       <span className="profile-menu-label">Mis pedidos</span>
+                      <ChevronRight size={16} />
+                    </button>
+                    <button className="profile-menu-row" onClick={() => setProfileMenuView("stats")}>
+                      <span className="profile-menu-icon"><TrendingUp size={17} /></span>
+                      <span className="profile-menu-label">Estadísticas</span>
                       <ChevronRight size={16} />
                     </button>
                     <button className="profile-menu-row" onClick={() => setProfileMenuView("favoritos")}>
@@ -4368,6 +4447,36 @@ export default function RopelinApp() {
                           </>
                         );
                       })()}
+                    </div>
+                  )}
+
+                  {profileMenuView === "stats" && (
+                    <div style={{ textAlign: "left" }}>
+                      {myStatsLoading && <p className="empty-tab">Cargando...</p>}
+                      {!myStatsLoading && (!myStats || myStats.length === 0) && (
+                        <p className="empty-tab">Publica algún artículo para empezar a ver sus estadísticas aquí.</p>
+                      )}
+                      {!myStatsLoading && myStats && myStats.length > 0 && (
+                        <div className="stats-list">
+                          {myStats.map((it) => (
+                            <div className="stats-row" key={it.id}>
+                              <div className="stats-row-thumb" style={{ backgroundImage: it.image ? `url(${it.image})` : "none" }} />
+                              <div className="stats-row-info">
+                                <p className="stats-row-title">{it.title}</p>
+                                <p className="stats-row-meta">
+                                  <Eye size={12} /> {it.views} {it.views === 1 ? "vista" : "vistas"}
+                                  <span style={{ margin: "0 6px" }}>·</span>
+                                  <Heart size={12} /> {it.favoritesCount} {it.favoritesCount === 1 ? "favorito" : "favoritos"}
+                                </p>
+                                {it.needsAttention && (
+                                  <p className="stats-row-tip"><TrendingDown size={12} /> Bastantes vistas pero ningún favorito — prueba a bajar el precio o mejorar las fotos</p>
+                                )}
+                              </div>
+                              <p className="stats-row-price">{it.price}€</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -5765,15 +5874,54 @@ export default function RopelinApp() {
 
             <p className="settings-toggle-row">
               <span>Notificaciones de mensajes</span>
-              <input type="checkbox" defaultChecked />
+              <input
+                type="checkbox"
+                checked={messageAlerts}
+                onChange={async (e) => {
+                  const value = e.target.checked;
+                  setMessageAlerts(value);
+                  try {
+                    await updateNotifPreference("messageAlerts", value);
+                  } catch (err) {
+                    setMessageAlerts(!value);
+                    toast.error(err.message);
+                  }
+                }}
+              />
             </p>
             <p className="settings-toggle-row">
               <span>Notificaciones de ofertas</span>
-              <input type="checkbox" defaultChecked />
+              <input
+                type="checkbox"
+                checked={offerAlerts}
+                onChange={async (e) => {
+                  const value = e.target.checked;
+                  setOfferAlerts(value);
+                  try {
+                    await updateNotifPreference("offerAlerts", value);
+                  } catch (err) {
+                    setOfferAlerts(!value);
+                    toast.error(err.message);
+                  }
+                }}
+              />
             </p>
             <p className="settings-toggle-row">
               <span>Bajadas de precio en favoritos</span>
-              <input type="checkbox" defaultChecked />
+              <input
+                type="checkbox"
+                checked={priceDropAlerts}
+                onChange={async (e) => {
+                  const value = e.target.checked;
+                  setPriceDropAlerts(value);
+                  try {
+                    await updateNotifPreference("priceDropAlerts", value);
+                  } catch (err) {
+                    setPriceDropAlerts(!value);
+                    toast.error(err.message);
+                  }
+                }}
+              />
             </p>
 
             <label>Privacidad</label>
