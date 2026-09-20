@@ -3703,7 +3703,7 @@ export default function RopelinApp() {
 
       {!anyModalOpen && !(showPost && numCols < 3) && (
       <div className="mobile-bottom-nav">
-        <button onClick={() => { closeItemView(); setCategory("Para ti"); setQuery(""); }}>
+        <button onClick={goHome}>
           <Home size={20} />
           <span>Inicio</span>
         </button>
