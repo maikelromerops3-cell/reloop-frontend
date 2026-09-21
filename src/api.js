@@ -5,6 +5,23 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// Lee el mensaje de error de una respuesta fallida sin arriesgarse a romper con un segundo
+// error confuso. Antes, cada función hacía `(await parseErrorMessage(res))` directamente — si el
+// servidor devolvía algo que no era JSON (una página de error del proxy, un 502, un timeout),
+// esa misma lectura del error fallaba con "Unexpected token '<', '<!DOCTYPE'... is not valid
+// JSON", tapando el problema real (que normalmente es que el servidor está caído, sobrecargado,
+// o la petición fue a una URL equivocada).
+async function parseErrorMessage(res) {
+  try {
+    const data = await res.json();
+    return data?.error || null;
+  } catch {
+    if (res.status >= 500) return `El servidor no está respondiendo bien ahora mismo (error ${res.status}). Prueba de nuevo en un momento.`;
+    if (res.status === 404) return "No se encontró lo que buscabas (404).";
+    return `Algo ha fallado (código ${res.status}).`;
+  }
+}
+
 export async function fetchItems({ query, category, size, minPrice, maxPrice, sortBy, lat, lng, maxDistanceKm } = {}) {
   const params = new URLSearchParams();
   if (query) params.set("query", query);
@@ -31,7 +48,7 @@ export async function searchByImage(file) {
     headers: { ...authHeaders() },
     body: formData,
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo analizar la foto");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo analizar la foto");
   return res.json();
 }
 
@@ -47,7 +64,7 @@ export async function createItem(data) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "Error al publicar");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "Error al publicar");
   return res.json();
 }
 
@@ -57,7 +74,7 @@ export async function login(email, password) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "Error al iniciar sesión");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "Error al iniciar sesión");
   const data = await res.json();
   localStorage.setItem("reloop_token", data.token);
   localStorage.setItem("reloop_username", data.user.username);
@@ -71,7 +88,7 @@ export async function loginWithGoogle(credential) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ credential }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "Error al iniciar sesión con Google");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "Error al iniciar sesión con Google");
   const data = await res.json();
   localStorage.setItem("reloop_token", data.token);
   localStorage.setItem("reloop_username", data.user.username);
@@ -85,7 +102,7 @@ export async function register(email, password, username, city, ref) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, username, city, ref }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "Error al registrarse");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "Error al registrarse");
   const data = await res.json();
   localStorage.setItem("reloop_token", data.token);
   localStorage.setItem("reloop_username", data.user.username);
@@ -99,7 +116,7 @@ export async function updateItem(id, data) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "Error al actualizar");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "Error al actualizar");
   return res.json();
 }
 
@@ -145,7 +162,7 @@ export async function uploadImage(file) {
     headers: { ...authHeaders() }, // OJO: no poner Content-Type, el navegador lo define solo con el boundary correcto
     body: formData,
   });
-  if (!res.ok) throw new Error((await res.json()).error || "Error al subir la imagen");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "Error al subir la imagen");
   const data = await res.json();
   return data.url;
 }
@@ -162,7 +179,7 @@ export async function updateMyLocation({ city, latitude, longitude, bio, avatarU
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ city, latitude, longitude, bio, avatarUrl, coverUrl, firstName, lastName, shippingPhone }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la ubicación");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo guardar la ubicación");
   return res.json();
 }
 
@@ -172,7 +189,7 @@ export async function updateShippingAddress({ shippingStreet, shippingPostalCode
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ shippingStreet, shippingPostalCode, shippingPhone }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la dirección");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo guardar la dirección");
   return res.json();
 }
 
@@ -182,19 +199,19 @@ export async function updateMarketingOptIn(marketingOptIn) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ marketingOptIn }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la preferencia");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo guardar la preferencia");
   return res.json();
 }
 
 export async function fetchMyStats() {
   const res = await fetch(`${API_URL}/items/mine/stats`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron cargar las estadísticas");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron cargar las estadísticas");
   return res.json();
 }
 
 export async function fetchMyPreferences() {
   const res = await fetch(`${API_URL}/users/me/preferences`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron cargar las preferencias");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron cargar las preferencias");
   return res.json();
 }
 
@@ -204,7 +221,7 @@ export async function updateNotifPreference(field, value) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ [field]: value }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la preferencia");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo guardar la preferencia");
   return res.json();
 }
 
@@ -213,7 +230,7 @@ export async function deleteMyAccount() {
     method: "DELETE",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo eliminar la cuenta");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo eliminar la cuenta");
   return res.json();
 }
 
@@ -223,7 +240,7 @@ export async function subscribeNewsletter(email) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo completar la suscripción");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo completar la suscripción");
   return res.json();
 }
 
@@ -239,7 +256,7 @@ export async function askItemQuestion(itemId, question) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ question }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la pregunta");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo enviar la pregunta");
   return res.json();
 }
 
@@ -249,7 +266,7 @@ export async function answerItemQuestion(itemId, questionId, answer) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ answer }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la respuesta");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo enviar la respuesta");
   return res.json();
 }
 
@@ -258,7 +275,7 @@ export async function deleteItemQuestion(itemId, questionId) {
     method: "DELETE",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo borrar la pregunta");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo borrar la pregunta");
   return res.json();
 }
 
@@ -267,7 +284,7 @@ export async function markItemSold(itemId) {
     method: "PATCH",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo marcar como vendido");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo marcar como vendido");
   return res.json();
 }
 
@@ -283,7 +300,7 @@ export async function notifySaleBuyer(itemId, buyerUsername) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ buyerUsername }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo avisar al comprador");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo avisar al comprador");
   return res.json(); // { ok, transactionId }
 }
 
@@ -293,7 +310,7 @@ export async function respondToOffer(itemId, messageId, action, counterAmount) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ action, counterAmount }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo responder a la oferta");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo responder a la oferta");
   return res.json();
 }
 
@@ -314,7 +331,7 @@ export async function followUser(username) {
     method: "POST",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo seguir a este usuario");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo seguir a este usuario");
   return res.json();
 }
 
@@ -323,7 +340,7 @@ export async function unfollowUser(username) {
     method: "DELETE",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo dejar de seguir");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo dejar de seguir");
   return res.json();
 }
 
@@ -334,7 +351,7 @@ export async function connectStripe() {
     method: "POST",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "Error al conectar con Stripe");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "Error al conectar con Stripe");
   const data = await res.json();
   return data.url; // redirige al usuario a este enlace para completar el onboarding
 }
@@ -361,7 +378,7 @@ export async function startCheckout(itemId, { shippingRateId, shippingProvider, 
       ...(servicePoint ? { servicePointId: servicePoint.id, servicePointName: servicePoint.name, servicePointAddress: servicePoint.address } : {}),
     }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo iniciar el pago");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo iniciar el pago");
   const data = await res.json();
   return data.url; // redirige al usuario a Stripe Checkout
 }
@@ -371,7 +388,7 @@ export async function fetchShippingQuote(itemId, postalCode, city) {
   const res = await fetch(`${API_URL}/shipments/quote?${params.toString()}`, {
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron consultar las tarifas de envío");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron consultar las tarifas de envío");
   return res.json(); // { rates: [...] }
 }
 
@@ -380,7 +397,7 @@ export async function boostItem(itemId) {
     method: "POST",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo iniciar el pago del destacado");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo iniciar el pago del destacado");
   return res.json(); // { url } si es de pago, { freeBoostUsed: true } si se usó un destacado gratis
 }
 
@@ -396,7 +413,7 @@ export async function fetchShippingRates(transactionId) {
   const res = await fetch(`${API_URL}/shipments/${transactionId}/rates`, {
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron consultar las tarifas de envío");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron consultar las tarifas de envío");
   return res.json(); // { rates: [{ rateId, provider, servicelevel, amount, currency, estimatedDays }] }
 }
 
@@ -405,7 +422,7 @@ export async function createShipmentLabel(transactionId) {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo generar la etiqueta");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo generar la etiqueta");
   return res.json();
 }
 
@@ -421,7 +438,7 @@ export async function searchServicePoints({ postalCode, city, latitude, longitud
   const res = await fetch(`${API_URL}/shipments/service-points?${params.toString()}`, {
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron buscar puntos de recogida");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron buscar puntos de recogida");
   return res.json(); // { points: [{ id, name, carrier, address, latitude, longitude }] }
 }
 
@@ -431,7 +448,7 @@ export async function setServicePoint(transactionId, servicePointId, servicePoin
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ servicePointId, servicePointName, servicePointAddress }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar el punto de recogida");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo guardar el punto de recogida");
   return res.json();
 }
 
@@ -449,7 +466,7 @@ export async function confirmReceived(transactionId) {
     method: "PATCH",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo confirmar la recepción");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo confirmar la recepción");
   return res.json();
 }
 
@@ -458,7 +475,7 @@ export async function completeInPerson(transactionId) {
     method: "PATCH",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo confirmar la entrega en persona");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo confirmar la entrega en persona");
   return res.json();
 }
 
@@ -468,7 +485,7 @@ export async function submitReview(transactionId, rating, comment) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ transactionId, rating, comment }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la valoración");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo enviar la valoración");
   return res.json();
 }
 
@@ -503,7 +520,7 @@ export async function fetchAdminUsers({ search, verified, stripeConnected, page 
   if (stripeConnected !== undefined && stripeConnected !== "") params.set("stripeConnected", stripeConnected);
   params.set("page", page);
   const res = await fetch(`${API_URL}/admin/users?${params.toString()}`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar la lista de usuarios");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cargar la lista de usuarios");
   return res.json();
 }
 
@@ -513,7 +530,7 @@ export async function changeUserRole(userId, role) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ role }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cambiar el rol");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cambiar el rol");
   return res.json();
 }
 
@@ -523,7 +540,7 @@ export async function changeUsernameAdmin(userId, username) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ username }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cambiar el nombre de usuario");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cambiar el nombre de usuario");
   return res.json();
 }
 
@@ -533,7 +550,7 @@ export async function adminDeleteItem(id, reason) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ reason }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo eliminar el artículo");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo eliminar el artículo");
   return res.json();
 }
 
@@ -543,7 +560,7 @@ export async function banUser(userId, reason) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ reason }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo suspender la cuenta");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo suspender la cuenta");
   return res.json();
 }
 
@@ -552,14 +569,14 @@ export async function unbanUser(userId) {
     method: "PATCH",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo reactivar la cuenta");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo reactivar la cuenta");
   return res.json();
 }
 
 export async function fetchAdminReports(status) {
   const query = status ? `?status=${status}` : "";
   const res = await fetch(`${API_URL}/admin/reports${query}`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron cargar las denuncias");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron cargar las denuncias");
   return res.json();
 }
 
@@ -568,19 +585,19 @@ export async function resolveReport(id) {
     method: "PATCH",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo actualizar la denuncia");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo actualizar la denuncia");
   return res.json();
 }
 
 export async function fetchAdminLogs() {
   const res = await fetch(`${API_URL}/admin/logs`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar el historial");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cargar el historial");
   return res.json();
 }
 
 export async function fetchAdminBroadcasts() {
   const res = await fetch(`${API_URL}/admin/broadcast`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar el historial de avisos");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cargar el historial de avisos");
   return res.json();
 }
 
@@ -590,19 +607,19 @@ export async function sendAdminBroadcast({ title, message, link, channel }) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ title, message, link, channel }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar el aviso");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo enviar el aviso");
   return res.json();
 }
 
 export async function fetchAdminTop() {
   const res = await fetch(`${API_URL}/admin/top`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar el ranking");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cargar el ranking");
   return res.json();
 }
 
 export async function fetchAdminTimeseries() {
   const res = await fetch(`${API_URL}/admin/stats/timeseries`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar la evolución de ganancias");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cargar la evolución de ganancias");
   return res.json();
 }
 
@@ -616,7 +633,7 @@ export async function submitReport(targetType, payload, reason) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la denuncia");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo enviar la denuncia");
   return res.json();
 }
 
@@ -626,20 +643,20 @@ export async function submitSupportMessage(subject, message) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ subject, message }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar el mensaje");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo enviar el mensaje");
   return res.json();
 }
 
 export async function fetchMySupportMessages() {
   const res = await fetch(`${API_URL}/support/mine`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron cargar tus mensajes");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron cargar tus mensajes");
   return res.json();
 }
 
 export async function fetchAdminSupport(status) {
   const query = status ? `?status=${status}` : "";
   const res = await fetch(`${API_URL}/admin/support${query}`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron cargar los mensajes de soporte");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron cargar los mensajes de soporte");
   return res.json();
 }
 
@@ -649,7 +666,7 @@ export async function replySupportMessage(id, reply) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ reply }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la respuesta");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo enviar la respuesta");
   return res.json();
 }
 
@@ -661,7 +678,7 @@ export async function fetchPublicSettings() {
 
 export async function fetchAdminSettings() {
   const res = await fetch(`${API_URL}/admin/settings`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar la configuración");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cargar la configuración");
   return res.json();
 }
 
@@ -671,7 +688,7 @@ export async function updateAdminSettings(data) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la configuración");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo guardar la configuración");
   return res.json();
 }
 
@@ -681,7 +698,7 @@ export async function adminEditItem(itemId, data) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo editar el artículo");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo editar el artículo");
   return res.json();
 }
 
@@ -706,13 +723,13 @@ export function exportTransactionsCsv() {
 }
 export async function fetchAdminStats() {
   const res = await fetch(`${API_URL}/admin/stats`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron cargar las estadísticas");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron cargar las estadísticas");
   return res.json();
 }
 
 export async function fetchAdminDisputes() {
   const res = await fetch(`${API_URL}/admin/disputes`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron cargar las disputas");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron cargar las disputas");
   return res.json();
 }
 
@@ -722,13 +739,13 @@ export async function submitIdentityVerification(documentUrl) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ documentUrl }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar la verificación");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo enviar la verificación");
   return res.json();
 }
 
 export async function fetchAdminVerifications() {
   const res = await fetch(`${API_URL}/admin/verifications`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudieron cargar las verificaciones");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron cargar las verificaciones");
   return res.json();
 }
 
@@ -737,7 +754,7 @@ export async function approveVerification(userId) {
     method: "POST",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo aprobar");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo aprobar");
   return res.json();
 }
 
@@ -747,31 +764,31 @@ export async function rejectVerification(userId, reason) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ reason }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo rechazar");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo rechazar");
   return res.json();
 }
 
 export async function blockUser(username) {
   const res = await fetch(`${API_URL}/users/${username}/block`, { method: "POST", headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo bloquear");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo bloquear");
   return res.json();
 }
 
 export async function unblockUser(username) {
   const res = await fetch(`${API_URL}/users/${username}/block`, { method: "DELETE", headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo desbloquear");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo desbloquear");
   return res.json();
 }
 
 export async function fetchBlockedUsers() {
   const res = await fetch(`${API_URL}/users/me/blocked`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar la lista");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cargar la lista");
   return res.json();
 }
 
 export async function fetchSellerBalance() {
   const res = await fetch(`${API_URL}/transactions/balance`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cargar el saldo");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cargar el saldo");
   return res.json();
 }
 
@@ -781,7 +798,7 @@ export async function refundTransactionPartial(transactionId, amount) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ amount }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo procesar el reembolso");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo procesar el reembolso");
   return res.json();
 }
 
@@ -790,7 +807,7 @@ export async function refundTransaction(transactionId) {
     method: "POST",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo procesar el reembolso");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo procesar el reembolso");
   return res.json();
 }
 
@@ -799,7 +816,7 @@ export async function rejectDispute(transactionId) {
     method: "POST",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo rechazar la reclamación");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo rechazar la reclamación");
   return res.json();
 }
 
@@ -808,7 +825,7 @@ export async function requestReturn(transactionId) {
     method: "POST",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo pedir la devolución");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo pedir la devolución");
   return res.json();
 }
 
@@ -818,7 +835,7 @@ export async function markReturned(transactionId, trackingCode) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ trackingCode }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo confirmar la devolución");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo confirmar la devolución");
   return res.json();
 }
 
@@ -827,7 +844,7 @@ export async function confirmReturnReceived(transactionId) {
     method: "PATCH",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo confirmar la recepción");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo confirmar la recepción");
   return res.json();
 }
 
@@ -837,7 +854,7 @@ export async function respondToDispute(transactionId, response) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ response }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar tu respuesta");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo enviar tu respuesta");
   return res.json();
 }
 
@@ -849,7 +866,7 @@ export async function forgotPassword(email) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "Error al solicitar recuperación");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "Error al solicitar recuperación");
   return res.json();
 }
 
@@ -859,13 +876,13 @@ export async function resetPassword(token, newPassword) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, newPassword }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "Error al restablecer la contraseña");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "Error al restablecer la contraseña");
   return res.json();
 }
 
 export async function verifyEmail(token) {
   const res = await fetch(`${API_URL}/auth/verify-email?token=${token}`);
-  if (!res.ok) throw new Error((await res.json()).error || "Enlace no válido");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "Enlace no válido");
   return res.json();
 }
 
@@ -874,7 +891,7 @@ export async function resendVerification() {
     method: "POST",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo reenviar el email");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo reenviar el email");
   return res.json();
 }
 
@@ -884,7 +901,7 @@ export async function changePassword(currentPassword, newPassword) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ currentPassword, newPassword }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cambiar la contraseña");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cambiar la contraseña");
   return res.json();
 }
 
@@ -894,7 +911,7 @@ export async function changeEmail(newEmail, password) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ newEmail, password }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cambiar el email");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo cambiar el email");
   return res.json();
 }
 
@@ -912,7 +929,7 @@ export async function sendChatMessage(itemId, content, offerAmount, imageUrl) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ content, offerAmount, imageUrl }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo enviar el mensaje");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo enviar el mensaje");
   return res.json();
 }
 
@@ -941,7 +958,7 @@ export async function disputeTransaction(transactionId, reason, evidenceUrl) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ reason, evidenceUrl }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo abrir la disputa");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo abrir la disputa");
   return res.json();
 }
 
@@ -959,7 +976,7 @@ export async function saveSearch(query, category) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ query, category }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo guardar la búsqueda");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo guardar la búsqueda");
   return res.json();
 }
 
@@ -968,7 +985,7 @@ export async function deleteSavedSearch(id) {
     method: "DELETE",
     headers: { ...authHeaders() },
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo borrar la búsqueda");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo borrar la búsqueda");
   return res.json();
 }
 
@@ -976,7 +993,7 @@ export async function deleteSavedSearch(id) {
 
 export async function fetchPushPublicKey() {
   const res = await fetch(`${API_URL}/push/public-key`);
-  if (!res.ok) throw new Error((await res.json()).error || "Las notificaciones push no están disponibles");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "Las notificaciones push no están disponibles");
   const data = await res.json();
   return data.publicKey;
 }
@@ -987,7 +1004,7 @@ export async function subscribeToPush(subscription) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(subscription),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo activar las notificaciones");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo activar las notificaciones");
   return res.json();
 }
 
@@ -997,6 +1014,6 @@ export async function unsubscribeFromPush(endpoint) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ endpoint }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "No se pudo desactivar las notificaciones");
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo desactivar las notificaciones");
   return res.json();
 }

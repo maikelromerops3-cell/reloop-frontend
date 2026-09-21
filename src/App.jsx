@@ -1089,6 +1089,7 @@ export default function RopelinApp() {
   const isAdmin = userRole === "admin";
   const isModerator = userRole === "admin" || userRole === "moderator";
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo"), instagramUrl: "", tiktokUrl: "", facebookUrl: "", twitterUrl: "", updatesText: "", maintenanceMode: false });
 
   // Bloquea el scroll de la página de fondo mientras haya cualquier ventana/modal abierto,
   // para que en móvil arrastrar dentro del modal no mueva el feed de detrás.
@@ -1099,7 +1100,7 @@ export default function RopelinApp() {
   // En Vender, Novedades, Quiénes somos, el apartado legal y la Ayuda se ocultan las tarjetas de artículos, pero el bloque de impacto y el boletín se quedan visibles
   const hidesFeedCardsOnDesktop = numCols >= 3 && (showPost || legalPageOpen || showHelpCenter || showLeague || showProfile);
   const anyModalOpen = !!(
-    (openItem && numCols < 3) || showAuth || (showProfile && numCols < 3) || showChat ||
+    (openItem && numCols < 3) || (showAuth && !(platformSettings.maintenanceMode && !isModerator)) || (showProfile && numCols < 3) || showChat ||
     (showLegal && !(numCols >= 3 && legalPageOpen)) ||
     (showHelpCenter && numCols < 3) ||
     (showLeague && numCols < 3) ||
@@ -1157,7 +1158,6 @@ export default function RopelinApp() {
   const [supportSubject, setSupportSubject] = useState("");
   const [supportMessage, setSupportMessage] = useState("");
   const [mySupportMessages, setMySupportMessages] = useState([]);
-  const [platformSettings, setPlatformSettings] = useState({ commissionPercent: 8, shippingFee: 3.5, boostPrice: 1.99, boostDurationHours: 48, categories: CATEGORIES.filter((c) => c !== "Todo"), instagramUrl: "", tiktokUrl: "", facebookUrl: "", twitterUrl: "", updatesText: "", maintenanceMode: false });
 
   useEffect(() => {
     if (!(platformSettings.maintenanceMode && !isModerator && showMaintenanceLogin)) return;
@@ -2596,7 +2596,8 @@ export default function RopelinApp() {
     return (
       <div className="soon-page">
         <style>{`
-          .soon-page { min-height: 100vh; background: #FFF8EC; font-family: Arial, Helvetica, sans-serif; color: #1A1A1A; }
+          html, body { overflow-y: auto !important; height: auto !important; position: static !important; }
+          .soon-page { min-height: 100vh; background: #FFF8EC; font-family: Arial, Helvetica, sans-serif; color: #1A1A1A; overflow-y: auto; }
           .soon-header { display: flex; align-items: center; gap: 10px; padding: 22px 24px; max-width: 720px; margin: 0 auto; }
           .soon-logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); border: 2px solid #1A1A1A; color: #1A1A1E; font-weight: 900; font-size: 16px; display: flex; align-items: center; justify-content: center; }
           .soon-header-name { font-size: 18px; font-weight: 900; margin: 0; }
