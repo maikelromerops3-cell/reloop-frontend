@@ -27,7 +27,7 @@ import {
   banUser, unbanUser, adminDeleteItem, fetchAdminReports, resolveReport, fetchAdminLogs, fetchAdminTop, fetchAdminTimeseries, submitReport,
   fetchAdminBroadcasts, sendAdminBroadcast,
   submitSupportMessage, fetchMySupportMessages, fetchAdminSupport, replySupportMessage,
-  fetchPublicSettings, fetchAdminSettings, updateAdminSettings, adminEditItem, exportUsersCsv, exportTransactionsCsv, changeUserRole,
+  fetchPublicSettings, fetchAdminSettings, updateAdminSettings, adminEditItem, exportUsersCsv, exportTransactionsCsv, changeUserRole, changeUsernameAdmin,
 } from "./api";
 
 const CATEGORY_ICONS = { "Todo": LayoutGrid, "Moda": Shirt, "Electrónica": Zap, "Hogar": PackageOpen, "Deporte": Footprints, "Juguetes y ocio": Watch, "Vehículos": Car, "Libros y música": BookOpen, "Belleza y cuidado personal": Sparkles, "Bebé e infantil": Baby, "Jardín y herramientas": Wrench, "Instrumentos musicales": Guitar, "Otros": Tag };
@@ -2172,6 +2172,18 @@ export default function RopelinApp() {
     }
   }
 
+  async function handleChangeUsername(user) {
+    const nuevo = prompt(`Nuevo nombre de usuario para @${user.username}:`, user.username);
+    if (!nuevo || nuevo.trim() === user.username) return;
+    try {
+      const { username } = await changeUsernameAdmin(user.id, nuevo.trim());
+      toast.success(`Ahora es @${username}`);
+      loadAdminTab("users", adminUserPage);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
   async function saveAdminSettings() {
     try {
       const updated = await updateAdminSettings(adminSettingsForm);
@@ -3047,6 +3059,8 @@ export default function RopelinApp() {
         .admin-user-row { display: flex; align-items: center; gap: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
         .admin-user-info { flex: 1; min-width: 0; }
         .admin-user-name { font-size: 13.5px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px; }
+        .admin-username-edit-btn { display: flex; align-items: center; justify-content: center; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 3px; color: var(--sub); cursor: pointer; }
+        .admin-username-edit-btn:hover { color: #FF4D8D; border-color: #FF4D8D; }
         .admin-role-badge { background: linear-gradient(135deg, #8C7CFF, #4DA8FF); color: var(--bg); font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 2px 7px; border-radius: 8px; }
         .admin-user-email { font-size: 11.5px; color: var(--sub); margin: 3px 0; }
         .admin-user-meta { font-size: 11px; color: var(--faint); margin: 0; line-height: 1.5; }
@@ -6332,6 +6346,7 @@ export default function RopelinApp() {
                               <div className="admin-user-info">
                                 <p className="admin-user-name">
                                   @{u.username}
+                                  <button className="admin-username-edit-btn" title="Cambiar nombre de usuario" onClick={() => handleChangeUsername(u)}><Pencil size={11} /></button>
                                   {u.role === "admin" && <span className="admin-role-badge">Admin</span>}
                                   {u.role === "moderator" && <span className="admin-role-badge" style={{ background: "linear-gradient(135deg, #7FD8D0, #4DA8FF)" }}>Moderador</span>}
                                   {u.banned && <span className="admin-role-badge banned-badge">Suspendido</span>}

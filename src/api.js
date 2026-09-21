@@ -517,6 +517,16 @@ export async function changeUserRole(userId, role) {
   return res.json();
 }
 
+export async function changeUsernameAdmin(userId, username) {
+  const res = await fetch(`${API_URL}/admin/users/${userId}/username`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ username }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "No se pudo cambiar el nombre de usuario");
+  return res.json();
+}
+
 export async function adminDeleteItem(id, reason) {
   const res = await fetch(`${API_URL}/items/${id}/admin`, {
     method: "DELETE",
