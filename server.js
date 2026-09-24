@@ -96,11 +96,15 @@ app.get("/item/:id", async (req, res, next) => {
 // de emails, etc. — una URL que cualquiera pueda abrir sin instalar ni cargar JS.
 const privacidadHtml = fs.readFileSync(path.join(__dirname, "legal", "privacidad.html"), "utf8");
 const terminosHtml = fs.readFileSync(path.join(__dirname, "legal", "terminos.html"), "utf8");
+const cookiesHtml = fs.readFileSync(path.join(__dirname, "legal", "cookies.html"), "utf8");
+const comoUsarHtml = fs.readFileSync(path.join(__dirname, "legal", "como-usar.html"), "utf8");
 app.get("/sitemap.xml", async (req, res) => {
   const staticUrls = [
     { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0" },
     { loc: `${SITE_URL}/privacidad`, changefreq: "monthly", priority: "0.3" },
     { loc: `${SITE_URL}/terminos`, changefreq: "monthly", priority: "0.3" },
+    { loc: `${SITE_URL}/cookies`, changefreq: "monthly", priority: "0.3" },
+    { loc: `${SITE_URL}/como-usar`, changefreq: "monthly", priority: "0.4" },
   ];
   let items = [];
   try {
@@ -121,6 +125,8 @@ app.get("/sitemap.xml", async (req, res) => {
 
 app.get("/privacidad", (req, res) => res.set("Content-Type", "text/html").send(privacidadHtml));
 app.get("/terminos", (req, res) => res.set("Content-Type", "text/html").send(terminosHtml));
+app.get("/cookies", (req, res) => res.set("Content-Type", "text/html").send(cookiesHtml));
+app.get("/como-usar", (req, res) => res.set("Content-Type", "text/html").send(comoUsarHtml));
 
 app.use(express.static(DIST_DIR));
 

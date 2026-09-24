@@ -1207,6 +1207,7 @@ export default function RopelinApp() {
           <p className="footer-col-title">Ropelin</p>
           <button onClick={() => openLegalPage("about")}>Quiénes somos</button>
           <button onClick={() => openLegalPage("how-it-works")}>Cómo funciona</button>
+          <button onClick={() => openLegalPage("guide")}>Cómo usar Ropelin</button>
         </div>
         <div className="footer-col">
           <p className="footer-col-title">Comprar y vender</p>
@@ -1340,11 +1341,18 @@ export default function RopelinApp() {
     if (!loggedIn && window.innerWidth >= 780) setShowAuth(true);
   }, []);
 
-  // Enlaces directos: si la URL es /item/:id o /perfil/:username, abre lo que corresponda
+  // Enlaces directos: si la URL es /item/:id o /perfil/:username, abre lo que corresponda.
+  // Primero miramos si ya lo tenemos cargado en el feed (rápido), y si no aparece ahí —por
+  // ejemplo, un artículo recién comprado que ya está marcado como vendido y por eso no sale
+  // en el listado normal— lo pedimos directamente por su id, para no dejar al usuario mirando
+  // solo la portada sin explicación (esto pasaba justo al volver de pagar con Stripe).
   useEffect(() => {
-    if (params.id && allItems.length) {
-      const found = allItems.find((i) => i.id === params.id);
-      if (found) setOpenItem(found);
+    if (!params.id) return;
+    const found = allItems.find((i) => i.id === params.id);
+    if (found) {
+      setOpenItem(found);
+    } else {
+      fetchItem(params.id).then((raw) => setOpenItem(normalizeItem(raw))).catch(() => {});
     }
   }, [params.id, allItems]);
 
@@ -1407,6 +1415,7 @@ export default function RopelinApp() {
       { key: "help", label: "Centro de ayuda", icon: <Mail size={16} />, action: openHelpCenter },
       { key: "about", label: "Quiénes somos", icon: <Sparkles size={16} />, action: () => openLegalPage("about") },
       { key: "how-it-works", label: "Cómo funciona", icon: <RefreshCw size={16} />, action: () => openLegalPage("how-it-works") },
+      { key: "guide", label: "Cómo usar Ropelin", icon: <BookOpen size={16} />, action: () => openLegalPage("guide") },
       { key: "terms", label: "Términos y condiciones", icon: <FileCheck size={16} />, action: () => openLegal("terms") },
       { key: "privacy", label: "Privacidad", icon: <ShieldCheck size={16} />, action: () => openLegal("privacy") },
       { key: "cookies", label: "Cookies", icon: <Settings size={16} />, action: () => openLegal("cookies") },
@@ -5146,6 +5155,29 @@ export default function RopelinApp() {
                 </div>
               </>
             )}
+            {showLegal === "guide" && (
+              <>
+                <p className="auth-title">Cómo usar Ropelin</p>
+                <p className="how-it-works-intro">Una guía rápida para sacarle partido a la app, paso a paso.</p>
+                <div className="how-it-works-list">
+                  {[
+                    { color: "#FF4D8D", title: "Crea tu cuenta", text: "Regístrate con tu email o con Google. Añade tu ciudad para ver artículos cerca de ti." },
+                    { color: "#B49CE8", title: "Busca o publica", text: "Explora por categoría, o busca por texto o foto. Para vender, pulsa \"Vender\", sube fotos y pon un precio — lleva menos de un minuto." },
+                    { color: "#7FD8D0", title: "Habla y compra seguro", text: "Pregunta por chat, haz una oferta más baja, o compra directamente. El pago queda protegido hasta que confirmes que todo ha llegado bien." },
+                    { color: "#FFC24D", title: "Recibe y valora", text: "Por correo, o en persona si quedáis cerca. Al recibirlo, confirmas desde tu perfil y podéis valoraros mutuamente." },
+                  ].map((step, i) => (
+                    <div className="how-it-works-card" key={i}>
+                      <span className="how-it-works-num" style={{ background: step.color }}>{i + 1}</span>
+                      <div>
+                        <p className="how-it-works-title">{step.title}</p>
+                        <p className="how-it-works-text">{step.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <a href="/como-usar" target="_blank" rel="noopener" className="about-block-link" style={{ display: "inline-block", marginTop: 14 }}>Ver como página completa →</a>
+              </>
+            )}
             {showLegal === "about" && (
               <>
                 <p className="auth-title">Quiénes somos</p>
@@ -5194,6 +5226,7 @@ export default function RopelinApp() {
             {showLegal === "terms" && (
               <>
                 <p className="auth-title">Términos y condiciones</p>
+                <a href="/terminos" target="_blank" rel="noopener" className="about-block-link" style={{ display: "inline-block", marginBottom: 14 }}>Ver el documento legal completo →</a>
                 <div className="how-it-works-list">
                   {[
                     { color: "#FF4D8D", title: "1. Objeto", text: "Ropelin es una plataforma que conecta a compradores y vendedores de artículos de segunda mano. Actuamos como intermediarios: no somos propietarios de los artículos publicados ni parte del contrato de compraventa entre usuarios, y no garantizamos la veracidad, calidad ni estado real de los artículos." },
@@ -5212,6 +5245,9 @@ export default function RopelinApp() {
                     { color: "#B49CE8", title: "14. Modificaciones", text: "Podemos modificar estas condiciones en cualquier momento; los cambios importantes se avisarán a los usuarios registrados." },
                     { color: "#7FD8D0", title: "15. Ley aplicable", text: "Estas condiciones se rigen por la legislación española, sometiéndonos a los juzgados y tribunales que correspondan según la normativa de consumidores aplicable." },
                     { color: "#FFC24D", title: "16. Contacto", text: "Para cualquier duda sobre estas condiciones: hola@ropelin.com" },
+                    { color: "#FF8A4D", title: "17. Vendedores particulares y profesionales", text: "Si vendes fuera de una actividad empresarial eres un vendedor particular. Si vendes de forma profesional, debes identificarte como tal — te pediremos NIF y datos de contacto adicionales, y estarás sujeto a la normativa de consumidores que corresponda a los vendedores profesionales." },
+                    { color: "#8C7CFF", title: "18. Sistema de reclamaciones", text: "Puedes recurrir cualquier decisión de moderación (retirada de un anuncio, suspensión...) desde el Centro de ayuda, explicando los motivos. Revisaremos la decisión y te comunicaremos el resultado." },
+                    { color: "#7FD8D0", title: "19. Protección del comprador", text: "Cubre casos como artículo no recibido, diferente, falsificado, dañado o incompleto. No es un seguro — su aplicación depende de las pruebas disponibles y de las condiciones de Stripe." },
                   ].map((s, i) => (
                     <div className="how-it-works-card" key={i}>
                       <span className="how-it-works-num" style={{ background: s.color }}>{i + 1}</span>
@@ -5228,6 +5264,7 @@ export default function RopelinApp() {
             {showLegal === "privacy" && (
               <>
                 <p className="auth-title">Política de privacidad</p>
+                <a href="/privacidad" target="_blank" rel="noopener" className="about-block-link" style={{ display: "inline-block", marginBottom: 14 }}>Ver el documento legal completo →</a>
                 <div className="how-it-works-list">
                   {[
                     { color: "#FF4D8D", title: "1. Responsable", text: "Ropelin es responsable del tratamiento de los datos personales recogidos a través de ropelin.com y la app. Contacto: hola@ropelin.com" },
@@ -5256,6 +5293,7 @@ export default function RopelinApp() {
             {showLegal === "cookies" && (
               <>
                 <p className="auth-title">Política de cookies</p>
+                <a href="/cookies" target="_blank" rel="noopener" className="about-block-link" style={{ display: "inline-block", marginBottom: 14 }}>Ver el documento legal completo →</a>
                 <div className="how-it-works-list">
                   {[
                     { color: "#FF4D8D", title: "Cookies esenciales", text: "Necesarias para que funcione el inicio de sesión, el carrito y la seguridad de la plataforma. No se pueden desactivar porque la web no funcionaría sin ellas." },
@@ -5284,7 +5322,7 @@ export default function RopelinApp() {
           <div className="legal-page profile-page-wide">
             <button className="back-btn" onClick={() => setShowLegal(null)}><ArrowLeft size={16} /> Volver</button>
             <div className="profile-desktop-flex has-sidebar">
-              {infoSidebarEl(showLegal === "terms" ? "terms" : showLegal === "privacy" ? "privacy" : showLegal === "cookies" ? "cookies" : showLegal === "about" ? "about" : showLegal === "how-it-works" ? "how-it-works" : null)}
+              {infoSidebarEl(showLegal === "terms" ? "terms" : showLegal === "privacy" ? "privacy" : showLegal === "cookies" ? "cookies" : showLegal === "about" ? "about" : showLegal === "how-it-works" ? "how-it-works" : showLegal === "guide" ? "guide" : null)}
               <div className="profile-desktop-content">{legalContentEl}</div>
             </div>
           </div>
