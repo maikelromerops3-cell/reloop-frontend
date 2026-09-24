@@ -1431,6 +1431,33 @@ export default function RopelinApp() {
     );
   }
 
+  // Menú lateral del panel de admin en escritorio — mismo patrón que el perfil y el centro de
+  // ayuda: la lista siempre visible a la izquierda, cambiando solo el contenido a la derecha,
+  // en vez del "entra en una sección, vuelve al menú, entra en otra" de antes.
+  function adminSidebarEl(active) {
+    const items = [
+      isAdmin && { key: "users", label: "Usuarios", icon: <User size={16} /> },
+      isAdmin && { key: "stats", label: "Ganancias", icon: <HandCoins size={16} /> },
+      { key: "disputes", label: "Disputas", icon: <Package size={16} />, badge: adminDisputes.length },
+      isAdmin && { key: "verifications", label: "Verificaciones", icon: <ShieldCheck size={16} />, badge: adminVerifications.length },
+      { key: "reports", label: "Denuncias", icon: <FileWarning size={16} />, badge: adminReports.filter((r) => r.status === "pending").length },
+      { key: "support", label: "Soporte", icon: <MessageCircle size={16} />, badge: adminSupport.filter((m) => m.status === "open").length },
+      isAdmin && { key: "broadcast", label: "Notificaciones", icon: <Send size={16} /> },
+      isAdmin && { key: "settings", label: "Configuración", icon: <Settings size={16} /> },
+      isAdmin && { key: "logs", label: "Historial", icon: <FileCheck size={16} /> },
+    ].filter(Boolean);
+    return (
+      <div className="profile-sidebar-menu info-sidebar">
+        {items.map((it) => (
+          <button key={it.key} className={"profile-sidebar-item" + (active === it.key ? " active" : "")} onClick={() => loadAdminTab(it.key)}>
+            {it.icon} {it.label}
+            {!!it.badge && <span className="admin-menu-badge" style={{ marginLeft: "auto" }}>{it.badge}</span>}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   useEffect(() => {
     if (openItem) {
       document.title = `${openItem.title} — ${openItem.price}€ | Ropelin, segunda mano`;
@@ -2111,6 +2138,12 @@ export default function RopelinApp() {
     fetchAdminSupport().then(setAdminSupport).catch(() => {});
   }
 
+  useEffect(() => {
+    if (showAdminPanel && numCols >= 3 && adminSection === null) {
+      loadAdminTab(isAdmin ? "users" : "disputes");
+    }
+  }, [showAdminPanel, numCols, isAdmin]);
+
   async function loadAdminTab(tab, page = 1) {
     setAdminSection(tab);
     setAdminTab(tab);
@@ -2118,9 +2151,11 @@ export default function RopelinApp() {
     try {
       if (tab === "users") {
         const result = await fetchAdminUsers({ search: adminUserSearch, verified: adminUserFilters.verified, stripeConnected: adminUserFilters.stripeConnected, page });
-        setAdminUsers(result.users);
-        setAdminUserPage(result.page);
-        setAdminUserPages(result.pages);
+        // Igual que con los pedidos: si el servidor devuelve algo con forma inesperada, no
+        // queremos que esto rompa toda la app — nos quedamos con una lista vacía en vez de crash.
+        setAdminUsers(Array.isArray(result?.users) ? result.users : []);
+        setAdminUserPage(result?.page || 1);
+        setAdminUserPages(result?.pages || 1);
       }
       if (tab === "stats") {
         setAdminStats(await fetchAdminStats());
@@ -6256,103 +6291,12 @@ export default function RopelinApp() {
       )}
 
 
-      {showAdminPanel && (
-        <div className="overlay" onClick={() => setShowAdminPanel(false)}>
-          <div className="modal admin-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowAdminPanel(false)}><X size={14} /></button>
+      {showAdminPanel && (() => {
+        const adminSectionContentEl = (
+          <>
+            {adminLoading && <p className="empty-tab">Cargando...</p>}
 
-            {adminSection === null ? (
-              <>
-                <div className="league-header">
-                  <ShieldCheck size={20} color="#8C7CFF" />
-                  <p className="auth-title" style={{ margin: 0 }}>Panel de administración</p>
-                </div>
-
-                <div className="admin-summary-row">
-                  {isAdmin && adminStats && (
-                    <div className="admin-summary-box"><strong>{adminStats.totalCommission.toFixed(2)}€</strong><span>Ganado</span></div>
-                  )}
-                  <div className="admin-summary-box"><strong>{adminDisputes.length}</strong><span>Disputas</span></div>
-                  <div className="admin-summary-box"><strong>{adminReports.filter((r) => r.status === "pending").length}</strong><span>Denuncias</span></div>
-                  <div className="admin-summary-box"><strong>{adminSupport.filter((m) => m.status === "open").length}</strong><span>Soporte</span></div>
-                </div>
-
-                <div className="admin-menu-list">
-                  {isAdmin && (
-                    <button className="admin-menu-item" onClick={() => loadAdminTab("users")}>
-                      <span className="admin-menu-icon"><User size={17} /></span>
-                      <span className="admin-menu-label">Usuarios</span>
-                      <span className="admin-menu-arrow">›</span>
-                    </button>
-                  )}
-                  {isAdmin && (
-                    <button className="admin-menu-item" onClick={() => loadAdminTab("stats")}>
-                      <span className="admin-menu-icon"><HandCoins size={17} /></span>
-                      <span className="admin-menu-label">Ganancias</span>
-                      <span className="admin-menu-arrow">›</span>
-                    </button>
-                  )}
-                  <button className="admin-menu-item" onClick={() => loadAdminTab("disputes")}>
-                    <span className="admin-menu-icon"><Package size={17} /></span>
-                    <span className="admin-menu-label">Disputas</span>
-                    {adminDisputes.length > 0 && <span className="admin-menu-badge">{adminDisputes.length}</span>}
-                    <span className="admin-menu-arrow">›</span>
-                  </button>
-                  {isAdmin && (
-                    <button className="admin-menu-item" onClick={() => loadAdminTab("verifications")}>
-                      <span className="admin-menu-icon"><ShieldCheck size={17} /></span>
-                      <span className="admin-menu-label">Verificaciones</span>
-                      {adminVerifications.length > 0 && <span className="admin-menu-badge">{adminVerifications.length}</span>}
-                      <span className="admin-menu-arrow">›</span>
-                    </button>
-                  )}
-                  <button className="admin-menu-item" onClick={() => loadAdminTab("reports")}>
-                    <span className="admin-menu-icon"><FileWarning size={17} /></span>
-                    <span className="admin-menu-label">Denuncias</span>
-                    {adminReports.filter((r) => r.status === "pending").length > 0 && <span className="admin-menu-badge">{adminReports.filter((r) => r.status === "pending").length}</span>}
-                    <span className="admin-menu-arrow">›</span>
-                  </button>
-                  <button className="admin-menu-item" onClick={() => loadAdminTab("support")}>
-                    <span className="admin-menu-icon"><MessageCircle size={17} /></span>
-                    <span className="admin-menu-label">Soporte</span>
-                    {adminSupport.filter((m) => m.status === "open").length > 0 && <span className="admin-menu-badge">{adminSupport.filter((m) => m.status === "open").length}</span>}
-                    <span className="admin-menu-arrow">›</span>
-                  </button>
-                  {isAdmin && (
-                    <button className="admin-menu-item" onClick={() => loadAdminTab("broadcast")}>
-                      <span className="admin-menu-icon"><Send size={17} /></span>
-                      <span className="admin-menu-label">Notificaciones</span>
-                      <span className="admin-menu-arrow">›</span>
-                    </button>
-                  )}
-                  {isAdmin && (
-                    <button className="admin-menu-item" onClick={() => loadAdminTab("settings")}>
-                      <span className="admin-menu-icon"><Settings size={17} /></span>
-                      <span className="admin-menu-label">Configuración</span>
-                      <span className="admin-menu-arrow">›</span>
-                    </button>
-                  )}
-                  {isAdmin && (
-                    <button className="admin-menu-item" onClick={() => loadAdminTab("logs")}>
-                      <span className="admin-menu-icon"><FileCheck size={17} /></span>
-                      <span className="admin-menu-label">Historial</span>
-                      <span className="admin-menu-arrow">›</span>
-                    </button>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="league-header">
-                  <button className="admin-back-btn" onClick={() => setAdminSection(null)}><ArrowLeft size={16} /></button>
-                  <p className="auth-title" style={{ margin: 0 }}>
-                    {{ users: "Usuarios", stats: "Ganancias", disputes: "Disputas", verifications: "Verificaciones", reports: "Denuncias", support: "Soporte", broadcast: "Notificaciones", settings: "Configuración", logs: "Historial" }[adminSection]}
-                  </p>
-                </div>
-
-                {adminLoading && <p className="empty-tab">Cargando...</p>}
-
-                {!adminLoading && adminSection === "users" && (
+            {!adminLoading && adminSection === "users" && (
                   <>
                     <form className="admin-search-row" onSubmit={handleUserSearch}>
                       <div className="search-box">
@@ -6809,11 +6753,124 @@ export default function RopelinApp() {
                         ))}
                       </div>
                 )}
-              </>
+          </>
+        );
+
+        const sectionTitles = { users: "Usuarios", stats: "Ganancias", disputes: "Disputas", verifications: "Verificaciones", reports: "Denuncias", support: "Soporte", broadcast: "Notificaciones", settings: "Configuración", logs: "Historial" };
+
+        const adminMenuListEl = (
+          <div className="admin-menu-list">
+            {isAdmin && (
+              <button className="admin-menu-item" onClick={() => loadAdminTab("users")}>
+                <span className="admin-menu-icon"><User size={17} /></span>
+                <span className="admin-menu-label">Usuarios</span>
+                <span className="admin-menu-arrow">›</span>
+              </button>
+            )}
+            {isAdmin && (
+              <button className="admin-menu-item" onClick={() => loadAdminTab("stats")}>
+                <span className="admin-menu-icon"><HandCoins size={17} /></span>
+                <span className="admin-menu-label">Ganancias</span>
+                <span className="admin-menu-arrow">›</span>
+              </button>
+            )}
+            <button className="admin-menu-item" onClick={() => loadAdminTab("disputes")}>
+              <span className="admin-menu-icon"><Package size={17} /></span>
+              <span className="admin-menu-label">Disputas</span>
+              {adminDisputes.length > 0 && <span className="admin-menu-badge">{adminDisputes.length}</span>}
+              <span className="admin-menu-arrow">›</span>
+            </button>
+            {isAdmin && (
+              <button className="admin-menu-item" onClick={() => loadAdminTab("verifications")}>
+                <span className="admin-menu-icon"><ShieldCheck size={17} /></span>
+                <span className="admin-menu-label">Verificaciones</span>
+                {adminVerifications.length > 0 && <span className="admin-menu-badge">{adminVerifications.length}</span>}
+                <span className="admin-menu-arrow">›</span>
+              </button>
+            )}
+            <button className="admin-menu-item" onClick={() => loadAdminTab("reports")}>
+              <span className="admin-menu-icon"><FileWarning size={17} /></span>
+              <span className="admin-menu-label">Denuncias</span>
+              {adminReports.filter((r) => r.status === "pending").length > 0 && <span className="admin-menu-badge">{adminReports.filter((r) => r.status === "pending").length}</span>}
+              <span className="admin-menu-arrow">›</span>
+            </button>
+            <button className="admin-menu-item" onClick={() => loadAdminTab("support")}>
+              <span className="admin-menu-icon"><MessageCircle size={17} /></span>
+              <span className="admin-menu-label">Soporte</span>
+              {adminSupport.filter((m) => m.status === "open").length > 0 && <span className="admin-menu-badge">{adminSupport.filter((m) => m.status === "open").length}</span>}
+              <span className="admin-menu-arrow">›</span>
+            </button>
+            {isAdmin && (
+              <button className="admin-menu-item" onClick={() => loadAdminTab("broadcast")}>
+                <span className="admin-menu-icon"><Send size={17} /></span>
+                <span className="admin-menu-label">Notificaciones</span>
+                <span className="admin-menu-arrow">›</span>
+              </button>
+            )}
+            {isAdmin && (
+              <button className="admin-menu-item" onClick={() => loadAdminTab("settings")}>
+                <span className="admin-menu-icon"><Settings size={17} /></span>
+                <span className="admin-menu-label">Configuración</span>
+                <span className="admin-menu-arrow">›</span>
+              </button>
+            )}
+            {isAdmin && (
+              <button className="admin-menu-item" onClick={() => loadAdminTab("logs")}>
+                <span className="admin-menu-icon"><FileCheck size={17} /></span>
+                <span className="admin-menu-label">Historial</span>
+                <span className="admin-menu-arrow">›</span>
+              </button>
             )}
           </div>
-        </div>
-      )}
+        );
+
+        return numCols >= 3 ? (
+          <div className="legal-page profile-page-wide">
+            <button className="back-btn" onClick={() => setShowAdminPanel(false)}><ArrowLeft size={16} /> Volver</button>
+            <div className="profile-desktop-flex has-sidebar">
+              {adminSidebarEl(adminSection)}
+              <div className="profile-desktop-content">
+                <p className="auth-title" style={{ marginBottom: 14 }}>{sectionTitles[adminSection] || "Panel de administración"}</p>
+                {adminSectionContentEl}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="overlay" onClick={() => setShowAdminPanel(false)}>
+            <div className="modal admin-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="close-btn" onClick={() => setShowAdminPanel(false)}><X size={14} /></button>
+
+              {adminSection === null ? (
+                <>
+                  <div className="league-header">
+                    <ShieldCheck size={20} color="#8C7CFF" />
+                    <p className="auth-title" style={{ margin: 0 }}>Panel de administración</p>
+                  </div>
+
+                  <div className="admin-summary-row">
+                    {isAdmin && adminStats && (
+                      <div className="admin-summary-box"><strong>{adminStats.totalCommission.toFixed(2)}€</strong><span>Ganado</span></div>
+                    )}
+                    <div className="admin-summary-box"><strong>{adminDisputes.length}</strong><span>Disputas</span></div>
+                    <div className="admin-summary-box"><strong>{adminReports.filter((r) => r.status === "pending").length}</strong><span>Denuncias</span></div>
+                    <div className="admin-summary-box"><strong>{adminSupport.filter((m) => m.status === "open").length}</strong><span>Soporte</span></div>
+                  </div>
+
+                  {adminMenuListEl}
+                </>
+              ) : (
+                <>
+                  <div className="league-header">
+                    <button className="admin-back-btn" onClick={() => setAdminSection(null)}><ArrowLeft size={16} /></button>
+                    <p className="auth-title" style={{ margin: 0 }}>{sectionTitles[adminSection]}</p>
+                  </div>
+                  {adminSectionContentEl}
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {banningUser && (
         <div className="overlay" onClick={() => setBanningUser(null)}>
