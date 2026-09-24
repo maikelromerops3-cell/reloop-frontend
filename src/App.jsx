@@ -5036,7 +5036,7 @@ export default function RopelinApp() {
         ) : (
           <div className="overlay" onClick={() => setShowHelpCenter(false)}>
             <div className="modal admin-modal" onClick={(e) => e.stopPropagation()}>
-              <button className="close-btn" onClick={() => setShowHelpCenter(false)}><X size={14} /></button>
+              <button className="back-btn" onClick={() => setShowHelpCenter(false)} style={{ marginBottom: 14 }}><ArrowLeft size={16} /> Volver</button>
               {helpContentEl}
             </div>
           </div>
@@ -5329,7 +5329,7 @@ export default function RopelinApp() {
         ) : (
           <div className="overlay" onClick={() => setShowLegal(null)}>
             <div className="modal legal-modal" onClick={(e) => e.stopPropagation()}>
-              <button className="close-btn" onClick={() => setShowLegal(null)}><X size={14} /></button>
+              <button className="back-btn" onClick={() => setShowLegal(null)} style={{ marginBottom: 14 }}><ArrowLeft size={16} /> Volver</button>
               {legalContentEl}
             </div>
           </div>
