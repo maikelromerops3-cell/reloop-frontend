@@ -62,7 +62,10 @@ app.get("/item/:id", async (req, res, next) => {
 
   try {
     const r = await fetch(`${API_URL}/items/${req.params.id}`);
-    if (!r.ok) return next();
+    // Si el artículo no existe, se lo decimos claramente a Google con un 404 de verdad,
+    // en vez de servirle la portada con un 200 como si no pasara nada — si no, con el
+    // tiempo acumula miles de páginas "fantasma" indexadas que no llevan a ningún sitio.
+    if (!r.ok) return res.status(404).set("Content-Type", "text/html").send(indexHtml);
     const item = await r.json();
     const html = withMeta(indexHtml, {
       title: `${item.title} — ${item.price}€ | Ropelin`,

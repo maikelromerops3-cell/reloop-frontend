@@ -1104,7 +1104,7 @@ export default function RopelinApp() {
     (showLegal && !(numCols >= 3 && legalPageOpen)) ||
     (showHelpCenter && numCols < 3) ||
     (showLeague && numCols < 3) ||
-    showSettings || showOrders || showFavorites || showAdminPanel || cropperState
+    showSettings || showOrders || showFavorites || (showAdminPanel && numCols < 3) || cropperState
   );
   useEffect(() => {
     if (anyModalOpen) {
@@ -1143,6 +1143,8 @@ export default function RopelinApp() {
   const [adminUserSearch, setAdminUserSearch] = useState("");
   const [adminReports, setAdminReports] = useState([]);
   const [adminLogs, setAdminLogs] = useState([]);
+  const [seoSitemapCount, setSeoSitemapCount] = useState(null);
+  const [seoLoading, setSeoLoading] = useState(false);
   const [adminBroadcasts, setAdminBroadcasts] = useState([]);
   const [broadcastForm, setBroadcastForm] = useState({ title: "", message: "", link: "", channel: "both" });
   const [sendingBroadcast, setSendingBroadcast] = useState(false);
@@ -1444,10 +1446,12 @@ export default function RopelinApp() {
       { key: "support", label: "Soporte", icon: <MessageCircle size={16} />, badge: adminSupport.filter((m) => m.status === "open").length },
       isAdmin && { key: "broadcast", label: "Notificaciones", icon: <Send size={16} /> },
       isAdmin && { key: "settings", label: "Configuración", icon: <Settings size={16} /> },
+      isAdmin && { key: "seo", label: "SEO", icon: <TrendingUp size={16} /> },
       isAdmin && { key: "logs", label: "Historial", icon: <FileCheck size={16} /> },
     ].filter(Boolean);
     return (
       <div className="profile-sidebar-menu info-sidebar">
+        <p className="admin-sidebar-title">Administrador</p>
         {items.map((it) => (
           <button key={it.key} className={"profile-sidebar-item" + (active === it.key ? " active" : "")} onClick={() => loadAdminTab(it.key)}>
             {it.icon} {it.label}
@@ -2143,6 +2147,16 @@ export default function RopelinApp() {
       loadAdminTab(isAdmin ? "users" : "disputes");
     }
   }, [showAdminPanel, numCols, isAdmin]);
+
+  useEffect(() => {
+    if (adminSection !== "seo" || seoSitemapCount !== null) return;
+    setSeoLoading(true);
+    fetch("/sitemap.xml")
+      .then((res) => res.text())
+      .then((xml) => setSeoSitemapCount((xml.match(/<url>/g) || []).length))
+      .catch(() => setSeoSitemapCount(-1))
+      .finally(() => setSeoLoading(false));
+  }, [adminSection]);
 
   async function loadAdminTab(tab, page = 1) {
     setAdminSection(tab);
@@ -2936,6 +2950,14 @@ export default function RopelinApp() {
           .profile-desktop-flex.has-sidebar .profile-desktop-content { flex: 1; }
         }
         .profile-sidebar-menu { display: flex; flex-direction: column; }
+        .admin-sidebar-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; color: #8C7CFF; margin: 0 0 10px 12px; }
+        .seo-stat-row { display: flex; gap: 10px; }
+        .seo-link-list { display: flex; flex-direction: column; gap: 8px; }
+        .seo-link-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 11px 14px; font-size: 13px; font-weight: 600; color: var(--text); text-decoration: none; }
+        .seo-link-row:hover { border-color: #FF4D8D; }
+        .seo-link-arrow { color: var(--sub); }
+        .seo-check-list { display: flex; flex-direction: column; gap: 9px; }
+        .seo-check-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--body); margin: 0; }
         .profile-sidebar-item { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; border-radius: 12px; padding: 11px 12px; margin-bottom: 4px; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--body); text-align: left; }
         .profile-sidebar-item:hover { background: var(--card); }
         .profile-sidebar-item.active { background: var(--card); color: var(--text); border: 1px solid var(--border); }
@@ -6741,6 +6763,53 @@ export default function RopelinApp() {
                   </>
                 )}
 
+                {adminSection === "seo" && (
+                  <div className="seo-panel">
+                    <div className="seo-stat-row">
+                      <div className="admin-summary-box">
+                        <strong>{seoLoading ? "…" : seoSitemapCount === -1 ? "?" : seoSitemapCount}</strong>
+                        <span>URLs en el sitemap</span>
+                      </div>
+                    </div>
+
+                    <p className="checkout-section-label" style={{ marginTop: 20 }}>Páginas públicas</p>
+                    <div className="seo-link-list">
+                      <a href="/sitemap.xml" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>sitemap.xml</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                      <a href="/robots.txt" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>robots.txt</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                      <a href="/terminos" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>/terminos</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                      <a href="/privacidad" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>/privacidad</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                      <a href="/cookies" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>/cookies</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                      <a href="/como-usar" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>/como-usar</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                    </div>
+
+                    <p className="checkout-section-label" style={{ marginTop: 20 }}>Qué está activo</p>
+                    <div className="seo-check-list">
+                      {[
+                        "Sitemap dinámico (se genera solo con cada artículo publicado)",
+                        "Datos estructurados de producto (precio y disponibilidad en Google)",
+                        "Vista previa correcta al compartir en WhatsApp/Facebook",
+                        "Enlace canónico por artículo",
+                        "Páginas legales indexables sin necesidad de JavaScript",
+                        "Artículos borrados devuelven un 404 de verdad a Google",
+                      ].map((text, i) => (
+                        <p key={i} className="seo-check-item"><CheckCircle size={14} color="#7FD8D0" /> {text}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {!adminLoading && adminSection === "logs" && (
                   adminLogs.length === 0
                     ? <p className="empty-tab">Aún no hay ninguna acción registrada.</p>
@@ -6756,7 +6825,7 @@ export default function RopelinApp() {
           </>
         );
 
-        const sectionTitles = { users: "Usuarios", stats: "Ganancias", disputes: "Disputas", verifications: "Verificaciones", reports: "Denuncias", support: "Soporte", broadcast: "Notificaciones", settings: "Configuración", logs: "Historial" };
+        const sectionTitles = { users: "Usuarios", stats: "Ganancias", disputes: "Disputas", verifications: "Verificaciones", reports: "Denuncias", support: "Soporte", broadcast: "Notificaciones", settings: "Configuración", seo: "SEO", logs: "Historial" };
 
         const adminMenuListEl = (
           <div className="admin-menu-list">
