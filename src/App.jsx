@@ -2065,6 +2065,7 @@ export default function RopelinApp() {
     setCategory("Para ti");
     setQuery("");
     navigate("/");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function startCropping(file, target, queue = []) {
