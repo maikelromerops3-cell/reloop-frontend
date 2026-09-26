@@ -4066,7 +4066,10 @@ export default function RopelinApp() {
         }
         .post-page { padding: 20px 26px 100px; max-width: 900px; margin: 0 auto; }
         .post-page-solo { padding: 32px 34px 100px; }
-        .post-solo-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 32px 36px 36px; margin-top: 18px; max-width: 760px; box-shadow: 0 24px 60px -30px rgba(0,0,0,0.35); }
+        .post-solo-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 32px 36px 36px; margin-top: 18px; max-width: 1100px; box-shadow: 0 24px 60px -30px rgba(0,0,0,0.35); }
+        @media (min-width: 1500px) {
+          .post-solo-card { max-width: 1300px; }
+        }
         .post-solo-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1.5px solid var(--border); }
         .post-solo-icon { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
         .legal-page { padding: 20px 26px 100px; max-width: 700px; margin: 0 auto; }
@@ -4351,12 +4354,6 @@ export default function RopelinApp() {
           {installPrompt && (
             <button className="icon-btn" onClick={handleInstallApp} title="Instalar app">
               <Download size={16} />
-            </button>
-          )}
-
-          {isModerator && (
-            <button className="icon-btn" onClick={openAdminPanel} title="Admin">
-              <ShieldCheck size={16} />
             </button>
           )}
         </div>
