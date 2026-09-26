@@ -33,6 +33,22 @@ import {
 const CATEGORY_ICONS = { "Todo": LayoutGrid, "Moda": Shirt, "Electrónica": Zap, "Hogar": PackageOpen, "Deporte": Footprints, "Juguetes y ocio": Watch, "Vehículos": Car, "Libros y música": BookOpen, "Belleza y cuidado personal": Sparkles, "Bebé e infantil": Baby, "Jardín y herramientas": Wrench, "Instrumentos musicales": Guitar, "Otros": Tag };
 const CATEGORY_COLORS = { "Todo": "#C8C8CE", "Moda": "#FF4D8D", "Electrónica": "#4DA8FF", "Hogar": "#FFC24D", "Deporte": "#7FD8D0", "Juguetes y ocio": "#8C7CFF", "Vehículos": "#6A9BFF", "Libros y música": "#E0A458", "Belleza y cuidado personal": "#FF8FB1", "Bebé e infantil": "#7FD8A6", "Jardín y herramientas": "#A3C96B", "Instrumentos musicales": "#C97BFF", "Otros": "#FF8A4D" };
 const CATEGORIES = ["Todo", "Moda", "Electrónica", "Hogar", "Deporte", "Juguetes y ocio", "Vehículos", "Libros y música", "Belleza y cuidado personal", "Bebé e infantil", "Jardín y herramientas", "Instrumentos musicales", "Otros"];
+
+// Subcategorías más concretas dentro de cada categoría principal, para el formulario de venta.
+// "Otros" no tiene, porque es precisamente el cajón de sastre para lo que no encaja en ninguna.
+const SUBCATEGORIES = {
+  "Moda": ["Camisetas", "Pantalones", "Vestidos", "Chaquetas y abrigos", "Zapatos", "Bolsos", "Accesorios"],
+  "Electrónica": ["Móviles", "Ordenadores", "Videojuegos y consolas", "Audio", "Cámaras", "Televisores", "Accesorios"],
+  "Hogar": ["Muebles", "Decoración", "Cocina", "Textil de hogar", "Iluminación", "Electrodomésticos"],
+  "Deporte": ["Fitness", "Ciclismo", "Running", "Deportes de equipo", "Deportes acuáticos", "Ropa deportiva"],
+  "Juguetes y ocio": ["Juguetes", "Juegos de mesa", "Puzzles", "Manualidades", "Coleccionismo"],
+  "Vehículos": ["Coches", "Motos", "Bicicletas", "Patinetes", "Accesorios de vehículo"],
+  "Libros y música": ["Libros", "Vinilos", "CDs", "Cómics y manga"],
+  "Belleza y cuidado personal": ["Maquillaje", "Perfumes", "Cuidado de la piel", "Cuidado del cabello"],
+  "Bebé e infantil": ["Ropa de bebé", "Juguetes infantiles", "Carritos y sillas", "Mobiliario infantil"],
+  "Jardín y herramientas": ["Herramientas", "Jardinería", "Bricolaje", "Muebles de exterior"],
+  "Instrumentos musicales": ["Guitarras", "Teclados y pianos", "Percusión", "Instrumentos de viento"],
+};
 function buildFaqItems(s) {
   return [
     { q: "¿Cómo publico un artículo?", a: "Dale al botón \"Vender\", añade fotos, título, precio y descripción, y publícalo. Aparecerá al momento en el feed." },
@@ -1104,7 +1120,7 @@ export default function RopelinApp() {
     (showLegal && !(numCols >= 3 && legalPageOpen)) ||
     (showHelpCenter && numCols < 3) ||
     (showLeague && numCols < 3) ||
-    showSettings || showOrders || showFavorites || (showAdminPanel && numCols < 3) || cropperState
+    showSettings || showOrders || showFavorites || showAdminPanel || cropperState
   );
   useEffect(() => {
     if (anyModalOpen) {
@@ -1250,7 +1266,7 @@ export default function RopelinApp() {
   const [adminUserPages, setAdminUserPages] = useState(1);
   const [editingAdminItem, setEditingAdminItem] = useState(null);
   const [adminItemEditForm, setAdminItemEditForm] = useState({ title: "", description: "" });
-  const [form, setForm] = useState({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] });
+  const [form, setForm] = useState({ title: "", category: "Moda", subcategory: "", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] });
   const [uploadingImages, setUploadingImages] = useState([]);
   const [authForm, setAuthForm] = useState({ email: "", password: "", username: "", city: "" });
   const [authMode, setAuthMode] = useState("login");
@@ -1459,6 +1475,519 @@ export default function RopelinApp() {
           </button>
         ))}
       </div>
+    );
+  }
+
+  function adminContentEl() {
+    return (
+          <>
+            {adminLoading && <p className="empty-tab">Cargando...</p>}
+
+            {!adminLoading && adminSection === "users" && (
+                  <>
+                    <form className="admin-search-row" onSubmit={handleUserSearch}>
+                      <div className="search-box">
+                        <Search size={14} color="#9A9AA3" />
+                        <input placeholder="Buscar por usuario o email..." value={adminUserSearch} onChange={(e) => setAdminUserSearch(e.target.value)} />
+                      </div>
+                      <button type="submit" className="btn ghost admin-search-btn">Buscar</button>
+                    </form>
+
+                    <div className="admin-filter-row">
+                      <select className="admin-filter-select" value={adminUserFilters.verified} onChange={(e) => handleUserFilterChange("verified", e.target.value)}>
+                        <option value="">Email: todos</option>
+                        <option value="true">Verificado</option>
+                        <option value="false">Sin verificar</option>
+                      </select>
+                      <select className="admin-filter-select" value={adminUserFilters.stripeConnected} onChange={(e) => handleUserFilterChange("stripeConnected", e.target.value)}>
+                        <option value="">Stripe: todos</option>
+                        <option value="true">Conectado</option>
+                        <option value="false">Sin conectar</option>
+                      </select>
+                      <button className="btn ghost admin-export-btn" onClick={handleExportUsers}>Exportar CSV</button>
+                    </div>
+
+                    {adminUsers.length === 0
+                      ? <p className="empty-tab">No hay usuarios que coincidan.</p>
+                      : <div className="admin-user-list">
+                          {adminUsers.map((u) => (
+                            <div key={u.id} className={"admin-user-row" + (u.banned ? " banned" : "")}>
+                              <div className="mini-avatar" style={{ background: PALETTE[u.username.length % PALETTE.length] }}>{u.username[0].toUpperCase()}</div>
+                              <div className="admin-user-info">
+                                <p className="admin-user-name">
+                                  @{u.username}
+                                  <button className="admin-username-edit-btn" title="Cambiar nombre de usuario" onClick={() => handleChangeUsername(u)}><Pencil size={11} /></button>
+                                  {u.role === "admin" && <span className="admin-role-badge">Admin</span>}
+                                  {u.role === "moderator" && <span className="admin-role-badge" style={{ background: "linear-gradient(135deg, #7FD8D0, #4DA8FF)" }}>Moderador</span>}
+                                  {u.banned && <span className="admin-role-badge banned-badge">Suspendido</span>}
+                                </p>
+                                <p className="admin-user-email">{u.email}</p>
+                                <p className="admin-user-meta">
+                                  {u._count.items} publicadas · {u._count.sales} vendidas · {u._count.purchases} compradas
+                                  {" · "}{u.emailVerified ? "Email verificado" : "Email sin verificar"}
+                                  {u.stripeOnboarded ? " · Stripe conectado" : ""}
+                                </p>
+                                {u.banned && u.bannedReason && <p className="admin-dispute-reason">Motivo: {u.bannedReason}</p>}
+                                {u.role !== "admin" && (
+                                  <select className="admin-role-select" value={u.role} onChange={(e) => handleChangeUserRole(u, e.target.value)}>
+                                    <option value="user">Usuario</option>
+                                    <option value="moderator">Moderador</option>
+                                    <option value="admin">Admin</option>
+                                  </select>
+                                )}
+                              </div>
+                              <div className="admin-user-actions">
+                                <span className="admin-user-date">{new Date(u.createdAt).toLocaleDateString("es-ES")}</span>
+                                {u.role !== "admin" && (
+                                  u.banned
+                                    ? <button className="admin-unban-btn" onClick={() => handleUnbanUser(u)}>Reactivar</button>
+                                    : <button className="admin-ban-btn" onClick={() => setBanningUser(u)}>Suspender</button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                    }
+
+                    {adminUserPages > 1 && (
+                      <div className="admin-pagination">
+                        <button className="btn ghost" disabled={adminUserPage <= 1} onClick={() => loadAdminTab("users", adminUserPage - 1)}>‹ Anterior</button>
+                        <span className="admin-page-label">Página {adminUserPage} de {adminUserPages}</span>
+                        <button className="btn ghost" disabled={adminUserPage >= adminUserPages} onClick={() => loadAdminTab("users", adminUserPage + 1)}>Siguiente ›</button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {!adminLoading && adminSection === "stats" && adminStats && (
+                  <>
+                    <div className="admin-stats-grid">
+                      <div className="admin-stat-box"><strong>{adminStats.userCount}</strong><span>Usuarios registrados</span></div>
+                      <div className="admin-stat-box"><strong>{adminStats.itemCount}</strong><span>Publicaciones totales</span></div>
+                      <div className="admin-stat-box"><strong>{adminStats.availableItemCount}</strong><span>Disponibles ahora</span></div>
+                      <div className="admin-stat-box"><strong>{adminStats.soldCount}</strong><span>Ventas pagadas</span></div>
+                      <div className="admin-stat-box highlight"><strong>{adminStats.totalVolume.toFixed(2)}€</strong><span>Volumen total vendido</span></div>
+                      <div className="admin-stat-box highlight"><strong>{adminStats.totalCommission.toFixed(2)}€</strong><span>Comisión ({platformSettings.commissionPercent}%) ganada</span></div>
+                      <div className="admin-stat-box"><strong>{adminStats.estimatedBoostRevenue.toFixed(2)}€</strong><span>Destacados (estimado)</span></div>
+                      <div className="admin-stat-box total"><strong>{adminStats.estimatedTotalRevenue.toFixed(2)}€</strong><span>Ganancia total estimada</span></div>
+                      {adminStats.disputedCount > 0 && (
+                        <div className="admin-stat-box warning"><strong>{adminStats.disputedCount}</strong><span>Disputas sin resolver</span></div>
+                      )}
+                      {adminStats.pendingReports > 0 && (
+                        <div className="admin-stat-box warning"><strong>{adminStats.pendingReports}</strong><span>Denuncias sin revisar</span></div>
+                      )}
+                    </div>
+
+                    {adminTimeseries.length > 0 && (
+                      <>
+                        <p className="profile-section-title">Comisión ganada (últimos 30 días)</p>
+                        <div className="admin-chart">
+                          {adminTimeseries.map((d) => {
+                            const max = Math.max(...adminTimeseries.map((x) => x.commission), 1);
+                            const h = Math.max(2, (d.commission / max) * 60);
+                            return (
+                              <div key={d.date} className="admin-chart-bar-wrap" title={`${d.date}: ${d.commission.toFixed(2)}€`}>
+                                <div className="admin-chart-bar" style={{ height: `${h}px` }} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+
+                    {adminTop && adminTop.topSellers.length > 0 && (
+                      <>
+                        <p className="profile-section-title">Mejores vendedores</p>
+                        <div className="admin-user-list">
+                          {adminTop.topSellers.slice(0, 5).map((s, i) => (
+                            <div key={s.username} className="admin-user-row">
+                              <span className="lb-rank">#{i + 1}</span>
+                              <div className="mini-avatar" style={{ background: PALETTE[s.username.length % PALETTE.length] }}>{s.username[0].toUpperCase()}</div>
+                              <div className="admin-user-info">
+                                <p className="admin-user-name">@{s.username}</p>
+                                <p className="admin-user-meta">{s.sales} ventas</p>
+                              </div>
+                              <span className="admin-user-date">{s.volume.toFixed(2)}€</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {adminTop && adminTop.topCategories.length > 0 && (
+                      <>
+                        <p className="profile-section-title">Categorías más vendidas</p>
+                        <div className="admin-category-list">
+                          {adminTop.topCategories.map((c) => (
+                            <div key={c.category} className="admin-category-row">
+                              <span>{c.category}</span>
+                              <span className="admin-category-count">{c.sales}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {adminTop && adminTop.topViewedItems?.length > 0 && (
+                      <>
+                        <p className="profile-section-title">Artículos más vistos</p>
+                        <div className="admin-category-list">
+                          {adminTop.topViewedItems.map((i) => (
+                            <div key={i.id} className="admin-category-row">
+                              <span>{i.title}</span>
+                              <span className="admin-category-count">{i.views} vistas</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {adminTop && adminTop.topSavedItems?.length > 0 && (
+                      <>
+                        <p className="profile-section-title">Artículos más guardados</p>
+                        <div className="admin-category-list">
+                          {adminTop.topSavedItems.map((i) => (
+                            <div key={i.id} className="admin-category-row">
+                              <span>{i.title}</span>
+                              <span className="admin-category-count">{i.saves} guardados</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    <button className="btn ghost admin-export-btn" style={{ width: "100%", marginTop: 14 }} onClick={handleExportTransactions}>Exportar ventas a CSV</button>
+                  </>
+                )}
+
+                {!adminLoading && adminSection === "settings" && adminSettingsForm && (
+                  <div className="admin-settings-form">
+                    <div className="maintenance-toggle-row">
+                      <div>
+                        <p className="maintenance-toggle-title">Modo mantenimiento</p>
+                        <p className="maintenance-toggle-sub">Muestra una pantalla de "volvemos enseguida" con lista de espera a todo el mundo (menos a moderadores/admins).</p>
+                      </div>
+                      <button
+                        type="button"
+                        className={"maintenance-toggle" + (adminSettingsForm.maintenanceMode ? " on" : "")}
+                        onClick={() => setAdminSettingsForm((prev) => ({ ...prev, maintenanceMode: !prev.maintenanceMode }))}
+                      >
+                        <span className="maintenance-toggle-knob" />
+                      </button>
+                    </div>
+
+                    <label>Comisión de la plataforma (%)</label>
+                    <input
+                      type="number" step="0.1" className="input-plain"
+                      value={adminSettingsForm.commissionPercent}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, commissionPercent: e.target.value }))}
+                    />
+                    <label>Gastos de envío fijos (€)</label>
+                    <input
+                      type="number" step="0.1" className="input-plain"
+                      value={adminSettingsForm.shippingFee}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, shippingFee: e.target.value }))}
+                    />
+                    <label>Precio de destacar una publicación (€)</label>
+                    <input
+                      type="number" step="0.1" className="input-plain"
+                      value={adminSettingsForm.boostPrice}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, boostPrice: e.target.value }))}
+                    />
+                    <label>Duración del destacado (horas)</label>
+                    <input
+                      type="number" className="input-plain"
+                      value={adminSettingsForm.boostDurationHours}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, boostDurationHours: e.target.value }))}
+                    />
+                    <label>Categorías (una por línea)</label>
+                    <textarea
+                      className="report-textarea"
+                      rows={6}
+                      value={adminSettingsForm.categories.join("\n")}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, categories: e.target.value.split("\n") }))}
+                    />
+                    <label>Instagram (URL completa, déjalo vacío para no mostrarlo)</label>
+                    <input
+                      type="text" className="input-plain" placeholder="https://instagram.com/tu_cuenta"
+                      value={adminSettingsForm.instagramUrl || ""}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, instagramUrl: e.target.value }))}
+                    />
+                    <label>TikTok (URL completa)</label>
+                    <input
+                      type="text" className="input-plain" placeholder="https://tiktok.com/@tu_cuenta"
+                      value={adminSettingsForm.tiktokUrl || ""}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, tiktokUrl: e.target.value }))}
+                    />
+                    <label>Facebook (URL completa)</label>
+                    <input
+                      type="text" className="input-plain" placeholder="https://facebook.com/tu_pagina"
+                      value={adminSettingsForm.facebookUrl || ""}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, facebookUrl: e.target.value }))}
+                    />
+                    <label>X / Twitter (URL completa)</label>
+                    <input
+                      type="text" className="input-plain" placeholder="https://x.com/tu_cuenta"
+                      value={adminSettingsForm.twitterUrl || ""}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, twitterUrl: e.target.value }))}
+                    />
+                    <label>Novedades (lo que se ve en "Novedades" del pie de página)</label>
+                    <textarea
+                      className="report-textarea"
+                      rows={8}
+                      placeholder={"Escribe aquí lo último que hayas añadido a la web, por ejemplo:\n\nAgosto 2026\n- Búsqueda por foto\n- Nuevas categorías"}
+                      value={adminSettingsForm.updatesText || ""}
+                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, updatesText: e.target.value }))}
+                    />
+                    <button className="btn primary admin-refund-btn" onClick={saveAdminSettings}>Guardar configuración</button>
+                  </div>
+                )}
+
+                {!adminLoading && adminSection === "disputes" && (
+                  adminDisputes.length === 0
+                    ? <p className="empty-tab">No hay disputas pendientes ahora mismo.</p>
+                    : <div className="admin-user-list">
+                        {adminDisputes.map((d) => (
+                          <div key={d.id} className="admin-dispute-row">
+                            <p className="admin-user-name">{d.item.title} — {Number(d.item.price).toFixed(2)}€</p>
+                            <p className="admin-user-meta">Comprador: @{d.buyer.username} · Vendedor: @{d.seller.username}</p>
+                            {d.shipment && (
+                              <p className="admin-dispute-reason">🚚 Estado real del envío: <strong>{{ label_created: "Etiqueta generada", in_transit: "En camino", delivered: "Entregado", incident: "Incidencia" }[d.shipment.status] || d.shipment.status}</strong></p>
+                            )}
+                            {d.buyerFlag && <p className="admin-dispute-flag">⚠️ {d.buyerFlag} (comprador)</p>}
+                            {d.sellerFlag && <p className="admin-dispute-flag">⚠️ {d.sellerFlag} (vendedor)</p>}
+                            {d.disputeReason && <p className="admin-dispute-reason">"{d.disputeReason}"</p>}
+                            {d.disputeEvidenceUrl && (
+                              <img src={d.disputeEvidenceUrl} alt="Prueba adjuntada" className="admin-dispute-evidence" onClick={() => window.open(d.disputeEvidenceUrl, "_blank")} />
+                            )}
+                            {d.sellerResponse && (
+                              <p className="admin-dispute-seller-response"><strong>Respuesta del vendedor:</strong> "{d.sellerResponse}"</p>
+                            )}
+                            {d.returnRequired && (
+                              <p className="admin-dispute-reason">
+                                📦 Devolución pedida{d.returnMarkedSentAt ? ` — el comprador dice que ya la envió${d.returnTrackingCode ? ` (seguimiento: ${d.returnTrackingCode})` : ""}` : ", esperando a que el comprador la envíe"}
+                                {d.returnLabelUrl && <> · <a href={d.returnLabelUrl} target="_blank" rel="noreferrer" style={{ color: "#FF4D8D", fontWeight: 700 }}>etiqueta generada</a></>}
+                              </p>
+                            )}
+                            {d.stripeDisputeId && (
+                              <p className="admin-dispute-reason">⚠️ Además hay un contracargo bancario abierto en Stripe ({d.stripeDisputeStatus})</p>
+                            )}
+                            {d.messages && d.messages.length > 0 && (
+                              <details className="admin-dispute-chat">
+                                <summary>Ver conversación ({d.messages.length} mensajes)</summary>
+                                {d.messages.map((m) => (
+                                  <p key={m.id} className="admin-dispute-chat-msg"><strong>@{m.sender.username}:</strong> {m.content || (m.imageUrl ? "[foto]" : "")}{m.offerAmount ? ` — oferta ${Number(m.offerAmount).toFixed(2)}€` : ""}</p>
+                                ))}
+                              </details>
+                            )}
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}>
+                              {!d.returnRequired && (
+                                <button className="order-action-btn secondary" onClick={() => handleAdminRequestReturn(d.id)}>Pedir devolución antes</button>
+                              )}
+                              <input
+                                type="number" step="0.01" placeholder={`hasta ${Number(d.amount).toFixed(2)}€`}
+                                value={partialRefundAmounts[d.id] || ""}
+                                onChange={(e) => setPartialRefundAmounts((prev) => ({ ...prev, [d.id]: e.target.value }))}
+                                style={{ width: 90, padding: "6px 8px", borderRadius: 8, border: "1.5px solid var(--input-border)", background: "var(--bg)", color: "var(--text)", fontSize: 12 }}
+                              />
+                              <button className="btn primary admin-refund-btn" onClick={() => handleAdminRefund(d.id, partialRefundAmounts[d.id])}>
+                                {partialRefundAmounts[d.id] ? "Reembolso parcial" : "Reembolsar al comprador"}
+                              </button>
+                              <button className="danger-zone-btn" onClick={() => handleAdminRejectDispute(d.id)}>Rechazar, pagar al vendedor</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                )}
+
+                {!adminLoading && adminSection === "verifications" && (
+                  adminVerifications.length === 0
+                    ? <p className="empty-tab">No hay solicitudes de verificación pendientes.</p>
+                    : <div className="admin-user-list">
+                        {adminVerifications.map((v) => (
+                          <div key={v.id} className="admin-dispute-row">
+                            <p className="admin-user-name">@{v.username}</p>
+                            <p className="admin-user-meta">{v.email}</p>
+                            <img src={v.idVerificationUrl} alt="Documento" className="admin-dispute-evidence" onClick={() => window.open(v.idVerificationUrl, "_blank")} />
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                              <button className="btn primary admin-refund-btn" onClick={() => handleApproveVerification(v.id)}>Aprobar</button>
+                              <button className="danger-zone-btn" onClick={() => handleRejectVerification(v.id)}>Rechazar</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                )}
+
+                {!adminLoading && adminSection === "reports" && (
+                  adminReports.length === 0
+                    ? <p className="empty-tab">No hay denuncias registradas.</p>
+                    : <div className="admin-user-list">
+                        {adminReports.map((r) => (
+                          <div key={r.id} className={"admin-dispute-row" + (r.status === "reviewed" ? " reviewed" : "")}>
+                            <p className="admin-user-name">
+                              {r.targetType === "item" ? `Artículo: ${r.item?.title || "(eliminado)"}` : `Usuario: @${r.reportedUsername}`}
+                              {r.status === "reviewed" && <span className="admin-role-badge">Revisada</span>}
+                            </p>
+                            <p className="admin-user-meta">Denunciado por @{r.reporter.username} · {new Date(r.createdAt).toLocaleDateString("es-ES")}</p>
+                            <p className="admin-dispute-reason">"{r.reason}"</p>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                              {r.status === "pending" && (
+                                <button className="btn primary admin-refund-btn" onClick={() => handleResolveReport(r.id)}>Marcar como revisada</button>
+                              )}
+                              {r.targetType === "item" && r.itemId && (
+                                <button className="danger-zone-btn" onClick={() => handleDeleteReportedItem(r)}>Eliminar artículo</button>
+                              )}
+                              <button className="admin-ban-btn" onClick={() => handleBanFromReport(r)}>Suspender usuario</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                )}
+
+                {!adminLoading && adminSection === "support" && (
+                  adminSupport.length === 0
+                    ? <p className="empty-tab">No hay mensajes de soporte.</p>
+                    : <div className="admin-user-list">
+                        {adminSupport.map((m) => (
+                          <div key={m.id} className={"admin-dispute-row" + (m.status === "resolved" ? " reviewed" : "")}>
+                            <p className="admin-user-name">
+                              {m.subject}
+                              {m.status === "resolved" && <span className="admin-role-badge">Resuelto</span>}
+                            </p>
+                            <p className="admin-user-meta">De @{m.user.username} ({m.user.email}) · {new Date(m.createdAt).toLocaleDateString("es-ES")}</p>
+                            <p className="admin-dispute-reason">{m.message}</p>
+                            {m.adminReply && <p className="admin-dispute-reason" style={{ color: "#7FD8D0" }}>Tu respuesta: {m.adminReply}</p>}
+                            {m.status === "open" && (
+                              <>
+                                <textarea
+                                  className="report-textarea"
+                                  placeholder="Escribe tu respuesta..."
+                                  value={supportReplyDrafts[m.id] || ""}
+                                  onChange={(e) => setSupportReplyDrafts((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                                  rows={2}
+                                />
+                                <button className="btn primary admin-refund-btn" onClick={() => handleReplySupport(m.id)}>Enviar respuesta</button>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                )}
+
+                {!adminLoading && adminSection === "broadcast" && (
+                  <>
+                    <form onSubmit={handleSendBroadcast} className="broadcast-form">
+                      <label>Título</label>
+                      <input
+                        type="text" maxLength={60} placeholder="Ej: ¡Nueva función en Ropelin!"
+                        value={broadcastForm.title}
+                        onChange={(e) => setBroadcastForm((f) => ({ ...f, title: e.target.value }))}
+                      />
+                      <label>Mensaje</label>
+                      <textarea
+                        className="report-textarea" rows={4} placeholder="Escribe el aviso que verán tus usuarios..."
+                        value={broadcastForm.message}
+                        onChange={(e) => setBroadcastForm((f) => ({ ...f, message: e.target.value }))}
+                      />
+                      <label>Enlace (opcional)</label>
+                      <input
+                        type="text" placeholder="/item/123 o vacío"
+                        value={broadcastForm.link}
+                        onChange={(e) => setBroadcastForm((f) => ({ ...f, link: e.target.value }))}
+                      />
+                      <label>Canal</label>
+                      <div className="broadcast-channel-row">
+                        {[{ v: "push", l: "Solo push" }, { v: "email", l: "Solo email" }, { v: "both", l: "Push + email" }].map((c) => (
+                          <button
+                            type="button" key={c.v}
+                            className={`chip-toggle ${broadcastForm.channel === c.v ? "active" : ""}`}
+                            onClick={() => setBroadcastForm((f) => ({ ...f, channel: c.v }))}
+                          >
+                            {c.l}
+                          </button>
+                        ))}
+                      </div>
+                      <button type="submit" className="btn primary" disabled={sendingBroadcast} style={{ marginTop: 14 }}>
+                        {sendingBroadcast ? "Enviando..." : "Enviar aviso"}
+                      </button>
+                      <p className="auth-subtitle" style={{ marginTop: 8, fontSize: 11.5 }}>Solo llega a usuarios activos que no hayan desactivado las comunicaciones de Ropelin en Ajustes.</p>
+                    </form>
+
+                    <label style={{ marginTop: 22, display: "block" }}>Historial</label>
+                    {adminBroadcasts.length === 0
+                      ? <p className="empty-tab">Aún no has enviado ningún aviso.</p>
+                      : <div className="admin-user-list">
+                          {adminBroadcasts.map((b) => (
+                            <div key={b.id} className="admin-log-row">
+                              <p className="admin-user-meta">{new Date(b.createdAt).toLocaleString("es-ES")} · {b.channel} · {b.pushSent + b.emailSent} destinatarios</p>
+                              <p className="admin-user-name" style={{ fontSize: 12.5 }}>{b.title}</p>
+                            </div>
+                          ))}
+                        </div>
+                    }
+                  </>
+                )}
+
+                {adminSection === "seo" && (
+                  <div className="seo-panel">
+                    <div className="seo-stat-row">
+                      <div className="admin-summary-box">
+                        <strong>{seoLoading ? "…" : seoSitemapCount === -1 ? "?" : seoSitemapCount}</strong>
+                        <span>URLs en el sitemap</span>
+                      </div>
+                    </div>
+
+                    <p className="checkout-section-label" style={{ marginTop: 20 }}>Páginas públicas</p>
+                    <div className="seo-link-list">
+                      <a href="/sitemap.xml" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>sitemap.xml</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                      <a href="/robots.txt" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>robots.txt</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                      <a href="/terminos" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>/terminos</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                      <a href="/privacidad" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>/privacidad</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                      <a href="/cookies" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>/cookies</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                      <a href="/como-usar" target="_blank" rel="noopener" className="seo-link-row">
+                        <span>/como-usar</span><span className="seo-link-arrow">↗</span>
+                      </a>
+                    </div>
+
+                    <p className="checkout-section-label" style={{ marginTop: 20 }}>Qué está activo</p>
+                    <div className="seo-check-list">
+                      {[
+                        "Sitemap dinámico (se genera solo con cada artículo publicado)",
+                        "Datos estructurados de producto (precio y disponibilidad en Google)",
+                        "Vista previa correcta al compartir en WhatsApp/Facebook",
+                        "Enlace canónico por artículo",
+                        "Páginas legales indexables sin necesidad de JavaScript",
+                        "Artículos borrados devuelven un 404 de verdad a Google",
+                      ].map((text, i) => (
+                        <p key={i} className="seo-check-item"><CheckCircle size={14} color="#7FD8D0" /> {text}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {!adminLoading && adminSection === "logs" && (
+                  adminLogs.length === 0
+                    ? <p className="empty-tab">Aún no hay ninguna acción registrada.</p>
+                    : <div className="admin-user-list">
+                        {adminLogs.map((l) => (
+                          <div key={l.id} className="admin-log-row">
+                            <p className="admin-user-meta">{new Date(l.createdAt).toLocaleString("es-ES")} · @{l.adminUsername}</p>
+                            <p className="admin-user-name" style={{ fontSize: 12.5 }}>{l.details}</p>
+                          </div>
+                        ))}
+                      </div>
+                )}
+          </>
     );
   }
 
@@ -1889,7 +2418,7 @@ export default function RopelinApp() {
     setShowHelpCenter(false);
     setShowLeague(false);
     setEditingItem(item);
-    setForm({ title: item.title, category: item.category, size: item.size || "", isShoe: !!(item.size && SHOE_SIZES.includes(item.size)), price: String(item.price), description: item.description || "", condition: item.condition, images: item.images || [] });
+    setForm({ title: item.title, category: item.category, subcategory: item.subcategory || "", size: item.size || "", isShoe: !!(item.size && SHOE_SIZES.includes(item.size)), price: String(item.price), description: item.description || "", condition: item.condition, images: item.images || [] });
     setShowProfile(false);
     setShowPost(true);
   }
@@ -2505,6 +3034,7 @@ export default function RopelinApp() {
     const payload = {
       title: form.title,
       category: form.category,
+      subcategory: form.subcategory || null,
       size: form.category === "Moda" ? form.size : null,
       price: Number(form.price),
       description: form.description,
@@ -2522,7 +3052,7 @@ export default function RopelinApp() {
       }
       await loadAllItems(); // recargamos desde el backend para tener los datos reales (id, fecha, vendedor...)
       setEditingItem(null);
-      setForm({ title: "", category: "Moda", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] });
+      setForm({ title: "", category: "Moda", subcategory: "", size: "", isShoe: false, price: "", description: "", condition: "Bueno", images: [] });
       setShowPost(false);
     } catch (err) {
       setPostError(err.message);
@@ -2958,6 +3488,9 @@ export default function RopelinApp() {
         .seo-link-arrow { color: var(--sub); }
         .seo-check-list { display: flex; flex-direction: column; gap: 9px; }
         .seo-check-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--body); margin: 0; }
+        .admin-mobile-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 6px; }
+        .admin-mobile-tab { flex-shrink: 0; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 20px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: var(--body); white-space: nowrap; }
+        .admin-mobile-tab.active { background: #17171A; color: #FFF8EC; border-color: #17171A; }
         .profile-sidebar-item { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; border-radius: 12px; padding: 11px 12px; margin-bottom: 4px; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--body); text-align: left; }
         .profile-sidebar-item:hover { background: var(--card); }
         .profile-sidebar-item.active { background: var(--card); color: var(--text); border: 1px solid var(--border); }
@@ -3321,6 +3854,10 @@ export default function RopelinApp() {
         .delete-confirm-actions .btn { flex: 1; }
         .delete-confirm-actions .danger-zone-btn { flex: 1; }
         .checkout-modal { max-width: 380px; }
+        .admin-modal-wide { max-width: 1000px; max-height: 85vh; }
+        .admin-modal-wide .profile-desktop-flex.has-sidebar { align-items: flex-start; }
+        .admin-modal-wide .profile-sidebar-menu { max-height: 75vh; overflow-y: auto; }
+        .admin-modal-wide .profile-desktop-content { max-height: 75vh; overflow-y: auto; padding-right: 4px; }
         .checkout-section-label { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--sub); font-weight: 800; margin: 0 0 8px; }
         .delivery-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
         .delivery-option { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 2px solid var(--border); background: var(--card); color: var(--text); border-radius: 12px; padding: 10px; font-weight: 700; font-size: 12.5px; cursor: pointer; font-family: inherit; }
@@ -3725,8 +4262,8 @@ export default function RopelinApp() {
           .post-mobile-title { flex: 1; text-align: center; margin: 0; font-size: 16px; font-weight: 700; margin-right: 26px; }
           .post-modal .close-btn { display: none; }
           .post-modal .auth-title, .post-modal .auth-subtitle { display: none; }
-          .post-modal { padding-top: 0; }
-          .post-submit-bar { position: sticky; bottom: 0; left: 0; right: 0; background: var(--card); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); margin: 20px -18px -18px; border-top: 1.5px solid var(--border); box-shadow: 0 -8px 20px rgba(0,0,0,0.12); }
+          .post-modal { padding-top: 0; padding-bottom: 88px; }
+          .post-submit-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); margin: 0; border-top: 1.5px solid var(--border); box-shadow: 0 -8px 20px rgba(0,0,0,0.12); z-index: 5; }
           .post-submit-bar .submit-btn { margin: 0; }
           .post-step-num { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #fff; font-size: 11px; font-weight: 900; flex-shrink: 0; }
           .post-section-label { gap: 8px; font-size: 12.5px; }
@@ -4169,6 +4706,9 @@ export default function RopelinApp() {
               <div className={"profile-desktop-flex" + (isOwnProfile && numCols >= 3 ? " has-sidebar" : "")}>
               {isOwnProfile ? (
                 numCols >= 3 ? (
+                  profileMenuView === "admin" ? (
+                    adminSidebarEl(adminSection)
+                  ) : (
                   <div className="profile-sidebar-menu">
                     <button className={"profile-sidebar-item" + ((profileMenuView || "pedidos") === "pedidos" ? " active" : "")} onClick={() => setProfileMenuView("pedidos")}>
                       <Package size={16} /> Mis pedidos
@@ -4198,7 +4738,13 @@ export default function RopelinApp() {
                         </button>
                       </>
                     )}
+                    {isModerator && (
+                      <button className="profile-sidebar-item" onClick={() => { setProfileMenuView("admin"); loadAdminTab(isAdmin ? "users" : "disputes"); }}>
+                        <ShieldCheck size={16} /> Administrador
+                      </button>
+                    )}
                   </div>
+                  )
                 ) :
                 profileMenuView === null ? (
                   <div className="profile-menu-list">
@@ -4261,6 +4807,13 @@ export default function RopelinApp() {
                       <span className="profile-menu-label">Ajustes</span>
                       <ChevronRight size={16} />
                     </button>
+                    {isModerator && (
+                      <button className="profile-menu-row" onClick={() => { setProfileMenuView("admin"); loadAdminTab(isAdmin ? "users" : "disputes"); }}>
+                        <span className="profile-menu-icon"><ShieldCheck size={17} /></span>
+                        <span className="profile-menu-label">Administrador</span>
+                        <ChevronRight size={16} />
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <button className="back-btn" style={{ marginBottom: 10 }} onClick={() => setProfileMenuView(null)}><ArrowLeft size={16} /> Volver</button>
@@ -4274,6 +4827,32 @@ export default function RopelinApp() {
               )}
 
               <div className="profile-desktop-content">
+              {profileMenuView === "admin" && (
+                <>
+                  {numCols < 3 && (
+                    <div className="admin-mobile-tabs">
+                      {[
+                        isAdmin && { key: "users", label: "Usuarios" },
+                        isAdmin && { key: "stats", label: "Ganancias" },
+                        { key: "disputes", label: "Disputas" },
+                        isAdmin && { key: "verifications", label: "Verificaciones" },
+                        { key: "reports", label: "Denuncias" },
+                        { key: "support", label: "Soporte" },
+                        isAdmin && { key: "broadcast", label: "Notificaciones" },
+                        isAdmin && { key: "settings", label: "Configuración" },
+                        isAdmin && { key: "seo", label: "SEO" },
+                        isAdmin && { key: "logs", label: "Historial" },
+                      ].filter(Boolean).map((it) => (
+                        <button key={it.key} className={"admin-mobile-tab" + (adminSection === it.key ? " active" : "")} onClick={() => loadAdminTab(it.key)}>
+                          {it.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p className="auth-title" style={{ marginBottom: 14 }}>{{ users: "Usuarios", stats: "Ganancias", disputes: "Disputas", verifications: "Verificaciones", reports: "Denuncias", support: "Soporte", broadcast: "Notificaciones", settings: "Configuración", seo: "SEO", logs: "Historial" }[adminSection] || "Panel de administración"}</p>
+                  {adminContentEl()}
+                </>
+              )}
               {(profileMenuView === "venta" || (!isOwnProfile && !profileMenuView)) && (
                 profileItems.length === 0
                   ? (isOwnProfile ? (
@@ -4748,6 +5327,7 @@ export default function RopelinApp() {
 
             <div className="tag-row">
               <span className="info-tag">{openItem.category}</span>
+              {openItem.subcategory && <span className="info-tag">{openItem.subcategory}</span>}
               {openItem.size && <span className="info-tag">Talla {openItem.size}</span>}
               <span className="info-tag">{openItem.condition}</span>
             </div>
@@ -5444,29 +6024,25 @@ export default function RopelinApp() {
 
             <div className="post-form-col">
               <form onSubmit={handlePublish}>
-                <p className="post-section-label"><span className="post-step-num">2</span>Detalles</p>
+                <p className="post-section-label"><span className="post-step-num">2</span>Tipo de artículo</p>
                 <div className="post-form-card">
-                  <label>Título</label>
-                  <div className="input-icon">
-                    <Tag size={14} />
-                    <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej. Bicicleta urbana, chaqueta vaquera, lámpara..." />
-                  </div>
-
-                  <label>Descripción</label>
-                  <textarea
-                    className="post-textarea"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    placeholder="Medidas, estado real, motivo de venta, defectos si los hay..."
-                    rows={3}
-                  />
-
                   <label>Categoría</label>
                   <div className="pill-group">
                     {platformSettings.categories.map((c) => (
-                      <button type="button" key={c} className={"pill" + (form.category === c ? " active" : "")} onClick={() => setForm({ ...form, category: c, size: "", isShoe: false })}>{c}</button>
+                      <button type="button" key={c} className={"pill" + (form.category === c ? " active" : "")} onClick={() => setForm({ ...form, category: c, subcategory: "", size: "", isShoe: false })}>{c}</button>
                     ))}
                   </div>
+
+                  {SUBCATEGORIES[form.category] && (
+                    <>
+                      <label>Más concretamente</label>
+                      <div className="pill-group">
+                        {SUBCATEGORIES[form.category].map((sc) => (
+                          <button type="button" key={sc} className={"pill" + (form.subcategory === sc ? " active" : "")} onClick={() => setForm({ ...form, subcategory: form.subcategory === sc ? "" : sc })}>{sc}</button>
+                        ))}
+                      </div>
+                    </>
+                  )}
 
                   {form.category === "Moda" && (
                     <>
@@ -5493,7 +6069,25 @@ export default function RopelinApp() {
                   </div>
                 </div>
 
-                <p className="post-section-label"><span className="post-step-num">3</span>Precio</p>
+                <p className="post-section-label"><span className="post-step-num">3</span>Descríbelo</p>
+                <div className="post-form-card">
+                  <label>Título</label>
+                  <div className="input-icon">
+                    <Tag size={14} />
+                    <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej. Bicicleta urbana, chaqueta vaquera, lámpara..." />
+                  </div>
+
+                  <label>Descripción</label>
+                  <textarea
+                    className="post-textarea"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Medidas, estado real, motivo de venta, defectos si los hay..."
+                    rows={3}
+                  />
+                </div>
+
+                <p className="post-section-label"><span className="post-step-num">4</span>Precio</p>
                 <div className="post-form-card">
                   <label>Precio de venta</label>
                   <div className="input-icon price-input">
@@ -6314,516 +6908,7 @@ export default function RopelinApp() {
 
 
       {showAdminPanel && (() => {
-        const adminSectionContentEl = (
-          <>
-            {adminLoading && <p className="empty-tab">Cargando...</p>}
-
-            {!adminLoading && adminSection === "users" && (
-                  <>
-                    <form className="admin-search-row" onSubmit={handleUserSearch}>
-                      <div className="search-box">
-                        <Search size={14} color="#9A9AA3" />
-                        <input placeholder="Buscar por usuario o email..." value={adminUserSearch} onChange={(e) => setAdminUserSearch(e.target.value)} />
-                      </div>
-                      <button type="submit" className="btn ghost admin-search-btn">Buscar</button>
-                    </form>
-
-                    <div className="admin-filter-row">
-                      <select className="admin-filter-select" value={adminUserFilters.verified} onChange={(e) => handleUserFilterChange("verified", e.target.value)}>
-                        <option value="">Email: todos</option>
-                        <option value="true">Verificado</option>
-                        <option value="false">Sin verificar</option>
-                      </select>
-                      <select className="admin-filter-select" value={adminUserFilters.stripeConnected} onChange={(e) => handleUserFilterChange("stripeConnected", e.target.value)}>
-                        <option value="">Stripe: todos</option>
-                        <option value="true">Conectado</option>
-                        <option value="false">Sin conectar</option>
-                      </select>
-                      <button className="btn ghost admin-export-btn" onClick={handleExportUsers}>Exportar CSV</button>
-                    </div>
-
-                    {adminUsers.length === 0
-                      ? <p className="empty-tab">No hay usuarios que coincidan.</p>
-                      : <div className="admin-user-list">
-                          {adminUsers.map((u) => (
-                            <div key={u.id} className={"admin-user-row" + (u.banned ? " banned" : "")}>
-                              <div className="mini-avatar" style={{ background: PALETTE[u.username.length % PALETTE.length] }}>{u.username[0].toUpperCase()}</div>
-                              <div className="admin-user-info">
-                                <p className="admin-user-name">
-                                  @{u.username}
-                                  <button className="admin-username-edit-btn" title="Cambiar nombre de usuario" onClick={() => handleChangeUsername(u)}><Pencil size={11} /></button>
-                                  {u.role === "admin" && <span className="admin-role-badge">Admin</span>}
-                                  {u.role === "moderator" && <span className="admin-role-badge" style={{ background: "linear-gradient(135deg, #7FD8D0, #4DA8FF)" }}>Moderador</span>}
-                                  {u.banned && <span className="admin-role-badge banned-badge">Suspendido</span>}
-                                </p>
-                                <p className="admin-user-email">{u.email}</p>
-                                <p className="admin-user-meta">
-                                  {u._count.items} publicadas · {u._count.sales} vendidas · {u._count.purchases} compradas
-                                  {" · "}{u.emailVerified ? "Email verificado" : "Email sin verificar"}
-                                  {u.stripeOnboarded ? " · Stripe conectado" : ""}
-                                </p>
-                                {u.banned && u.bannedReason && <p className="admin-dispute-reason">Motivo: {u.bannedReason}</p>}
-                                {u.role !== "admin" && (
-                                  <select className="admin-role-select" value={u.role} onChange={(e) => handleChangeUserRole(u, e.target.value)}>
-                                    <option value="user">Usuario</option>
-                                    <option value="moderator">Moderador</option>
-                                    <option value="admin">Admin</option>
-                                  </select>
-                                )}
-                              </div>
-                              <div className="admin-user-actions">
-                                <span className="admin-user-date">{new Date(u.createdAt).toLocaleDateString("es-ES")}</span>
-                                {u.role !== "admin" && (
-                                  u.banned
-                                    ? <button className="admin-unban-btn" onClick={() => handleUnbanUser(u)}>Reactivar</button>
-                                    : <button className="admin-ban-btn" onClick={() => setBanningUser(u)}>Suspender</button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                    }
-
-                    {adminUserPages > 1 && (
-                      <div className="admin-pagination">
-                        <button className="btn ghost" disabled={adminUserPage <= 1} onClick={() => loadAdminTab("users", adminUserPage - 1)}>‹ Anterior</button>
-                        <span className="admin-page-label">Página {adminUserPage} de {adminUserPages}</span>
-                        <button className="btn ghost" disabled={adminUserPage >= adminUserPages} onClick={() => loadAdminTab("users", adminUserPage + 1)}>Siguiente ›</button>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {!adminLoading && adminSection === "stats" && adminStats && (
-                  <>
-                    <div className="admin-stats-grid">
-                      <div className="admin-stat-box"><strong>{adminStats.userCount}</strong><span>Usuarios registrados</span></div>
-                      <div className="admin-stat-box"><strong>{adminStats.itemCount}</strong><span>Publicaciones totales</span></div>
-                      <div className="admin-stat-box"><strong>{adminStats.availableItemCount}</strong><span>Disponibles ahora</span></div>
-                      <div className="admin-stat-box"><strong>{adminStats.soldCount}</strong><span>Ventas pagadas</span></div>
-                      <div className="admin-stat-box highlight"><strong>{adminStats.totalVolume.toFixed(2)}€</strong><span>Volumen total vendido</span></div>
-                      <div className="admin-stat-box highlight"><strong>{adminStats.totalCommission.toFixed(2)}€</strong><span>Comisión ({platformSettings.commissionPercent}%) ganada</span></div>
-                      <div className="admin-stat-box"><strong>{adminStats.estimatedBoostRevenue.toFixed(2)}€</strong><span>Destacados (estimado)</span></div>
-                      <div className="admin-stat-box total"><strong>{adminStats.estimatedTotalRevenue.toFixed(2)}€</strong><span>Ganancia total estimada</span></div>
-                      {adminStats.disputedCount > 0 && (
-                        <div className="admin-stat-box warning"><strong>{adminStats.disputedCount}</strong><span>Disputas sin resolver</span></div>
-                      )}
-                      {adminStats.pendingReports > 0 && (
-                        <div className="admin-stat-box warning"><strong>{adminStats.pendingReports}</strong><span>Denuncias sin revisar</span></div>
-                      )}
-                    </div>
-
-                    {adminTimeseries.length > 0 && (
-                      <>
-                        <p className="profile-section-title">Comisión ganada (últimos 30 días)</p>
-                        <div className="admin-chart">
-                          {adminTimeseries.map((d) => {
-                            const max = Math.max(...adminTimeseries.map((x) => x.commission), 1);
-                            const h = Math.max(2, (d.commission / max) * 60);
-                            return (
-                              <div key={d.date} className="admin-chart-bar-wrap" title={`${d.date}: ${d.commission.toFixed(2)}€`}>
-                                <div className="admin-chart-bar" style={{ height: `${h}px` }} />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-
-                    {adminTop && adminTop.topSellers.length > 0 && (
-                      <>
-                        <p className="profile-section-title">Mejores vendedores</p>
-                        <div className="admin-user-list">
-                          {adminTop.topSellers.slice(0, 5).map((s, i) => (
-                            <div key={s.username} className="admin-user-row">
-                              <span className="lb-rank">#{i + 1}</span>
-                              <div className="mini-avatar" style={{ background: PALETTE[s.username.length % PALETTE.length] }}>{s.username[0].toUpperCase()}</div>
-                              <div className="admin-user-info">
-                                <p className="admin-user-name">@{s.username}</p>
-                                <p className="admin-user-meta">{s.sales} ventas</p>
-                              </div>
-                              <span className="admin-user-date">{s.volume.toFixed(2)}€</span>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-
-                    {adminTop && adminTop.topCategories.length > 0 && (
-                      <>
-                        <p className="profile-section-title">Categorías más vendidas</p>
-                        <div className="admin-category-list">
-                          {adminTop.topCategories.map((c) => (
-                            <div key={c.category} className="admin-category-row">
-                              <span>{c.category}</span>
-                              <span className="admin-category-count">{c.sales}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-
-                    {adminTop && adminTop.topViewedItems?.length > 0 && (
-                      <>
-                        <p className="profile-section-title">Artículos más vistos</p>
-                        <div className="admin-category-list">
-                          {adminTop.topViewedItems.map((i) => (
-                            <div key={i.id} className="admin-category-row">
-                              <span>{i.title}</span>
-                              <span className="admin-category-count">{i.views} vistas</span>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-
-                    {adminTop && adminTop.topSavedItems?.length > 0 && (
-                      <>
-                        <p className="profile-section-title">Artículos más guardados</p>
-                        <div className="admin-category-list">
-                          {adminTop.topSavedItems.map((i) => (
-                            <div key={i.id} className="admin-category-row">
-                              <span>{i.title}</span>
-                              <span className="admin-category-count">{i.saves} guardados</span>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-
-                    <button className="btn ghost admin-export-btn" style={{ width: "100%", marginTop: 14 }} onClick={handleExportTransactions}>Exportar ventas a CSV</button>
-                  </>
-                )}
-
-                {!adminLoading && adminSection === "settings" && adminSettingsForm && (
-                  <div className="admin-settings-form">
-                    <div className="maintenance-toggle-row">
-                      <div>
-                        <p className="maintenance-toggle-title">Modo mantenimiento</p>
-                        <p className="maintenance-toggle-sub">Muestra una pantalla de "volvemos enseguida" con lista de espera a todo el mundo (menos a moderadores/admins).</p>
-                      </div>
-                      <button
-                        type="button"
-                        className={"maintenance-toggle" + (adminSettingsForm.maintenanceMode ? " on" : "")}
-                        onClick={() => setAdminSettingsForm((prev) => ({ ...prev, maintenanceMode: !prev.maintenanceMode }))}
-                      >
-                        <span className="maintenance-toggle-knob" />
-                      </button>
-                    </div>
-
-                    <label>Comisión de la plataforma (%)</label>
-                    <input
-                      type="number" step="0.1" className="input-plain"
-                      value={adminSettingsForm.commissionPercent}
-                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, commissionPercent: e.target.value }))}
-                    />
-                    <label>Gastos de envío fijos (€)</label>
-                    <input
-                      type="number" step="0.1" className="input-plain"
-                      value={adminSettingsForm.shippingFee}
-                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, shippingFee: e.target.value }))}
-                    />
-                    <label>Precio de destacar una publicación (€)</label>
-                    <input
-                      type="number" step="0.1" className="input-plain"
-                      value={adminSettingsForm.boostPrice}
-                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, boostPrice: e.target.value }))}
-                    />
-                    <label>Duración del destacado (horas)</label>
-                    <input
-                      type="number" className="input-plain"
-                      value={adminSettingsForm.boostDurationHours}
-                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, boostDurationHours: e.target.value }))}
-                    />
-                    <label>Categorías (una por línea)</label>
-                    <textarea
-                      className="report-textarea"
-                      rows={6}
-                      value={adminSettingsForm.categories.join("\n")}
-                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, categories: e.target.value.split("\n") }))}
-                    />
-                    <label>Instagram (URL completa, déjalo vacío para no mostrarlo)</label>
-                    <input
-                      type="text" className="input-plain" placeholder="https://instagram.com/tu_cuenta"
-                      value={adminSettingsForm.instagramUrl || ""}
-                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, instagramUrl: e.target.value }))}
-                    />
-                    <label>TikTok (URL completa)</label>
-                    <input
-                      type="text" className="input-plain" placeholder="https://tiktok.com/@tu_cuenta"
-                      value={adminSettingsForm.tiktokUrl || ""}
-                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, tiktokUrl: e.target.value }))}
-                    />
-                    <label>Facebook (URL completa)</label>
-                    <input
-                      type="text" className="input-plain" placeholder="https://facebook.com/tu_pagina"
-                      value={adminSettingsForm.facebookUrl || ""}
-                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, facebookUrl: e.target.value }))}
-                    />
-                    <label>X / Twitter (URL completa)</label>
-                    <input
-                      type="text" className="input-plain" placeholder="https://x.com/tu_cuenta"
-                      value={adminSettingsForm.twitterUrl || ""}
-                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, twitterUrl: e.target.value }))}
-                    />
-                    <label>Novedades (lo que se ve en "Novedades" del pie de página)</label>
-                    <textarea
-                      className="report-textarea"
-                      rows={8}
-                      placeholder={"Escribe aquí lo último que hayas añadido a la web, por ejemplo:\n\nAgosto 2026\n- Búsqueda por foto\n- Nuevas categorías"}
-                      value={adminSettingsForm.updatesText || ""}
-                      onChange={(e) => setAdminSettingsForm((prev) => ({ ...prev, updatesText: e.target.value }))}
-                    />
-                    <button className="btn primary admin-refund-btn" onClick={saveAdminSettings}>Guardar configuración</button>
-                  </div>
-                )}
-
-                {!adminLoading && adminSection === "disputes" && (
-                  adminDisputes.length === 0
-                    ? <p className="empty-tab">No hay disputas pendientes ahora mismo.</p>
-                    : <div className="admin-user-list">
-                        {adminDisputes.map((d) => (
-                          <div key={d.id} className="admin-dispute-row">
-                            <p className="admin-user-name">{d.item.title} — {Number(d.item.price).toFixed(2)}€</p>
-                            <p className="admin-user-meta">Comprador: @{d.buyer.username} · Vendedor: @{d.seller.username}</p>
-                            {d.shipment && (
-                              <p className="admin-dispute-reason">🚚 Estado real del envío: <strong>{{ label_created: "Etiqueta generada", in_transit: "En camino", delivered: "Entregado", incident: "Incidencia" }[d.shipment.status] || d.shipment.status}</strong></p>
-                            )}
-                            {d.buyerFlag && <p className="admin-dispute-flag">⚠️ {d.buyerFlag} (comprador)</p>}
-                            {d.sellerFlag && <p className="admin-dispute-flag">⚠️ {d.sellerFlag} (vendedor)</p>}
-                            {d.disputeReason && <p className="admin-dispute-reason">"{d.disputeReason}"</p>}
-                            {d.disputeEvidenceUrl && (
-                              <img src={d.disputeEvidenceUrl} alt="Prueba adjuntada" className="admin-dispute-evidence" onClick={() => window.open(d.disputeEvidenceUrl, "_blank")} />
-                            )}
-                            {d.sellerResponse && (
-                              <p className="admin-dispute-seller-response"><strong>Respuesta del vendedor:</strong> "{d.sellerResponse}"</p>
-                            )}
-                            {d.returnRequired && (
-                              <p className="admin-dispute-reason">
-                                📦 Devolución pedida{d.returnMarkedSentAt ? ` — el comprador dice que ya la envió${d.returnTrackingCode ? ` (seguimiento: ${d.returnTrackingCode})` : ""}` : ", esperando a que el comprador la envíe"}
-                                {d.returnLabelUrl && <> · <a href={d.returnLabelUrl} target="_blank" rel="noreferrer" style={{ color: "#FF4D8D", fontWeight: 700 }}>etiqueta generada</a></>}
-                              </p>
-                            )}
-                            {d.stripeDisputeId && (
-                              <p className="admin-dispute-reason">⚠️ Además hay un contracargo bancario abierto en Stripe ({d.stripeDisputeStatus})</p>
-                            )}
-                            {d.messages && d.messages.length > 0 && (
-                              <details className="admin-dispute-chat">
-                                <summary>Ver conversación ({d.messages.length} mensajes)</summary>
-                                {d.messages.map((m) => (
-                                  <p key={m.id} className="admin-dispute-chat-msg"><strong>@{m.sender.username}:</strong> {m.content || (m.imageUrl ? "[foto]" : "")}{m.offerAmount ? ` — oferta ${Number(m.offerAmount).toFixed(2)}€` : ""}</p>
-                                ))}
-                              </details>
-                            )}
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}>
-                              {!d.returnRequired && (
-                                <button className="order-action-btn secondary" onClick={() => handleAdminRequestReturn(d.id)}>Pedir devolución antes</button>
-                              )}
-                              <input
-                                type="number" step="0.01" placeholder={`hasta ${Number(d.amount).toFixed(2)}€`}
-                                value={partialRefundAmounts[d.id] || ""}
-                                onChange={(e) => setPartialRefundAmounts((prev) => ({ ...prev, [d.id]: e.target.value }))}
-                                style={{ width: 90, padding: "6px 8px", borderRadius: 8, border: "1.5px solid var(--input-border)", background: "var(--bg)", color: "var(--text)", fontSize: 12 }}
-                              />
-                              <button className="btn primary admin-refund-btn" onClick={() => handleAdminRefund(d.id, partialRefundAmounts[d.id])}>
-                                {partialRefundAmounts[d.id] ? "Reembolso parcial" : "Reembolsar al comprador"}
-                              </button>
-                              <button className="danger-zone-btn" onClick={() => handleAdminRejectDispute(d.id)}>Rechazar, pagar al vendedor</button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                )}
-
-                {!adminLoading && adminSection === "verifications" && (
-                  adminVerifications.length === 0
-                    ? <p className="empty-tab">No hay solicitudes de verificación pendientes.</p>
-                    : <div className="admin-user-list">
-                        {adminVerifications.map((v) => (
-                          <div key={v.id} className="admin-dispute-row">
-                            <p className="admin-user-name">@{v.username}</p>
-                            <p className="admin-user-meta">{v.email}</p>
-                            <img src={v.idVerificationUrl} alt="Documento" className="admin-dispute-evidence" onClick={() => window.open(v.idVerificationUrl, "_blank")} />
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                              <button className="btn primary admin-refund-btn" onClick={() => handleApproveVerification(v.id)}>Aprobar</button>
-                              <button className="danger-zone-btn" onClick={() => handleRejectVerification(v.id)}>Rechazar</button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                )}
-
-                {!adminLoading && adminSection === "reports" && (
-                  adminReports.length === 0
-                    ? <p className="empty-tab">No hay denuncias registradas.</p>
-                    : <div className="admin-user-list">
-                        {adminReports.map((r) => (
-                          <div key={r.id} className={"admin-dispute-row" + (r.status === "reviewed" ? " reviewed" : "")}>
-                            <p className="admin-user-name">
-                              {r.targetType === "item" ? `Artículo: ${r.item?.title || "(eliminado)"}` : `Usuario: @${r.reportedUsername}`}
-                              {r.status === "reviewed" && <span className="admin-role-badge">Revisada</span>}
-                            </p>
-                            <p className="admin-user-meta">Denunciado por @{r.reporter.username} · {new Date(r.createdAt).toLocaleDateString("es-ES")}</p>
-                            <p className="admin-dispute-reason">"{r.reason}"</p>
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                              {r.status === "pending" && (
-                                <button className="btn primary admin-refund-btn" onClick={() => handleResolveReport(r.id)}>Marcar como revisada</button>
-                              )}
-                              {r.targetType === "item" && r.itemId && (
-                                <button className="danger-zone-btn" onClick={() => handleDeleteReportedItem(r)}>Eliminar artículo</button>
-                              )}
-                              <button className="admin-ban-btn" onClick={() => handleBanFromReport(r)}>Suspender usuario</button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                )}
-
-                {!adminLoading && adminSection === "support" && (
-                  adminSupport.length === 0
-                    ? <p className="empty-tab">No hay mensajes de soporte.</p>
-                    : <div className="admin-user-list">
-                        {adminSupport.map((m) => (
-                          <div key={m.id} className={"admin-dispute-row" + (m.status === "resolved" ? " reviewed" : "")}>
-                            <p className="admin-user-name">
-                              {m.subject}
-                              {m.status === "resolved" && <span className="admin-role-badge">Resuelto</span>}
-                            </p>
-                            <p className="admin-user-meta">De @{m.user.username} ({m.user.email}) · {new Date(m.createdAt).toLocaleDateString("es-ES")}</p>
-                            <p className="admin-dispute-reason">{m.message}</p>
-                            {m.adminReply && <p className="admin-dispute-reason" style={{ color: "#7FD8D0" }}>Tu respuesta: {m.adminReply}</p>}
-                            {m.status === "open" && (
-                              <>
-                                <textarea
-                                  className="report-textarea"
-                                  placeholder="Escribe tu respuesta..."
-                                  value={supportReplyDrafts[m.id] || ""}
-                                  onChange={(e) => setSupportReplyDrafts((prev) => ({ ...prev, [m.id]: e.target.value }))}
-                                  rows={2}
-                                />
-                                <button className="btn primary admin-refund-btn" onClick={() => handleReplySupport(m.id)}>Enviar respuesta</button>
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                )}
-
-                {!adminLoading && adminSection === "broadcast" && (
-                  <>
-                    <form onSubmit={handleSendBroadcast} className="broadcast-form">
-                      <label>Título</label>
-                      <input
-                        type="text" maxLength={60} placeholder="Ej: ¡Nueva función en Ropelin!"
-                        value={broadcastForm.title}
-                        onChange={(e) => setBroadcastForm((f) => ({ ...f, title: e.target.value }))}
-                      />
-                      <label>Mensaje</label>
-                      <textarea
-                        className="report-textarea" rows={4} placeholder="Escribe el aviso que verán tus usuarios..."
-                        value={broadcastForm.message}
-                        onChange={(e) => setBroadcastForm((f) => ({ ...f, message: e.target.value }))}
-                      />
-                      <label>Enlace (opcional)</label>
-                      <input
-                        type="text" placeholder="/item/123 o vacío"
-                        value={broadcastForm.link}
-                        onChange={(e) => setBroadcastForm((f) => ({ ...f, link: e.target.value }))}
-                      />
-                      <label>Canal</label>
-                      <div className="broadcast-channel-row">
-                        {[{ v: "push", l: "Solo push" }, { v: "email", l: "Solo email" }, { v: "both", l: "Push + email" }].map((c) => (
-                          <button
-                            type="button" key={c.v}
-                            className={`chip-toggle ${broadcastForm.channel === c.v ? "active" : ""}`}
-                            onClick={() => setBroadcastForm((f) => ({ ...f, channel: c.v }))}
-                          >
-                            {c.l}
-                          </button>
-                        ))}
-                      </div>
-                      <button type="submit" className="btn primary" disabled={sendingBroadcast} style={{ marginTop: 14 }}>
-                        {sendingBroadcast ? "Enviando..." : "Enviar aviso"}
-                      </button>
-                      <p className="auth-subtitle" style={{ marginTop: 8, fontSize: 11.5 }}>Solo llega a usuarios activos que no hayan desactivado las comunicaciones de Ropelin en Ajustes.</p>
-                    </form>
-
-                    <label style={{ marginTop: 22, display: "block" }}>Historial</label>
-                    {adminBroadcasts.length === 0
-                      ? <p className="empty-tab">Aún no has enviado ningún aviso.</p>
-                      : <div className="admin-user-list">
-                          {adminBroadcasts.map((b) => (
-                            <div key={b.id} className="admin-log-row">
-                              <p className="admin-user-meta">{new Date(b.createdAt).toLocaleString("es-ES")} · {b.channel} · {b.pushSent + b.emailSent} destinatarios</p>
-                              <p className="admin-user-name" style={{ fontSize: 12.5 }}>{b.title}</p>
-                            </div>
-                          ))}
-                        </div>
-                    }
-                  </>
-                )}
-
-                {adminSection === "seo" && (
-                  <div className="seo-panel">
-                    <div className="seo-stat-row">
-                      <div className="admin-summary-box">
-                        <strong>{seoLoading ? "…" : seoSitemapCount === -1 ? "?" : seoSitemapCount}</strong>
-                        <span>URLs en el sitemap</span>
-                      </div>
-                    </div>
-
-                    <p className="checkout-section-label" style={{ marginTop: 20 }}>Páginas públicas</p>
-                    <div className="seo-link-list">
-                      <a href="/sitemap.xml" target="_blank" rel="noopener" className="seo-link-row">
-                        <span>sitemap.xml</span><span className="seo-link-arrow">↗</span>
-                      </a>
-                      <a href="/robots.txt" target="_blank" rel="noopener" className="seo-link-row">
-                        <span>robots.txt</span><span className="seo-link-arrow">↗</span>
-                      </a>
-                      <a href="/terminos" target="_blank" rel="noopener" className="seo-link-row">
-                        <span>/terminos</span><span className="seo-link-arrow">↗</span>
-                      </a>
-                      <a href="/privacidad" target="_blank" rel="noopener" className="seo-link-row">
-                        <span>/privacidad</span><span className="seo-link-arrow">↗</span>
-                      </a>
-                      <a href="/cookies" target="_blank" rel="noopener" className="seo-link-row">
-                        <span>/cookies</span><span className="seo-link-arrow">↗</span>
-                      </a>
-                      <a href="/como-usar" target="_blank" rel="noopener" className="seo-link-row">
-                        <span>/como-usar</span><span className="seo-link-arrow">↗</span>
-                      </a>
-                    </div>
-
-                    <p className="checkout-section-label" style={{ marginTop: 20 }}>Qué está activo</p>
-                    <div className="seo-check-list">
-                      {[
-                        "Sitemap dinámico (se genera solo con cada artículo publicado)",
-                        "Datos estructurados de producto (precio y disponibilidad en Google)",
-                        "Vista previa correcta al compartir en WhatsApp/Facebook",
-                        "Enlace canónico por artículo",
-                        "Páginas legales indexables sin necesidad de JavaScript",
-                        "Artículos borrados devuelven un 404 de verdad a Google",
-                      ].map((text, i) => (
-                        <p key={i} className="seo-check-item"><CheckCircle size={14} color="#7FD8D0" /> {text}</p>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {!adminLoading && adminSection === "logs" && (
-                  adminLogs.length === 0
-                    ? <p className="empty-tab">Aún no hay ninguna acción registrada.</p>
-                    : <div className="admin-user-list">
-                        {adminLogs.map((l) => (
-                          <div key={l.id} className="admin-log-row">
-                            <p className="admin-user-meta">{new Date(l.createdAt).toLocaleString("es-ES")} · @{l.adminUsername}</p>
-                            <p className="admin-user-name" style={{ fontSize: 12.5 }}>{l.details}</p>
-                          </div>
-                        ))}
-                      </div>
-                )}
-          </>
-        );
+        const adminSectionContentEl = adminContentEl();
 
         const sectionTitles = { users: "Usuarios", stats: "Ganancias", disputes: "Disputas", verifications: "Verificaciones", reports: "Denuncias", support: "Soporte", broadcast: "Notificaciones", settings: "Configuración", seo: "SEO", logs: "Historial" };
 
@@ -6894,13 +6979,15 @@ export default function RopelinApp() {
         );
 
         return numCols >= 3 ? (
-          <div className="legal-page profile-page-wide">
-            <button className="back-btn" onClick={() => setShowAdminPanel(false)}><ArrowLeft size={16} /> Volver</button>
-            <div className="profile-desktop-flex has-sidebar">
-              {adminSidebarEl(adminSection)}
-              <div className="profile-desktop-content">
-                <p className="auth-title" style={{ marginBottom: 14 }}>{sectionTitles[adminSection] || "Panel de administración"}</p>
-                {adminSectionContentEl}
+          <div className="overlay overlay-top-most" onClick={() => setShowAdminPanel(false)}>
+            <div className="modal admin-modal-wide" onClick={(e) => e.stopPropagation()}>
+              <button className="close-btn" onClick={() => setShowAdminPanel(false)}><X size={14} /></button>
+              <div className="profile-desktop-flex has-sidebar">
+                {adminSidebarEl(adminSection)}
+                <div className="profile-desktop-content">
+                  <p className="auth-title" style={{ marginBottom: 14 }}>{sectionTitles[adminSection] || "Panel de administración"}</p>
+                  {adminSectionContentEl}
+                </div>
               </div>
             </div>
           </div>
