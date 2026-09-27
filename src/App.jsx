@@ -3465,7 +3465,7 @@ export default function RopelinApp() {
         .locker-location-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border: 2px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 12px; padding: 11px; font-weight: 800; font-size: 12.5px; cursor: pointer; font-family: inherit; margin-bottom: 8px; }
         .locker-location-btn:disabled { opacity: 0.5; cursor: default; }
         .locker-or-divider { text-align: center; font-size: 11px; color: var(--faint); margin: 0 0 12px; }
-        .locker-map { width: 100%; height: 200px; border-radius: 14px; border: 2px solid var(--border); margin-bottom: 14px; overflow: hidden; }
+        .locker-map { width: 100%; height: 200px; flex-shrink: 0; border-radius: 14px; border: 2px solid var(--border); margin-bottom: 14px; overflow: hidden; }
         .locker-map .leaflet-popup-content-wrapper { border-radius: 12px; border: 2px solid #1A1A1A; }
         .sheet-rate-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--sub); }
         .sheet-rate-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
