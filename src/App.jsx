@@ -794,17 +794,65 @@ export default function RopelinApp() {
   useEffect(() => {
     if (!lockerPicker || !lockerPicker.center || !lockerMapRef.current) return;
 
-    if (!lockerMapInstance.current) {
+    // Añade los pines de las taquillas encontradas — se llama tanto la primera vez que se crea
+    // el mapa como cada vez que cambian los resultados de una búsqueda posterior.
+    function addLockerMarkers() {
+      lockerMarkers.current.forEach((m) => m.remove());
+      lockerMarkers.current = [];
+
+      const pinIcon = L.divIcon({
+        className: "locker-pin",
+        html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#FF4D8D,#FF8A4D);border:2.5px solid #1A1A1A;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;"><div style="transform:rotate(45deg);width:8px;height:8px;border-radius:50%;background:#1A1A1A;"></div></div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+      });
+
+      lockerPicker.points.forEach((p) => {
+        if (p.latitude == null || p.longitude == null) return;
+        const marker = L.marker([p.latitude, p.longitude], { icon: pinIcon }).addTo(lockerMapInstance.current);
+        const popupEl = document.createElement("div");
+        popupEl.innerHTML = `<p style="font-weight:800;font-size:12.5px;margin:0 0 3px;">${p.name}</p><p style="font-size:11px;color:#5A5450;margin:0 0 8px;">${p.address}</p>`;
+      const btn = document.createElement("button");
+      btn.textContent = "Elegir este punto";
+      btn.style.cssText = "border:2px solid #1A1A1A;background:linear-gradient(135deg,#FF4D8D,#FF8A4D);color:#1A1A1A;border-radius:8px;padding:6px 12px;font-weight:800;font-size:11px;cursor:pointer;font-family:inherit;";
+      btn.onclick = () => handleChooseLocker(p);
+      popupEl.appendChild(btn);
+      marker.bindPopup(popupEl);
+      lockerMarkers.current.push(marker);
+      });
+    }
+
+    if (lockerMapInstance.current) {
+      // El mapa ya existe (una búsqueda posterior en la misma sesión) — solo hace falta mover
+      // la vista y refrescar los pines, sin volver a cargar nada.
+      lockerMapInstance.current.setView([lockerPicker.center.lat, lockerPicker.center.lng], 14);
+      lockerMapInstance.current.invalidateSize();
+      addLockerMarkers();
+      return;
+    }
+
+    // Primera vez que se abre el buscador: creamos el mapa. MapLibre GL (necesario para los
+    // mapas de OpenFreeMap, ver más abajo) pesa bastante, así que solo lo descargamos en este
+    // momento — quien nunca elige InPost no se descarga nunca esta parte de la app.
+    let cancelled = false;
+    (async () => {
+      await import("maplibre-gl/dist/maplibre-gl.css");
+      await import("@maplibre/maplibre-gl-leaflet");
+      if (cancelled || !lockerMapRef.current) return; // se cerró el buscador mientras cargaba
+
       lockerMapInstance.current = L.map(lockerMapRef.current).setView([lockerPicker.center.lat, lockerPicker.center.lng], 14);
       // Antes usábamos tile.openstreetmap.org directamente — es el servidor "crudo" de OSM, y su
       // propia política de uso pide explícitamente NO usarlo así en una app real; puede bloquear
       // o cortar el acceso sin avisar según el volumen o el origen de las peticiones, lo que
       // explica que el mapa se viera interactivo (arrastrable) pero sin ninguna imagen cargada.
-      // CartoDB sí está pensado para esto — gratuito, sin necesitar clave, hecho para producción.
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: "abcd",
-        maxZoom: 20,
+      // CartoDB empezó a exigir clave de API para sus mapas gratuitos en agosto de 2026 (le pasó
+      // a todo el mundo que los usaba sin clave, tapando los mapas con un aviso "API KEY
+      // REQUIRED"). OpenFreeMap es la alternativa que sí es gratis de verdad, para siempre, sin
+      // clave ni límite de peticiones — pero sirve mapas vectoriales, no las imágenes PNG de
+      // siempre, así que se dibuja con MapLibre GL en vez del L.tileLayer normal de Leaflet.
+      L.maplibreGL({
+        style: "https://tiles.openfreemap.org/styles/positron",
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(lockerMapInstance.current);
       // El mapa se crea mientras el modal todavía se está deslizando hacia arriba (animación
       // CSS de .2s) — en ese momento Leaflet mide mal el tamaño real del contenedor y el mapa
@@ -816,37 +864,13 @@ export default function RopelinApp() {
       const resizeObserver = new ResizeObserver(() => lockerMapInstance.current?.invalidateSize());
       resizeObserver.observe(lockerMapRef.current);
       lockerMapResizeObserver.current = resizeObserver;
-      // Además, un par de intentos tempranos por si el observer tarda en disparar la primera vez
       setTimeout(() => lockerMapInstance.current?.invalidateSize(), 100);
       setTimeout(() => lockerMapInstance.current?.invalidateSize(), 400);
-    } else {
-      lockerMapInstance.current.setView([lockerPicker.center.lat, lockerPicker.center.lng], 14);
-      lockerMapInstance.current.invalidateSize();
-    }
 
-    lockerMarkers.current.forEach((m) => m.remove());
-    lockerMarkers.current = [];
+      addLockerMarkers();
+    })();
 
-    const pinIcon = L.divIcon({
-      className: "locker-pin",
-      html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#FF4D8D,#FF8A4D);border:2.5px solid #1A1A1A;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;"><div style="transform:rotate(45deg);width:8px;height:8px;border-radius:50%;background:#1A1A1A;"></div></div>`,
-      iconSize: [30, 30],
-      iconAnchor: [15, 30],
-    });
-
-    lockerPicker.points.forEach((p) => {
-      if (p.latitude == null || p.longitude == null) return;
-      const marker = L.marker([p.latitude, p.longitude], { icon: pinIcon }).addTo(lockerMapInstance.current);
-      const popupEl = document.createElement("div");
-      popupEl.innerHTML = `<p style="font-weight:800;font-size:12.5px;margin:0 0 3px;">${p.name}</p><p style="font-size:11px;color:#5A5450;margin:0 0 8px;">${p.address}</p>`;
-      const btn = document.createElement("button");
-      btn.textContent = "Elegir este punto";
-      btn.style.cssText = "border:2px solid #1A1A1A;background:linear-gradient(135deg,#FF4D8D,#FF8A4D);color:#1A1A1A;border-radius:8px;padding:6px 12px;font-weight:800;font-size:11px;cursor:pointer;font-family:inherit;";
-      btn.onclick = () => handleChooseLocker(p);
-      popupEl.appendChild(btn);
-      marker.bindPopup(popupEl);
-      lockerMarkers.current.push(marker);
-    });
+    return () => { cancelled = true; };
   }, [lockerPicker?.center, lockerPicker?.points]);
 
   // Limpia el mapa al cerrar el buscador de taquillas, para poder crear uno limpio la próxima vez
