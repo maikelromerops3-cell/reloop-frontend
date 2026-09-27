@@ -12,7 +12,7 @@ import {
   connectStripe, fetchStripeStatus, startCheckout, boostItem,
   fetchTransactions, createShipmentLabel, downloadShipmentLabel, confirmReceived, completeInPerson, submitReview, fetchReviews,
   searchServicePoints, setServicePoint, fetchShippingQuote,
-  fetchProfile, updateMyLocation, updateShippingAddress, updateMarketingOptIn, updateNotifPreference, fetchMyPreferences, fetchMyStats, loginWithGoogle, searchByImage, deleteMyAccount, resendVerification, changePassword, changeEmail,
+  fetchProfile, updateMyLocation, updateShippingAddress, updateMarketingOptIn, updateNotifPreference, fetchMyPreferences, fetchMyStats, loginWithGoogle, searchByImage, exportMyData, deleteMyAccount, resendVerification, changePassword, changeEmail,
   fetchSavedSearches, saveSearch, deleteSavedSearch,
   fetchPushPublicKey, subscribeToPush, unsubscribeFromPush,
   fetchMyFollowing, followUser, unfollowUser, subscribeNewsletter, fetchLeague,
@@ -169,7 +169,8 @@ function normalizeItem(raw) {
 function ItemCard({ item, onOpen, index, saved, toggleSave }) {
   return (
     <div className="card" onClick={() => onOpen(item)}>
-      <div className="card-media" style={{ backgroundImage: `url(${item.photo})` }}>
+      <div className="card-media">
+        <img src={item.photo} alt={item.title} loading="lazy" decoding="async" className="card-media-img" />
         {item.minutesAgo < 30 && <span className="new-ribbon">Nuevo</span>}
         {item.featured && <span className="featured-ribbon" style={{ top: item.minutesAgo < 30 ? 38 : 10 }}>Destacado</span>}
         <button className={"heart" + (saved ? " on" : "")} onClick={(e) => { e.stopPropagation(); toggleSave(item.id); }}>
@@ -3618,7 +3619,8 @@ export default function RopelinApp() {
         .col { flex: 1; min-width: 0; max-width: 300px; display: flex; flex-direction: column; gap: 14px; }
         .card { background: var(--card); border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; border: 3px solid var(--border); }
         .card:hover { transform: translateY(-4px); border-color: #FF4D8D55; box-shadow: 0 12px 30px -14px #FF4D8D33; }
-        .card-media { height: 150px; position: relative; background-size: cover; background-position: center; flex-shrink: 0; }
+        .card-media { height: 150px; position: relative; flex-shrink: 0; overflow: hidden; background: var(--surface2); }
+        .card-media-img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
         .heart { border: none; background: #00000055; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; position: absolute; top: 10px; right: 10px; }
         .new-ribbon { position: absolute; top: 10px; left: 10px; background: #7FD8D0; color: var(--bg); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 10px; z-index: 2; }
         .featured-ribbon { position: absolute; left: 10px; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: var(--bg); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 10px; z-index: 2; }
@@ -5037,6 +5039,8 @@ export default function RopelinApp() {
                       </button>
 
                       <button className="logout-btn" style={{ marginTop: 20 }} onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); setShowProfile(false); toast("Sesión cerrada"); }}>Cerrar sesión</button>
+
+                      <button className="logout-btn" style={{ marginTop: 10 }} onClick={async () => { try { await exportMyData(); toast.success("Descargando tus datos..."); } catch (err) { toast.error(err.message); } }}>Descargar mis datos</button>
 
                       <div className="danger-zone">
                         <p className="danger-zone-title">Zona de peligro</p>
@@ -6761,6 +6765,8 @@ export default function RopelinApp() {
               {savingAccountSettings ? "Guardando..." : "Guardar cambios"}
             </button>
             <button className="logout-btn" onClick={() => { apiLogout(); setLoggedIn(false); setUsername(""); setUserRole("user"); setShowSettings(false); toast("Sesión cerrada"); }}>Cerrar sesión</button>
+
+            <button className="logout-btn" style={{ marginTop: 10 }} onClick={async () => { try { await exportMyData(); toast.success("Descargando tus datos..."); } catch (err) { toast.error(err.message); } }}>Descargar mis datos</button>
 
             <div className="danger-zone">
               <p className="danger-zone-title">Zona de peligro</p>
