@@ -796,8 +796,15 @@ export default function RopelinApp() {
 
     if (!lockerMapInstance.current) {
       lockerMapInstance.current = L.map(lockerMapRef.current).setView([lockerPicker.center.lat, lockerPicker.center.lng], 14);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      // Antes usábamos tile.openstreetmap.org directamente — es el servidor "crudo" de OSM, y su
+      // propia política de uso pide explícitamente NO usarlo así en una app real; puede bloquear
+      // o cortar el acceso sin avisar según el volumen o el origen de las peticiones, lo que
+      // explica que el mapa se viera interactivo (arrastrable) pero sin ninguna imagen cargada.
+      // CartoDB sí está pensado para esto — gratuito, sin necesitar clave, hecho para producción.
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: "abcd",
+        maxZoom: 20,
       }).addTo(lockerMapInstance.current);
       // El mapa se crea mientras el modal todavía se está deslizando hacia arriba (animación
       // CSS de .2s) — en ese momento Leaflet mide mal el tamaño real del contenedor y el mapa
