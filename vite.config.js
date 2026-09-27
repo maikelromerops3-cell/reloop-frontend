@@ -15,7 +15,6 @@ export default defineConfig({
           vendor: ["react", "react-dom", "react-router-dom"],
           icons: ["lucide-react"],
           maps: ["leaflet"],
-          "maps-vector": ["maplibre-gl", "@maplibre/maplibre-gl-leaflet"],
         },
       },
     },

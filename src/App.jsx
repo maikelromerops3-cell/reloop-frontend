@@ -254,6 +254,7 @@ export default function RopelinApp() {
   const [checkoutRates, setCheckoutRates] = useState([]);
   const [checkoutRatesLoading, setCheckoutRatesLoading] = useState(false);
   const [checkoutSelectedRateId, setCheckoutSelectedRateId] = useState(null);
+  const [showAllShippingRates, setShowAllShippingRates] = useState(false);
   const [checkoutServicePoint, setCheckoutServicePoint] = useState(null); // { id, name, address }
   const [showNotifs, setShowNotifs] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
@@ -822,55 +823,31 @@ export default function RopelinApp() {
       });
     }
 
-    if (lockerMapInstance.current) {
-      // El mapa ya existe (una búsqueda posterior en la misma sesión) — solo hace falta mover
-      // la vista y refrescar los pines, sin volver a cargar nada.
-      lockerMapInstance.current.setView([lockerPicker.center.lat, lockerPicker.center.lng], 14);
-      lockerMapInstance.current.invalidateSize();
-      addLockerMarkers();
-      return;
-    }
-
-    // Primera vez que se abre el buscador: creamos el mapa. MapLibre GL (necesario para los
-    // mapas de OpenFreeMap, ver más abajo) pesa bastante, así que solo lo descargamos en este
-    // momento — quien nunca elige InPost no se descarga nunca esta parte de la app.
-    let cancelled = false;
-    (async () => {
-      await import("maplibre-gl/dist/maplibre-gl.css");
-      await import("@maplibre/maplibre-gl-leaflet");
-      if (cancelled || !lockerMapRef.current) return; // se cerró el buscador mientras cargaba
-
+    if (!lockerMapInstance.current) {
       lockerMapInstance.current = L.map(lockerMapRef.current).setView([lockerPicker.center.lat, lockerPicker.center.lng], 14);
-      // Antes usábamos tile.openstreetmap.org directamente — es el servidor "crudo" de OSM, y su
-      // propia política de uso pide explícitamente NO usarlo así en una app real; puede bloquear
-      // o cortar el acceso sin avisar según el volumen o el origen de las peticiones, lo que
-      // explica que el mapa se viera interactivo (arrastrable) pero sin ninguna imagen cargada.
-      // CartoDB empezó a exigir clave de API para sus mapas gratuitos en agosto de 2026 (le pasó
-      // a todo el mundo que los usaba sin clave, tapando los mapas con un aviso "API KEY
-      // REQUIRED"). OpenFreeMap es la alternativa que sí es gratis de verdad, para siempre, sin
-      // clave ni límite de peticiones — pero sirve mapas vectoriales, no las imágenes PNG de
-      // siempre, así que se dibuja con MapLibre GL en vez del L.tileLayer normal de Leaflet.
-      L.maplibreGL({
-        style: "https://tiles.openfreemap.org/styles/positron",
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      }).addTo(lockerMapInstance.current);
-      // El mapa se crea mientras el modal todavía se está deslizando hacia arriba (animación
-      // CSS de .2s) — en ese momento Leaflet mide mal el tamaño real del contenedor y el mapa
-      // se queda "roto" (tiles a medias, o el mapa aplastado en una tira minúscula) para siempre.
-      // Un timeout fijo no era suficiente en todos los casos (ordenadores más lentos, varias
-      // pestañas abiertas...), así que en vez de adivinar un tiempo, vigilamos el propio
-      // contenedor: cada vez que cambia de tamaño de verdad, le decimos a Leaflet que se
-      // vuelva a medir. Esto cubre la animación de apertura y cualquier otro cambio de layout.
+      // Probamos ya tres proveedores "gratis sin clave" (OSM directo, CartoDB, OpenFreeMap) y los
+      // tres fallaron de una forma distinta según el dispositivo/red de cada persona — ese patrón
+      // en sí es la señal de que ninguno está pensado para sostener una app real. MapTiler sí lo
+      // está: capa gratuita de 100.000 cargas de mapa al mes, sin tarjeta, y es la forma estándar
+      // en la que casi cualquier app real resuelve esto en 2026. Necesita una clave gratuita —
+      // ver VITE_MAPTILER_KEY en el .env.
+      const maptilerKey = import.meta.env.VITE_MAPTILER_KEY;
+      L.tileLayer(
+        maptilerKey
+          ? `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${maptilerKey}`
+          : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", // respaldo si aún no has puesto la clave (puede salir marcado "API KEY REQUIRED")
+        { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://www.maptiler.com/copyright/">MapTiler</a>', maxZoom: 20 }
+      ).addTo(lockerMapInstance.current);
       const resizeObserver = new ResizeObserver(() => lockerMapInstance.current?.invalidateSize());
       resizeObserver.observe(lockerMapRef.current);
       lockerMapResizeObserver.current = resizeObserver;
       setTimeout(() => lockerMapInstance.current?.invalidateSize(), 100);
       setTimeout(() => lockerMapInstance.current?.invalidateSize(), 400);
-
-      addLockerMarkers();
-    })();
-
-    return () => { cancelled = true; };
+    } else {
+      lockerMapInstance.current.setView([lockerPicker.center.lat, lockerPicker.center.lng], 14);
+      lockerMapInstance.current.invalidateSize();
+    }
+    addLockerMarkers();
   }, [lockerPicker?.center, lockerPicker?.points]);
 
   // Limpia el mapa al cerrar el buscador de taquillas, para poder crear uno limpio la próxima vez
@@ -2551,6 +2528,7 @@ export default function RopelinApp() {
     try {
       const { rates } = await fetchShippingQuote(openItem.id, checkoutPostalCode.trim(), checkoutCity.trim());
       setCheckoutRates(rates);
+      setShowAllShippingRates(false);
       setCheckoutSelectedRateId(rates.find((r) => !r.requiresServicePoint)?.rateId || rates[0]?.rateId || null);
       setCheckoutServicePoint(null);
     } catch (err) {
@@ -3898,7 +3876,9 @@ export default function RopelinApp() {
         .delete-confirm-actions { display: flex; gap: 10px; }
         .delete-confirm-actions .btn { flex: 1; }
         .delete-confirm-actions .danger-zone-btn { flex: 1; }
-        .checkout-modal { max-width: 380px; }
+        .checkout-modal { max-width: 460px; }
+        .checkout-more-rates-btn { width: 100%; background: none; border: 1.5px dashed var(--border); border-radius: 12px; padding: 10px; font-size: 12.5px; font-weight: 700; color: var(--sub); cursor: pointer; font-family: inherit; margin-bottom: 14px; }
+        .checkout-more-rates-btn:hover { border-color: #FF4D8D; color: #FF4D8D; }
         .admin-modal-wide { max-width: 1000px; max-height: 85vh; }
         .admin-modal-wide .profile-desktop-flex.has-sidebar { align-items: flex-start; }
         .admin-modal-wide .profile-sidebar-menu { max-height: 75vh; overflow-y: auto; }
@@ -5473,7 +5453,7 @@ export default function RopelinApp() {
                   {openItem.sellerStripeOnboarded === false ? (
                     <button className="buy-btn" disabled title="Este vendedor todavía no puede recibir pagos por correo" style={{ opacity: 0.6 }}>No disponible por correo</button>
                   ) : (
-                    <button className="buy-btn" onClick={() => { if (loggedIn) { setCheckoutPostalCode(""); setCheckoutCity(""); setCheckoutRates([]); setCheckoutSelectedRateId(null); setCheckoutServicePoint(null); setShowCheckout(true); } else { setShowAuth(true); } }}>Comprar</button>
+                    <button className="buy-btn" onClick={() => { if (loggedIn) { setCheckoutPostalCode(""); setCheckoutCity(""); setCheckoutRates([]); setCheckoutSelectedRateId(null); setCheckoutServicePoint(null); setShowAllShippingRates(false); setShowCheckout(true); } else { setShowAuth(true); } }}>Comprar</button>
                   )}
                   <button
                     className="in-person-alt-btn"
@@ -6868,10 +6848,23 @@ export default function RopelinApp() {
 
             {!checkoutRatesLoading && checkoutRates.length > 0 && (() => {
               const chosen = checkoutRates.find((r) => r.rateId === checkoutSelectedRateId);
+              // En vez de enseñar cada tarifa suelta (varias de "Correos", varias de
+              // "Correos_express"...), agrupamos por transportista y mostramos solo la más barata
+              // de cada uno por defecto — así la lista no se hace interminable con opciones muy
+              // parecidas. El resto queda a un toque de distancia con "Ver X opciones más".
+              const cheapestByProvider = {};
+              checkoutRates.forEach((r) => {
+                if (!cheapestByProvider[r.provider] || r.amount < cheapestByProvider[r.provider].amount) {
+                  cheapestByProvider[r.provider] = r;
+                }
+              });
+              const mainRates = Object.values(cheapestByProvider).sort((a, b) => a.amount - b.amount);
+              const extraRates = checkoutRates.filter((r) => !mainRates.includes(r));
+              const visibleRates = showAllShippingRates ? checkoutRates : mainRates;
               return (
                 <>
-                  <div className="sheet-rate-list" style={{ marginBottom: 14 }}>
-                    {checkoutRates.map((r) => {
+                  <div className="sheet-rate-list" style={{ marginBottom: 10 }}>
+                    {visibleRates.map((r) => {
                       const selected = checkoutSelectedRateId === r.rateId;
                       return (
                         <button
@@ -6893,8 +6886,15 @@ export default function RopelinApp() {
                           <span className={"sheet-rate-radio" + (selected ? " on" : "")} />
                         </button>
                       );
+
                     })}
                   </div>
+
+                  {!showAllShippingRates && extraRates.length > 0 && (
+                    <button type="button" className="checkout-more-rates-btn" onClick={() => setShowAllShippingRates(true)}>
+                      Ver {extraRates.length} opción{extraRates.length === 1 ? "" : "es"} más
+                    </button>
+                  )}
 
                   {chosen?.requiresServicePoint && (
                     checkoutServicePoint ? (
