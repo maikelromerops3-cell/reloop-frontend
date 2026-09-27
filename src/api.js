@@ -12,6 +12,13 @@ function authHeaders() {
 // JSON", tapando el problema real (que normalmente es que el servidor está caído, sobrecargado,
 // o la petición fue a una URL equivocada).
 async function parseErrorMessage(res) {
+  // Sea cual sea la función que hizo esta llamada, si el servidor dice que el token de sesión ya
+  // no vale, avisamos a toda la app de una vez con un evento global — así App.jsx puede cerrar la
+  // sesión y llevar al login en vez de dejar a la persona viendo errores sueltos por cada sitio
+  // donde antes hacía falta estar conectado, sin saber nunca que en realidad ya no lo estaba.
+  if (res.status === 401) {
+    window.dispatchEvent(new CustomEvent("reloop:auth-expired"));
+  }
   try {
     const data = await res.json();
     return data?.error || null;

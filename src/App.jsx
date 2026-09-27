@@ -2079,6 +2079,26 @@ export default function RopelinApp() {
     setOpenItem(null);
     navigate(-1);
   }
+  // Si cualquier petición al servidor descubre que el token de sesión ya no vale (caducado, o
+  // manipulado), cerramos la sesión de verdad en vez de dejar a la persona viendo errores
+  // sueltos por toda la app sin saber que en realidad ya no está conectada.
+  useEffect(() => {
+    function handleAuthExpired() {
+      if (!loggedIn) return; // ya estaba desconectado, no hace falta hacer nada más
+      apiLogout();
+      setLoggedIn(false);
+      setUsername("");
+      setUserRole("user");
+      setShowProfile(false);
+      setShowSettings(false);
+      setShowAdminPanel(false);
+      toast.error("Tu sesión ha caducado. Vuelve a entrar para seguir.");
+      navigate("/");
+    }
+    window.addEventListener("reloop:auth-expired", handleAuthExpired);
+    return () => window.removeEventListener("reloop:auth-expired", handleAuthExpired);
+  }, [loggedIn]);
+
   function goHome() {
     setOpenItem(null);
     setShowProfile(false);
