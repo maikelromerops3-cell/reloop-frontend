@@ -731,6 +731,7 @@ export default function RopelinApp() {
   const lockerMapRef = useRef(null);
   const lockerMapInstance = useRef(null);
   const lockerMarkers = useRef([]);
+  const lockerMapResizeObserver = useRef(null);
 
   function openLockerPicker(transactionId) {
     setLockerPicker({ transactionId, postalCode: "", city: "", points: [], loading: false, searched: false, center: null });
@@ -800,9 +801,17 @@ export default function RopelinApp() {
       }).addTo(lockerMapInstance.current);
       // El mapa se crea mientras el modal todavía se está deslizando hacia arriba (animación
       // CSS de .2s) — en ese momento Leaflet mide mal el tamaño real del contenedor y el mapa
-      // se queda "roto" (tiles a medias) para siempre. Le decimos que vuelva a medirse una vez
-      // la animación ha terminado del todo.
-      setTimeout(() => lockerMapInstance.current?.invalidateSize(), 300);
+      // se queda "roto" (tiles a medias, o el mapa aplastado en una tira minúscula) para siempre.
+      // Un timeout fijo no era suficiente en todos los casos (ordenadores más lentos, varias
+      // pestañas abiertas...), así que en vez de adivinar un tiempo, vigilamos el propio
+      // contenedor: cada vez que cambia de tamaño de verdad, le decimos a Leaflet que se
+      // vuelva a medir. Esto cubre la animación de apertura y cualquier otro cambio de layout.
+      const resizeObserver = new ResizeObserver(() => lockerMapInstance.current?.invalidateSize());
+      resizeObserver.observe(lockerMapRef.current);
+      lockerMapResizeObserver.current = resizeObserver;
+      // Además, un par de intentos tempranos por si el observer tarda en disparar la primera vez
+      setTimeout(() => lockerMapInstance.current?.invalidateSize(), 100);
+      setTimeout(() => lockerMapInstance.current?.invalidateSize(), 400);
     } else {
       lockerMapInstance.current.setView([lockerPicker.center.lat, lockerPicker.center.lng], 14);
       lockerMapInstance.current.invalidateSize();
@@ -839,6 +848,8 @@ export default function RopelinApp() {
       lockerMapInstance.current.remove();
       lockerMapInstance.current = null;
       lockerMarkers.current = [];
+      lockerMapResizeObserver.current?.disconnect();
+      lockerMapResizeObserver.current = null;
     }
   }, [lockerPicker]);
 
