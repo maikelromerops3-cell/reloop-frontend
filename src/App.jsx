@@ -173,7 +173,7 @@ function ItemCard({ item, onOpen, index, saved, toggleSave }) {
         <img src={item.photo} alt={item.title} loading="lazy" decoding="async" className="card-media-img" />
         {item.minutesAgo < 30 && <span className="new-ribbon">Nuevo</span>}
         {item.featured && <span className="featured-ribbon" style={{ top: item.minutesAgo < 30 ? 38 : 10 }}>Destacado</span>}
-        <button className={"heart" + (saved ? " on" : "")} onClick={(e) => { e.stopPropagation(); toggleSave(item.id); }}>
+        <button className={"heart" + (saved ? " on" : "")} onClick={(e) => { e.stopPropagation(); toggleSave(item.id); }} aria-label={saved ? "Quitar de favoritos" : "Añadir a favoritos"}>
           <Heart size={16} fill={saved ? "#FF4D8D" : "none"} color={saved ? "#FF4D8D" : "#fff"} />
         </button>
         <span className="price-pill">{item.price}€</span>
@@ -4362,17 +4362,17 @@ export default function RopelinApp() {
           <h1>Ropelin</h1>
         </div>
         <div className="top-actions">
-          <button className="icon-btn" onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))} title={theme === "dark" ? "Modo claro" : "Modo oscuro"}>
+          <button className="icon-btn" onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))} title={theme === "dark" ? "Modo claro" : "Modo oscuro"} aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           {loggedIn && (
-            <button className="icon-btn" onClick={() => { setShowProfile(true); setProfileMenuView("pedidos"); }}>
+            <button className="icon-btn" onClick={() => { setShowProfile(true); setProfileMenuView("pedidos"); }} aria-label={`Mis pedidos${pendingShipmentsCount > 0 ? ` (${pendingShipmentsCount} pendientes)` : ""}`}>
               <Package size={16} />
               {pendingShipmentsCount > 0 && <span className="notif-dot">{pendingShipmentsCount}</span>}
             </button>
           )}
           {loggedIn && (
-            <button className="icon-btn hide-on-mobile-nav" onClick={handleOpenNotifs}>
+            <button className="icon-btn hide-on-mobile-nav" onClick={handleOpenNotifs} aria-label={`Notificaciones${notifications.some((n) => !n.read) ? ` (${notifications.filter((n) => !n.read).length} sin leer)` : ""}`}>
               <Bell size={16} />
               {notifications.some((n) => !n.read) && (
                 <span className="notif-dot">{notifications.filter((n) => !n.read).length}</span>
@@ -4380,13 +4380,13 @@ export default function RopelinApp() {
             </button>
           )}
           {loggedIn && (
-            <button className="icon-btn hide-on-mobile-nav" onClick={() => setShowFavorites(true)}>
+            <button className="icon-btn hide-on-mobile-nav" onClick={() => setShowFavorites(true)} aria-label={`Favoritos${saved.size > 0 ? ` (${saved.size})` : ""}`}>
               <Heart size={16} fill={saved.size > 0 ? "#FF4D8D" : "none"} color={saved.size > 0 ? "#FF4D8D" : "currentColor"} />
               {saved.size > 0 && <span className="notif-dot">{saved.size}</span>}
             </button>
           )}
           {loggedIn && (
-            <span className="badge profile-badge hide-on-mobile-nav" onClick={viewProfile}>
+            <span className="badge profile-badge hide-on-mobile-nav" onClick={viewProfile} role="button" tabIndex={0} aria-label={`Ver mi perfil, @${username}`} onKeyDown={(e) => { if (e.key === "Enter") viewProfile(); }}>
               <span className="mini-avatar" style={{ background: avatarColor }}>{username[0]?.toUpperCase()}</span>
               @{username}
             </span>
@@ -4397,7 +4397,7 @@ export default function RopelinApp() {
           )}
 
           {installPrompt && (
-            <button className="icon-btn" onClick={handleInstallApp} title="Instalar app">
+            <button className="icon-btn" onClick={handleInstallApp} title="Instalar app" aria-label="Instalar la app de Ropelin">
               <Download size={16} />
             </button>
           )}
@@ -4505,10 +4505,11 @@ export default function RopelinApp() {
           onClick={() => document.getElementById("photo-search-input").click()}
           disabled={searchingPhoto}
           title="Buscar por foto"
+          aria-label="Buscar por foto"
         >
           {searchingPhoto ? <RefreshCw size={15} className="spin" /> : <Camera size={15} />}
         </button>
-        <button className={"filter-toggle-btn" + (showFilters ? " active" : "")} onClick={() => setShowFilters(!showFilters)}>
+        <button className={"filter-toggle-btn" + (showFilters ? " active" : "")} onClick={() => setShowFilters(!showFilters)} aria-label={showFilters ? "Ocultar filtros" : "Mostrar filtros"}>
           <SlidersHorizontal size={15} />
         </button>
       </div>
@@ -5625,7 +5626,7 @@ export default function RopelinApp() {
         ) : (
           <div className="overlay" onClick={() => setShowLeague(false)}>
             <div className="modal league-modal" onClick={(e) => e.stopPropagation()}>
-              <button className="close-btn" onClick={() => setShowLeague(false)}><X size={14} /></button>
+              <button className="close-btn" aria-label="Cerrar" onClick={() => setShowLeague(false)}><X size={14} /></button>
               {leagueContentEl}
             </div>
           </div>
@@ -6184,7 +6185,7 @@ export default function RopelinApp() {
                 <button className="post-mobile-close" onClick={() => setShowPost(false)}><X size={18} /></button>
                 <p className="post-mobile-title">{editingItem ? "Editar" : "Vender"}</p>
               </div>
-              <button className="close-btn" onClick={() => setShowPost(false)}><X size={14} /></button>
+              <button className="close-btn" aria-label="Cerrar" onClick={() => setShowPost(false)}><X size={14} /></button>
               <p className="auth-title">{editingItem ? "Editar artículo" : "Nuevo artículo"}</p>
               <p className="auth-subtitle" style={{ marginBottom: 18 }}>{editingItem ? "Actualiza los datos de tu artículo" : "Rellena los datos y publícalo en segundos"}</p>
               {stripeReminderEl}
@@ -6303,7 +6304,7 @@ export default function RopelinApp() {
       {showForgotPassword && (
         <div className="overlay" onClick={() => { setShowForgotPassword(false); setForgotSent(false); setForgotError(null); }}>
           <div className="modal auth-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => { setShowForgotPassword(false); setForgotSent(false); setForgotError(null); }}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => { setShowForgotPassword(false); setForgotSent(false); setForgotError(null); }}><X size={14} /></button>
             {forgotSent ? (
               <div className="offer-sent">
                 <Mail size={26} color="#7FD8D0" />
@@ -6333,7 +6334,7 @@ export default function RopelinApp() {
       {showAuth && (
         <div className="overlay detail-overlay" onClick={() => setShowAuth(false)}>
           <div className="modal auth-modal detail-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowAuth(false)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setShowAuth(false)}><X size={14} /></button>
 
             <div className="auth-brand">
               <div className="brand-mark auth-mark">
@@ -6397,7 +6398,7 @@ export default function RopelinApp() {
       {disputingTx && (
         <div className="overlay" onClick={() => setDisputingTx(null)}>
           <div className="modal rating-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setDisputingTx(null)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setDisputingTx(null)}><X size={14} /></button>
             <p className="auth-title">Solicitar reembolso</p>
             <p className="auth-subtitle" style={{ marginBottom: 18 }}>{disputingTx.item.title}</p>
             <form onSubmit={handleSubmitDispute}>
@@ -6427,7 +6428,7 @@ export default function RopelinApp() {
       {respondingTx && (
         <div className="overlay" onClick={() => setRespondingTx(null)}>
           <div className="modal rating-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setRespondingTx(null)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setRespondingTx(null)}><X size={14} /></button>
             <p className="auth-title">Dar tu versión</p>
             <p className="auth-subtitle" style={{ marginBottom: 18 }}>{respondingTx.item.title}</p>
             <p className="admin-dispute-reason">Reclamación de @{respondingTx.buyer.username}: "{respondingTx.disputeReason}"</p>
@@ -6462,7 +6463,7 @@ export default function RopelinApp() {
       {pickingBuyerFor && (
         <div className="overlay" onClick={() => setPickingBuyerFor(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setPickingBuyerFor(null)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setPickingBuyerFor(null)}><X size={14} /></button>
             <p className="auth-title">¿A quién se lo vendiste?</p>
             <p className="auth-subtitle" style={{ marginBottom: 16 }}>Así le avisamos y podéis valoraros mutuamente</p>
 
@@ -6497,7 +6498,7 @@ export default function RopelinApp() {
       {reviewingTx && (
         <div className="overlay" onClick={() => setReviewingTx(null)}>
           <div className="modal rating-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setReviewingTx(null)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setReviewingTx(null)}><X size={14} /></button>
             <p className="auth-title">Valorar a @{reviewingTx.otherUsername}</p>
             <form onSubmit={handleSubmitReview}>
               <div className="star-picker">
@@ -6520,7 +6521,7 @@ export default function RopelinApp() {
       {showFavorites && (
         <div className="overlay" onClick={() => setShowFavorites(false)}>
           <div className="modal favorites-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowFavorites(false)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setShowFavorites(false)}><X size={14} /></button>
             <p className="auth-title" style={{ marginBottom: 4 }}>Tus favoritos</p>
             <p className="auth-subtitle" style={{ marginBottom: 16 }}>{saved.size} {saved.size === 1 ? "artículo guardado" : "artículos guardados"}</p>
 
@@ -6552,7 +6553,7 @@ export default function RopelinApp() {
       {showNotifs && (
         <div className="overlay" onClick={() => setShowNotifs(false)}>
           <div className="modal notif-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowNotifs(false)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setShowNotifs(false)}><X size={14} /></button>
             <p className="auth-title" style={{ marginBottom: 16 }}>Notificaciones</p>
             {notifications.length === 0 && <p className="empty-tab">No tienes notificaciones todavía.</p>}
             {notifications.map((n) => (
@@ -6600,7 +6601,7 @@ export default function RopelinApp() {
       {showSettings && (
         <div className="overlay" onClick={() => setShowSettings(false)}>
           <div className="modal settings-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowSettings(false)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setShowSettings(false)}><X size={14} /></button>
             <p className="auth-title" style={{ marginBottom: 16 }}>Ajustes de cuenta</p>
 
             {!myEmailVerified && (
@@ -6842,7 +6843,7 @@ export default function RopelinApp() {
       {showCheckout && openItem && (
         <div className="overlay overlay-top" onClick={() => { setShowCheckout(false); setCheckoutError(null); }}>
           <div className="modal checkout-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => { setShowCheckout(false); setCheckoutError(null); }}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => { setShowCheckout(false); setCheckoutError(null); }}><X size={14} /></button>
             <p className="auth-title">Confirmar compra</p>
             <p className="auth-subtitle" style={{ marginBottom: 18 }}>{openItem.title}</p>
 
@@ -7047,7 +7048,7 @@ export default function RopelinApp() {
         return numCols >= 3 ? (
           <div className="overlay overlay-top-most" onClick={() => setShowAdminPanel(false)}>
             <div className="modal admin-modal-wide" onClick={(e) => e.stopPropagation()}>
-              <button className="close-btn" onClick={() => setShowAdminPanel(false)}><X size={14} /></button>
+              <button className="close-btn" aria-label="Cerrar" onClick={() => setShowAdminPanel(false)}><X size={14} /></button>
               <div className="profile-desktop-flex has-sidebar">
                 {adminSidebarEl(adminSection)}
                 <div className="profile-desktop-content">
@@ -7060,7 +7061,7 @@ export default function RopelinApp() {
         ) : (
           <div className="overlay" onClick={() => setShowAdminPanel(false)}>
             <div className="modal admin-modal" onClick={(e) => e.stopPropagation()}>
-              <button className="close-btn" onClick={() => setShowAdminPanel(false)}><X size={14} /></button>
+              <button className="close-btn" aria-label="Cerrar" onClick={() => setShowAdminPanel(false)}><X size={14} /></button>
 
               {adminSection === null ? (
                 <>
@@ -7097,7 +7098,7 @@ export default function RopelinApp() {
       {banningUser && (
         <div className="overlay" onClick={() => setBanningUser(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 340 }}>
-            <button className="close-btn" onClick={() => setBanningUser(null)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setBanningUser(null)}><X size={14} /></button>
             <p className="auth-title">Suspender a @{banningUser.username}</p>
             <p className="auth-subtitle" style={{ marginBottom: 14 }}>No podrá iniciar sesión hasta que reactives su cuenta.</p>
             <textarea
@@ -7115,7 +7116,7 @@ export default function RopelinApp() {
       {editingAdminItem && (
         <div className="overlay" onClick={() => setEditingAdminItem(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 380 }}>
-            <button className="close-btn" onClick={() => setEditingAdminItem(null)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setEditingAdminItem(null)}><X size={14} /></button>
             <p className="auth-title">Editar publicación (admin)</p>
             <p className="auth-subtitle" style={{ marginBottom: 14 }}>Corrige el título o la descripción sin borrar la publicación.</p>
             <label>Título</label>
@@ -7168,7 +7169,7 @@ export default function RopelinApp() {
       {showEditProfile && (
         <div className="overlay" onClick={() => setShowEditProfile(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 380 }}>
-            <button className="close-btn" onClick={() => setShowEditProfile(false)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setShowEditProfile(false)}><X size={14} /></button>
             <p className="auth-title">Editar perfil</p>
 
             <div className="edit-avatar-row">
@@ -7219,7 +7220,7 @@ export default function RopelinApp() {
             <div className="sheet-handle" />
             <div className="sheet-header">
               <p className="sheet-title">Elige tu punto de recogida</p>
-              <button className="close-btn" onClick={() => setLockerPicker(null)}><X size={14} /></button>
+              <button className="close-btn" aria-label="Cerrar" onClick={() => setLockerPicker(null)}><X size={14} /></button>
             </div>
 
             <button className="locker-location-btn" onClick={handleUseMyLocation} disabled={lockerPicker.loading}>
@@ -7274,7 +7275,7 @@ export default function RopelinApp() {
       {showReportForm && (
         <div className="overlay" onClick={() => setShowReportForm(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 340 }}>
-            <button className="close-btn" onClick={() => setShowReportForm(null)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setShowReportForm(null)}><X size={14} /></button>
             <div className="report-modal-header">
               <div className="report-modal-icon"><FileWarning size={18} /></div>
               <div>
@@ -7416,7 +7417,7 @@ export default function RopelinApp() {
       {showOffer && openItem && (
         <div className="overlay overlay-top" onClick={() => setShowOffer(false)}>
           <div className="modal offer-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowOffer(false)}><X size={14} /></button>
+            <button className="close-btn" aria-label="Cerrar" onClick={() => setShowOffer(false)}><X size={14} /></button>
             {offerSent ? (
               <div className="offer-sent">
                 <HandCoins size={26} color="#7FD8D0" />
