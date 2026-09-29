@@ -4,6 +4,15 @@ import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "./styles/fonts.css";
+import "./styles/legacy.css";
+import "./styles/theme.css";
+import "./styles/home.css";
+import "./styles/explore.css";
+import ItemCard from "./components/ItemCard";
+import HomeSections from "./components/HomeSections";
+import FilterPanel from "./components/FilterPanel";
+import Accordion from "./components/Accordion";
 import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, FileDown, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight, Clock, Download } from "lucide-react";
 import {
   fetchItems, fetchItem, createItem, updateItem, deleteItem,
@@ -31,7 +40,7 @@ import {
 } from "./api";
 
 const CATEGORY_ICONS = { "Todo": LayoutGrid, "Moda": Shirt, "Electrónica": Zap, "Hogar": PackageOpen, "Deporte": Footprints, "Juguetes y ocio": Watch, "Vehículos": Car, "Libros y música": BookOpen, "Belleza y cuidado personal": Sparkles, "Bebé e infantil": Baby, "Jardín y herramientas": Wrench, "Instrumentos musicales": Guitar, "Otros": Tag };
-const CATEGORY_COLORS = { "Todo": "#C8C8CE", "Moda": "#FF4D8D", "Electrónica": "#4DA8FF", "Hogar": "#FFC24D", "Deporte": "#7FD8D0", "Juguetes y ocio": "#8C7CFF", "Vehículos": "#6A9BFF", "Libros y música": "#E0A458", "Belleza y cuidado personal": "#FF8FB1", "Bebé e infantil": "#7FD8A6", "Jardín y herramientas": "#A3C96B", "Instrumentos musicales": "#C97BFF", "Otros": "#FF8A4D" };
+const CATEGORY_COLORS = { "Todo": "#C8C8CE", "Moda": "var(--accent)", "Electrónica": "var(--info)", "Hogar": "var(--amber)", "Deporte": "var(--ok)", "Juguetes y ocio": "var(--sub)", "Vehículos": "#6A9BFF", "Libros y música": "#E0A458", "Belleza y cuidado personal": "var(--accent)", "Bebé e infantil": "#7FD8A6", "Jardín y herramientas": "#A3C96B", "Instrumentos musicales": "#C97BFF", "Otros": "var(--accent)" };
 const CATEGORIES = ["Todo", "Moda", "Electrónica", "Hogar", "Deporte", "Juguetes y ocio", "Vehículos", "Libros y música", "Belleza y cuidado personal", "Bebé e infantil", "Jardín y herramientas", "Instrumentos musicales", "Otros"];
 
 // Subcategorías más concretas dentro de cada categoría principal, para el formulario de venta.
@@ -61,7 +70,8 @@ function buildFaqItems(s) {
 }
 const SIZES = ["XS", "S", "M", "L", "XL"];
 const SHOE_SIZES = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"];
-const PALETTE = ["#FF4D8D", "#7FD8D0", "#FFC24D", "#8C7CFF", "#4DA8FF", "#FF8A4D"];
+// Tonos tierra para avatares y portadas de perfil (antes eran los colores chillones de la marca antigua)
+const PALETTE = ["#B93E16", "#2F4A3D", "#3B3934", "#8A6F4E", "#4A6A85", "#7A4B3A"];
 function miniSwatchStyle(item, idx) {
   const photo = (item.images && item.images[0]) || item.photo;
   return photo
@@ -86,11 +96,11 @@ const AUTH_PAGE_STYLES = `
   .app { background: #121214; font-family: 'Helvetica Neue', Arial, sans-serif; color: #F2F2F0; }
   .modal { background: #1A1A1E; border: 1px solid #29292f; border-radius: 22px; max-width: 380px; width: 100%; padding: 30px 26px; margin: 20px; }
   .auth-title { font-family: Georgia, serif; font-size: 20px; font-weight: 700; margin: 0 0 18px; text-align: center; }
-  label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 5px; color: #9A9AA3; }
+  label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 5px; color: var(--faint); }
   .input-icon { display: flex; align-items: center; gap: 8px; border: 1px solid #333; border-radius: 12px; padding: 0 12px; background: #121214; }
-  .input-icon svg { color: #6A6A73; flex-shrink: 0; }
+  .input-icon svg { color: var(--sub); flex-shrink: 0; }
   .input-icon input { border: none; padding: 10px 0; background: transparent; color: #F2F2F0; font-family: inherit; font-size: 16px; width: 100%; outline: none; }
-  .submit-btn { margin-top: 20px; width: 100%; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #121214; border: none; border-radius: 14px; padding: 13px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .submit-btn { margin-top: 20px; width: 100%; background: var(--accent); color: #121214; border: none; border-radius: 14px; padding: 13px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
   .offer-sent { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; font-weight: 700; }
   .spin { animation: spin 1s linear infinite; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -164,27 +174,6 @@ function normalizeItem(raw) {
     featuredUntil: raw.featuredUntil || null,
     favoritesCount: raw._count?.favoritedBy ?? raw.favoritesCount ?? 0,
   };
-}
-
-function ItemCard({ item, onOpen, index, saved, toggleSave }) {
-  return (
-    <div className="card" onClick={() => onOpen(item)}>
-      <div className="card-media">
-        <img src={item.photo} alt={item.title} loading="lazy" decoding="async" className="card-media-img" />
-        {item.minutesAgo < 30 && <span className="new-ribbon">Nuevo</span>}
-        {item.featured && <span className="featured-ribbon" style={{ top: item.minutesAgo < 30 ? 38 : 10 }}>Destacado</span>}
-        <button className={"heart" + (saved ? " on" : "")} onClick={(e) => { e.stopPropagation(); toggleSave(item.id); }} aria-label={saved ? "Quitar de favoritos" : "Añadir a favoritos"}>
-          <Heart size={16} fill={saved ? "#FF4D8D" : "none"} color={saved ? "#FF4D8D" : "#fff"} />
-        </button>
-        <span className="price-pill">{item.price}€</span>
-      </div>
-      <div className="card-info">
-        <h3>{item.title}</h3>
-        <p>{item.size ? `${item.size} · ` : ""}{item.condition}</p>
-        <p className="card-city"><MapPin size={10} /> {item.distanceKm !== null ? `a ${item.distanceKm < 1 ? "menos de 1" : Math.round(item.distanceKm)} km · ` : item.city ? `${item.city} · ` : ""}{timeAgo(item.minutesAgo)}</p>
-      </div>
-    </div>
-  );
 }
 
 export default function RopelinApp() {
@@ -803,7 +792,7 @@ export default function RopelinApp() {
 
       const pinIcon = L.divIcon({
         className: "locker-pin",
-        html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#FF4D8D,#FF8A4D);border:2.5px solid #1A1A1A;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;"><div style="transform:rotate(45deg);width:8px;height:8px;border-radius:50%;background:#1A1A1A;"></div></div>`,
+        html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;background:var(--accent);border:1px solid var(--border);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;"><div style="transform:rotate(45deg);width:8px;height:8px;border-radius:50%;background:#1A1A1A;"></div></div>`,
         iconSize: [30, 30],
         iconAnchor: [15, 30],
       });
@@ -812,10 +801,10 @@ export default function RopelinApp() {
         if (p.latitude == null || p.longitude == null) return;
         const marker = L.marker([p.latitude, p.longitude], { icon: pinIcon }).addTo(lockerMapInstance.current);
         const popupEl = document.createElement("div");
-        popupEl.innerHTML = `<p style="font-weight:800;font-size:12.5px;margin:0 0 3px;">${p.name}</p><p style="font-size:11px;color:#5A5450;margin:0 0 8px;">${p.address}</p>`;
+        popupEl.innerHTML = `<p style="font-weight:800;font-size:12.5px;margin:0 0 3px;">${p.name}</p><p style="font-size:11px;color:var(--sub);margin:0 0 8px;">${p.address}</p>`;
       const btn = document.createElement("button");
       btn.textContent = "Elegir este punto";
-      btn.style.cssText = "border:2px solid #1A1A1A;background:linear-gradient(135deg,#FF4D8D,#FF8A4D);color:#1A1A1A;border-radius:8px;padding:6px 12px;font-weight:800;font-size:11px;cursor:pointer;font-family:inherit;";
+      btn.style.cssText = "border:1px solid var(--border);background:var(--accent);color:var(--on-accent);border-radius:8px;padding:6px 12px;font-weight:800;font-size:11px;cursor:pointer;font-family:inherit;";
       btn.onclick = () => handleChooseLocker(p);
       popupEl.appendChild(btn);
       marker.bindPopup(popupEl);
@@ -933,7 +922,7 @@ export default function RopelinApp() {
           </>
         )}
         {tx.status === "disputed" && (
-          <p className="order-hint" style={{ color: "#FF4D8D" }}>Reembolso solicitado, en revisión.</p>
+          <p className="order-hint" style={{ color: "var(--accent)" }}>Reembolso solicitado, en revisión.</p>
         )}
         {["paid", "shipped"].includes(tx.status) && (
           <p className="dispute-link" onClick={() => setDisputingTx(tx)}>¿Algún problema con este pedido? Solicitar reembolso</p>
@@ -1215,8 +1204,8 @@ export default function RopelinApp() {
         <div className="footer-brand-group">
           <div className="footer-brand-mark">
             <svg width="32" height="32" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
-              <rect width="140" height="140" rx="30" fill="#FF8A4D" stroke="#1A1A1E" strokeWidth="2.5" />
-              <rect x="92" y="25" width="21" height="21" fill="#FF4D8D" />
+              <rect width="140" height="140" rx="30" fill="var(--accent)" stroke="#1A1A1E" strokeWidth="2.5" />
+              <rect x="92" y="25" width="21" height="21" fill="var(--accent)" />
               <text x="66" y="112" fontFamily="Manrope, Arial, sans-serif" fontSize="105" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
             </svg>
           </div>
@@ -1507,7 +1496,7 @@ export default function RopelinApp() {
                   <>
                     <form className="admin-search-row" onSubmit={handleUserSearch}>
                       <div className="search-box">
-                        <Search size={14} color="#9A9AA3" />
+                        <Search size={14} color="var(--faint)" />
                         <input placeholder="Buscar por usuario o email..." value={adminUserSearch} onChange={(e) => setAdminUserSearch(e.target.value)} />
                       </div>
                       <button type="submit" className="btn ghost admin-search-btn">Buscar</button>
@@ -1538,7 +1527,7 @@ export default function RopelinApp() {
                                   @{u.username}
                                   <button className="admin-username-edit-btn" title="Cambiar nombre de usuario" onClick={() => handleChangeUsername(u)}><Pencil size={11} /></button>
                                   {u.role === "admin" && <span className="admin-role-badge">Admin</span>}
-                                  {u.role === "moderator" && <span className="admin-role-badge" style={{ background: "linear-gradient(135deg, #7FD8D0, #4DA8FF)" }}>Moderador</span>}
+                                  {u.role === "moderator" && <span className="admin-role-badge" style={{ background: "var(--ok)" }}>Moderador</span>}
                                   {u.banned && <span className="admin-role-badge banned-badge">Suspendido</span>}
                                 </p>
                                 <p className="admin-user-email">{u.email}</p>
@@ -1786,7 +1775,7 @@ export default function RopelinApp() {
                             {d.returnRequired && (
                               <p className="admin-dispute-reason">
                                 📦 Devolución pedida{d.returnMarkedSentAt ? ` — el comprador dice que ya la envió${d.returnTrackingCode ? ` (seguimiento: ${d.returnTrackingCode})` : ""}` : ", esperando a que el comprador la envíe"}
-                                {d.returnLabelUrl && <> · <a href={d.returnLabelUrl} target="_blank" rel="noreferrer" style={{ color: "#FF4D8D", fontWeight: 700 }}>etiqueta generada</a></>}
+                                {d.returnLabelUrl && <> · <a href={d.returnLabelUrl} target="_blank" rel="noreferrer" style={{ color: "var(--accent)", fontWeight: 700 }}>etiqueta generada</a></>}
                               </p>
                             )}
                             {d.stripeDisputeId && (
@@ -1876,7 +1865,7 @@ export default function RopelinApp() {
                             </p>
                             <p className="admin-user-meta">De @{m.user.username} ({m.user.email}) · {new Date(m.createdAt).toLocaleDateString("es-ES")}</p>
                             <p className="admin-dispute-reason">{m.message}</p>
-                            {m.adminReply && <p className="admin-dispute-reason" style={{ color: "#7FD8D0" }}>Tu respuesta: {m.adminReply}</p>}
+                            {m.adminReply && <p className="admin-dispute-reason" style={{ color: "var(--ok)" }}>Tu respuesta: {m.adminReply}</p>}
                             {m.status === "open" && (
                               <>
                                 <textarea
@@ -1989,7 +1978,7 @@ export default function RopelinApp() {
                         "Páginas legales indexables sin necesidad de JavaScript",
                         "Artículos borrados devuelven un 404 de verdad a Google",
                       ].map((text, i) => (
-                        <p key={i} className="seo-check-item"><CheckCircle size={14} color="#7FD8D0" /> {text}</p>
+                        <p key={i} className="seo-check-item"><CheckCircle size={14} color="var(--ok)" /> {text}</p>
                       ))}
                     </div>
                   </div>
@@ -3163,7 +3152,7 @@ export default function RopelinApp() {
         <div className="modal auth-modal" style={{ position: "static" }}>
           {resetDone ? (
             <div className="offer-sent">
-              <CheckCircle size={26} color="#7FD8D0" />
+              <CheckCircle size={26} color="var(--ok)" />
               <p>¡Contraseña actualizada!</p>
               <button className="submit-btn" onClick={() => navigate("/")}>Ir a Ropelin</button>
             </div>
@@ -3176,7 +3165,7 @@ export default function RopelinApp() {
                   <Lock size={14} />
                   <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
                 </div>
-                {resetError && <p style={{ color: "#FF4D8D", fontSize: 12, marginTop: 10 }}>{resetError}</p>}
+                {resetError && <p style={{ color: "var(--accent)", fontSize: 12, marginTop: 10 }}>{resetError}</p>}
                 <button className="submit-btn" type="submit">Guardar contraseña</button>
               </form>
             </>
@@ -3192,9 +3181,9 @@ export default function RopelinApp() {
         <style>{AUTH_PAGE_STYLES}</style>
         <div className="modal auth-modal" style={{ position: "static" }}>
           <div className="offer-sent">
-            {verifyStatus === "loading" && <><RefreshCw size={26} color="#9A9AA3" className="spin" /><p>Verificando...</p></>}
-            {verifyStatus === "ok" && <><CheckCircle size={26} color="#7FD8D0" /><p>¡Email confirmado!</p></>}
-            {verifyStatus === "error" && <><X size={26} color="#FF4D8D" /><p>Enlace no válido o caducado</p></>}
+            {verifyStatus === "loading" && <><RefreshCw size={26} color="var(--faint)" className="spin" /><p>Verificando...</p></>}
+            {verifyStatus === "ok" && <><CheckCircle size={26} color="var(--ok)" /><p>¡Email confirmado!</p></>}
+            {verifyStatus === "error" && <><X size={26} color="var(--accent)" /><p>Enlace no válido o caducado</p></>}
             <button className="submit-btn" onClick={() => navigate("/")}>Ir a Ropelin</button>
           </div>
         </div>
@@ -3207,7 +3196,7 @@ export default function RopelinApp() {
       <div style={{ minHeight: "100vh", background: "#FFF8EC", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{
           width: 40, height: 40, borderRadius: "50%", border: "3px solid #1A1A1A22",
-          borderTopColor: "#FF4D8D", animation: "soon-spin 0.7s linear infinite",
+          borderTopColor: "var(--accent)", animation: "soon-spin 0.7s linear infinite",
         }} />
         <style>{`@keyframes soon-spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -3216,46 +3205,47 @@ export default function RopelinApp() {
 
   if (platformSettings.maintenanceMode && !isModerator) {
     const comingSoonSteps = [
-      { color: "#FF4D8D", title: "Encuentra o publica un artículo", text: "Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio." },
-      { color: "#B49CE8", title: "Habla, oferta o compra directamente", text: "Pregunta al vendedor, haz una oferta más baja, o compra al precio marcado. El pago se hace dentro de Ropelin con Stripe — nunca por fuera, para que quede constancia de todo." },
-      { color: "#7FD8D0", title: "El vendedor envía o quedáis en persona", text: "Tras el pago, el vendedor genera una etiqueta de envío con un par de clics, o podéis quedar en persona si os viene mejor." },
-      { color: "#FFC24D", title: "Confirmas que lo has recibido", text: "En cuanto te llegue, confirmas la recepción desde tu perfil — así queda cerrado el pedido para las dos partes." },
-      { color: "#FF8A4D", title: "Valorad la compra", text: "Al confirmar la entrega, comprador y vendedor podéis valoraros mutuamente — así se construye la confianza de la comunidad." },
+      { color: "var(--accent)", title: "Encuentra o publica un artículo", text: "Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio." },
+      { color: "var(--sub)", title: "Habla, oferta o compra directamente", text: "Pregunta al vendedor, haz una oferta más baja, o compra al precio marcado. El pago se hace dentro de Ropelin con Stripe — nunca por fuera, para que quede constancia de todo." },
+      { color: "var(--ok)", title: "El vendedor envía o quedáis en persona", text: "Tras el pago, el vendedor genera una etiqueta de envío con un par de clics, o podéis quedar en persona si os viene mejor." },
+      { color: "var(--amber)", title: "Confirmas que lo has recibido", text: "En cuanto te llegue, confirmas la recepción desde tu perfil — así queda cerrado el pedido para las dos partes." },
+      { color: "var(--accent)", title: "Valorad la compra", text: "Al confirmar la entrega, comprador y vendedor podéis valoraros mutuamente — así se construye la confianza de la comunidad." },
     ];
 
     return (
       <div className="soon-page">
         <style>{`
           html, body { overflow-y: auto !important; height: auto !important; position: static !important; }
-          .soon-page { min-height: 100vh; background: #FFF8EC; font-family: Arial, Helvetica, sans-serif; color: #1A1A1A; overflow-y: auto; }
+          .soon-page { min-height: 100vh; background: var(--bg); font-family: var(--font-body); color: var(--text); overflow-y: auto; }
           .soon-header { display: flex; align-items: center; gap: 10px; padding: 22px 24px; max-width: 720px; margin: 0 auto; }
-          .soon-logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); border: 2px solid #1A1A1A; color: #1A1A1E; font-weight: 900; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+          .soon-logo { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); border: none; color: var(--on-accent); font-weight: 900; font-size: 16px; display: flex; align-items: center; justify-content: center; }
           .soon-header-name { font-size: 18px; font-weight: 900; margin: 0; }
           .soon-hero { max-width: 720px; margin: 0 auto; padding: 20px 24px 56px; text-align: center; }
           .soon-badge { display: inline-block; background: #1A1A1A; color: #FFF8EC; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 16px; border-radius: 999px; margin-bottom: 20px; }
           .soon-title { font-size: 34px; font-weight: 900; line-height: 1.15; margin: 0 0 14px; }
-          .soon-title .accent { background: linear-gradient(135deg, #FF4D8D, #B49CE8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-          .soon-subtitle { font-size: 15px; color: #5A5450; line-height: 1.55; max-width: 480px; margin: 0 auto 28px; }
+          .soon-title .accent { background: var(--accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+          .soon-subtitle { font-size: 15px; color: var(--sub); line-height: 1.55; max-width: 480px; margin: 0 auto 28px; }
           .soon-form { display: flex; gap: 10px; max-width: 420px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
-          .soon-form input { flex: 1; min-width: 220px; border: 2px solid #1A1A1A; border-radius: 12px; padding: 13px 16px; font-size: 16px; font-family: inherit; background: #fff; color: #1A1A1A; }
-          .soon-form input:focus { outline: none; border-color: #FF4D8D; }
-          .soon-form button { border: 2px solid #1A1A1A; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #1A1A1A; border-radius: 12px; padding: 13px 22px; font-weight: 900; font-size: 13.5px; cursor: pointer; font-family: inherit; white-space: nowrap; }
-          .soon-success { display: inline-flex; align-items: center; gap: 8px; color: #04342C; background: #7FD8D0; border: 2px solid #1A1A1A; border-radius: 12px; padding: 13px 20px; font-weight: 800; font-size: 13.5px; }
+          .soon-form input { flex: 1; min-width: 220px; border: 1px solid var(--border); border-radius: 12px; padding: 13px 16px; font-size: 16px; font-family: inherit; background: var(--card); color: var(--text); }
+          .soon-form input:focus { outline: none; border-color: var(--accent); }
+          .soon-form button { border: 1px solid var(--border); background: var(--accent); color: var(--on-accent); border-radius: 12px; padding: 13px 22px; font-weight: 900; font-size: 13.5px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+          .soon-success { display: inline-flex; align-items: center; gap: 8px; color: var(--ok-ink); background: var(--ok-soft); border: 1px solid var(--border); border-radius: 12px; padding: 13px 20px; font-weight: 800; font-size: 13.5px; }
           .soon-section { max-width: 720px; margin: 0 auto; padding: 0 24px 56px; }
           .soon-section-title { font-size: 22px; font-weight: 900; text-align: center; margin: 0 0 28px; }
           .soon-steps { display: flex; flex-direction: column; gap: 12px; }
-          .soon-step-card { display: flex; align-items: flex-start; gap: 14px; background: #fff; border: 2.5px solid #1A1A1A; border-radius: 16px; padding: 16px 18px; }
-          .soon-step-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: #1A1A1A; border: 2px solid #1A1A1A; flex-shrink: 0; }
+          .soon-step-card { display: flex; align-items: flex-start; gap: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; }
+          .soon-step-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: #fff; border: none; flex-shrink: 0; }
+          .soon-step-num[style*="--amber"] { color: var(--amber-ink); }
           .soon-step-title { font-size: 14px; font-weight: 800; margin: 0 0 4px; }
-          .soon-step-text { font-size: 13px; color: #5A5450; line-height: 1.5; margin: 0; }
-          .soon-footer { text-align: center; padding: 24px; color: #8A7FA0; font-size: 12px; }
-          .soon-admin-link { background: none; border: none; color: #8A7FA0; font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer; font-family: inherit; margin-top: 10px; }
-          .soon-admin-title { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #8A7FA0; margin: 20px 0 0; }
+          .soon-step-text { font-size: 13px; color: var(--sub); line-height: 1.5; margin: 0; }
+          .soon-footer { text-align: center; padding: 24px; color: var(--sub); font-size: 12px; }
+          .soon-admin-link { background: none; border: none; color: var(--sub); font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer; font-family: inherit; margin-top: 10px; }
+          .soon-admin-title { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--sub); margin: 20px 0 0; }
           .soon-google-btn { display: flex; justify-content: center; margin-top: 10px; }
-          .soon-or-divider { font-size: 11px; color: #8A7FA0; text-align: center; margin: 10px 0 0; }
+          .soon-or-divider { font-size: 11px; color: var(--sub); text-align: center; margin: 10px 0 0; }
           .soon-login-form { display: flex; flex-direction: column; gap: 8px; max-width: 280px; margin: 10px auto 0; }
-          .soon-login-form input { border: 2px solid #1A1A1A; border-radius: 10px; padding: 10px 12px; font-size: 16px; font-family: inherit; background: #fff; color: #1A1A1A; }
-          .soon-login-form button { border: 2px solid #1A1A1A; background: #1A1A1A; color: #FFF8EC; border-radius: 10px; padding: 10px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; }
+          .soon-login-form input { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 16px; font-family: inherit; background: var(--card); color: var(--text); }
+          .soon-login-form button { border: 1px solid var(--border); background: #1A1A1A; color: #FFF8EC; border-radius: 10px; padding: 10px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; }
           @media (max-width: 480px) { .soon-title { font-size: 27px; } .soon-form { flex-direction: column; } .soon-form input, .soon-form button { width: 100%; } }
         `}</style>
 
@@ -3292,7 +3282,7 @@ export default function RopelinApp() {
                 />
                 <button type="submit">Avísame</button>
               </form>
-              {newsletterError && <p style={{ color: "#FF4D8D", fontSize: 12.5, fontWeight: 700, marginTop: 10 }}>{newsletterError}</p>}
+              {newsletterError && <p style={{ color: "var(--accent)", fontSize: 12.5, fontWeight: 700, marginTop: 10 }}>{newsletterError}</p>}
             </>
           )}
         </div>
@@ -3350,7 +3340,7 @@ export default function RopelinApp() {
                   value={maintenanceLoginPassword}
                   onChange={(e) => setMaintenanceLoginPassword(e.target.value)}
                 />
-                {maintenanceLoginError && <p style={{ color: "#FF4D8D", fontSize: 12, fontWeight: 700, margin: "-2px 0 2px" }}>{maintenanceLoginError}</p>}
+                {maintenanceLoginError && <p style={{ color: "var(--accent)", fontSize: 12, fontWeight: 700, margin: "-2px 0 2px" }}>{maintenanceLoginError}</p>}
                 <button type="submit">Entrar</button>
               </form>
             </>
@@ -3360,1113 +3350,11 @@ export default function RopelinApp() {
     );
   }
 
-  return (
-    <div className="app">
-      {!cookieChoice && (
-        <div className="cookie-banner">
-          <p>
-            Usamos cookies propias y de terceros para que la web funcione, recordar tu sesión y entender cómo la usas.{" "}
-            <button className="cookie-link" onClick={() => openLegal("cookies")}>Más información</button>
-          </p>
-          <div className="cookie-actions">
-            <button className="btn ghost" onClick={() => handleCookieChoice("rejected")}>Solo necesarias</button>
-            <button className="btn primary" onClick={() => handleCookieChoice("accepted")}>Aceptar todo</button>
-          </div>
-        </div>
-      )}
-      <Toaster
-        position="bottom-center"
-        toastOptions={{
-          style: theme === "light"
-            ? { background: "#FFFFFF", color: "#1A1A1A", border: "2px solid #1A1A1A", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: "13px", fontWeight: 600 }
-            : { background: "#1A1A1E", color: "#F2F2F0", border: "1px solid #29292f", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: "13px" },
-          success: { iconTheme: { primary: "#7FD8D0", secondary: theme === "light" ? "#1A1A1A" : "#1A1A1E" } },
-          error: { iconTheme: { primary: "#FF4D8D", secondary: theme === "light" ? "#1A1A1A" : "#1A1A1E" } },
-        }}
-      />
-      <style>{`
-        :root {
-          --bg: #1C1620; --bg-translucent: #1C1620ee; --card: #26202B; --card-alt: #221C26; --surface: #322A38; --surface2: #2C2530;
-          --border: #3D3542; --input-border: #4A414F; --text: #FFF8EC; --body: #E4D9EA; --sub: #B8A9C9; --faint: #8A7FA0;
-          --shimmer-highlight: #423851;
-        }
-        [data-theme="light"] {
-          --bg: #FFF8EC; --bg-translucent: #FFF8ECee; --card: #FFFFFF; --card-alt: #FFF3D6; --surface: #F5EFE0; --surface2: #FFF3D6;
-          --border: #1A1A1A; --input-border: #1A1A1A; --text: #1A1A1A; --body: #2E2A22; --sub: #8A7FA0; --faint: #B8A9C9;
-          --shimmer-highlight: #FFFFFF;
-        }
-        * { box-sizing: border-box; }
-        html, body { overflow-x: hidden; margin: 0; background: var(--bg); }
-        .app { min-height: 100vh; max-width: 100vw; overflow-x: hidden; background: var(--bg); color: var(--text); font-family: 'Helvetica Neue', Arial, sans-serif; }
-        header.top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; padding: 16px 20px; position: sticky; top: 0; background: var(--bg-translucent); backdrop-filter: blur(6px); z-index: 5; }
-        .brand { display: flex; align-items: center; gap: 8px; }
-        .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: #FF8A4D; border: 2px solid #1A1A1A; display: flex; align-items: center; justify-content: center; }
-        .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
-        .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-        .mobile-bottom-nav { display: none; }
-        .ios-install-banner {
-          position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
-          z-index: 95; background: var(--card); border: 2.5px solid var(--border); border-radius: 18px;
-          padding: 12px 14px; display: flex; align-items: center; gap: 12px;
-          box-shadow: 0 10px 28px rgba(0,0,0,0.18); animation: ios-banner-up .25s ease;
-        }
-        @keyframes ios-banner-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .ios-install-icon { width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; border: 2px solid var(--border); }
-        .ios-install-text { flex: 1; min-width: 0; }
-        .ios-install-title { font-size: 13.5px; font-weight: 800; color: var(--text); margin: 0 0 2px; }
-        .ios-install-steps { font-size: 12px; color: var(--sub); margin: 0; line-height: 1.4; }
-        .ios-install-close { background: var(--surface2); border: 2px solid var(--border); color: var(--text); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; align-self: flex-start; }
-        @media (max-width: 780px) {
-          .ios-install-banner { bottom: calc(70px + env(safe-area-inset-bottom)); }
-        }
-        @media (max-width: 780px) {
-          .hide-on-mobile-nav { display: none !important; }
-          .mobile-bottom-nav {
-            display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
-            background: var(--card); border-top: 1px solid var(--border); padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
-            justify-content: space-around; align-items: center;
-          }
-          .mobile-bottom-nav button {
-            background: none; border: none; color: var(--sub); display: flex; flex-direction: column; align-items: center;
-            gap: 3px; font-size: 10px; font-family: inherit; cursor: pointer; padding: 4px 8px; position: relative; flex: 1;
-          }
-          .mobile-nav-sell {
-            background: linear-gradient(135deg, #FF4D8D, #FF7A45) !important; color: var(--bg) !important; border-radius: 50%;
-            width: 46px; height: 46px; flex: none !important; margin-top: -18px; box-shadow: 0 6px 16px rgba(255,77,109,0.4);
-          }
-          .mobile-nav-sell span { display: none; }
-          .bottom-nav-avatar { width: 20px; height: 20px; font-size: 10px; margin: 0; }
-          .bottom-nav-dot { position: absolute; top: -2px; right: 10px; }
-          body { padding-bottom: 62px; }
-        }
-        .more-menu-wrap { position: relative; }
-        .more-menu-backdrop { position: fixed; inset: 0; z-index: 59; }
-        .more-menu-panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 6px; min-width: 190px; box-shadow: 0 12px 32px rgba(0,0,0,0.4); display: flex; flex-direction: column; }
-        .more-menu-panel button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; background: none; border: none; color: var(--text); font-size: 13.5px; font-family: inherit; border-radius: 8px; cursor: pointer; text-align: left; position: relative; }
-        .more-menu-panel button:hover { background: var(--border); }
-        .notif-dot.inline { position: static; margin-left: auto; }
-        @media (max-width: 640px) {
-          .btn-label { display: none; }
-          .league-btn, .admin-panel-btn, .top-actions > .btn.ghost:not(.league-btn):not(.admin-panel-btn) { width: 36px; height: 36px; padding: 0; border-radius: 50%; justify-content: center; }
-        }
-        .badge { font-size: 12px; background: var(--surface2); border: 1px solid var(--input-border); padding: 6px 12px; border-radius: 20px; color: #7FD8D0; }
-        .profile-badge { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text); }
-        .mini-avatar { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--bg); }
-        .profile-modal { max-width: 400px; padding: 0; }
-        .profile-top-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
-        .icon-round-btn { background: var(--surface2); border: 2px solid var(--border); color: var(--text); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .profile-content { padding: 10px 22px 24px; text-align: center; position: relative; z-index: 2; }
-        .profile-avatar-lg { width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: var(--bg); margin: 0 auto 10px; border: 5px solid var(--card); box-shadow: 0 0 0 2px var(--border), 0 4px 14px rgba(0,0,0,0.45); position: relative; z-index: 2; }
-        .edit-avatar-row { display: flex; align-items: center; gap: 14px; margin: 14px 0 6px; }
-        .profile-name { font-size: 18px; font-weight: 700; margin: 0; }
-        .profile-sub { font-size: 12px; color: var(--sub); margin: 4px 0 14px; display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .profile-quick-actions { display: flex; justify-content: center; gap: 8px; margin: 4px 0 16px; }
-        .edit-profile-btn { border: 1px solid var(--input-border); background: var(--surface2); color: var(--body); border-radius: 20px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .about-me-box { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: left; background: var(--card); border: 2px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
-        .about-me-heading { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--faint); margin: 0 0 8px; }
-        .about-me-line { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); margin: 0 0 6px; }
-        .about-me-line:last-child { margin-bottom: 0; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .edit-profile-btn:hover { border-color: #7FD8D0; color: #7FD8D0; }
-        .sheet-overlay { align-items: flex-end; padding: 0; }
-        .sheet-modal { width: 100%; max-width: 480px; margin: 0 auto; background: var(--card); border-radius: 20px 20px 0 0; border: 2.5px solid var(--border); border-bottom: none; padding: 10px 20px 24px; max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column; animation: sheet-up .2s ease; }
-        @keyframes sheet-up { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .sheet-handle { width: 36px; height: 4px; border-radius: 4px; background: var(--input-border); margin: 0 auto 14px; }
-        .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-        .sheet-box-note { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--sub); background: var(--card-alt); border: 2px solid var(--border); border-radius: 10px; padding: 8px 10px; margin: -4px 0 14px; line-height: 1.4; }
-        .sheet-box-note svg { flex-shrink: 0; }
-        .sheet-title { font-size: 16px; font-weight: 800; margin: 0; }
-        .sheet-loading { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 30px 0; color: var(--faint); font-size: 13px; }
-        .sheet-loading .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .sheet-rate-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-        .sheet-rate-card { display: flex; align-items: center; gap: 10px; width: 100%; background: var(--surface2); border: 2px solid var(--border); border-radius: 14px; padding: 12px 14px; cursor: pointer; font-family: inherit; color: var(--body); text-align: left; }
-        .sheet-rate-card.selected { border-color: #FF4D8D; background: #FF4D8D14; }
-        .sheet-rate-card:disabled { opacity: 0.5; cursor: default; }
-        .locker-search-row { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
-        .locker-location-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border: 2px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 12px; padding: 11px; font-weight: 800; font-size: 12.5px; cursor: pointer; font-family: inherit; margin-bottom: 8px; }
-        .locker-location-btn:disabled { opacity: 0.5; cursor: default; }
-        .locker-or-divider { text-align: center; font-size: 11px; color: var(--faint); margin: 0 0 12px; }
-        .locker-map { width: 100%; height: 200px; flex-shrink: 0; border-radius: 14px; border: 2px solid var(--border); margin-bottom: 14px; overflow: hidden; }
-        .locker-map .leaflet-popup-content-wrapper { border-radius: 12px; border: 2px solid #1A1A1A; }
-        .sheet-rate-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--sub); }
-        .sheet-rate-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-        .sheet-rate-provider { font-size: 13px; font-weight: 800; text-transform: capitalize; }
-        .sheet-rate-meta { font-size: 11px; color: var(--faint); }
-        .sheet-rate-price { font-size: 14px; font-weight: 800; color: #04342C; background: #7FD8D0; padding: 2px 8px; border-radius: 8px; white-space: nowrap; display: inline-block; }
-        .sheet-rate-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--input-border); flex-shrink: 0; }
-        .sheet-rate-radio.on { border-color: #FF4D8D; background: #FF4D8D; box-shadow: inset 0 0 0 3px var(--card); }
-        .sheet-confirm-btn { width: 100%; }
-        .settings-sheet { max-height: 85vh; }
-        .settings-scroll { overflow-y: auto; }
-        .settings-avatar-row { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; }
-        .settings-avatar { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 24px; color: var(--bg); }
-        .settings-subheading { font-size: 13px; font-weight: 700; margin: 0 0 10px; color: var(--text); }
-        .settings-menu-list { border-top: 1px solid var(--border); padding-top: 6px; }
-        .stats-row { display: flex; gap: 10px; margin-bottom: 18px; }
-        .stat-box { flex: 1; background: var(--bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .stat-box-clickable { font-family: inherit; cursor: pointer; transition: transform .1s ease, background .15s ease; }
-        .stat-box-clickable:hover { background: var(--card-alt); }
-        .stat-box-clickable:active { transform: scale(0.97); }
-        .stat-box strong { color: var(--text); }
-        .stat-box span { color: var(--sub); }
-        .stat-box strong { display: block; font-size: 18px; }
-        .stat-box span { font-size: 10px; color: var(--sub); text-transform: uppercase; letter-spacing: .5px; }
-        .profile-tabs { margin-bottom: 16px; }
-        .profile-menu-list { margin-bottom: 10px; }
-        .profile-desktop-flex { display: flex; flex-direction: column; gap: 20px; }
-        .profile-desktop-content { min-width: 0; }
-        @media (min-width: 780px) {
-          .profile-desktop-flex.has-sidebar { flex-direction: row; align-items: flex-start; }
-          .profile-desktop-flex.has-sidebar .profile-sidebar-menu { flex: 0 0 200px; position: sticky; top: 20px; }
-          .profile-desktop-flex.has-sidebar .profile-desktop-content { flex: 1; }
-        }
-        .profile-sidebar-menu { display: flex; flex-direction: column; }
-        .admin-sidebar-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; color: #8C7CFF; margin: 0 0 10px 12px; }
-        .seo-stat-row { display: flex; gap: 10px; }
-        .seo-link-list { display: flex; flex-direction: column; gap: 8px; }
-        .seo-link-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 11px 14px; font-size: 13px; font-weight: 600; color: var(--text); text-decoration: none; }
-        .seo-link-row:hover { border-color: #FF4D8D; }
-        .seo-link-arrow { color: var(--sub); }
-        .seo-check-list { display: flex; flex-direction: column; gap: 9px; }
-        .seo-check-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--body); margin: 0; }
-        .admin-mobile-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 6px; }
-        .admin-mobile-tab { flex-shrink: 0; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 20px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: var(--body); white-space: nowrap; }
-        .admin-mobile-tab.active { background: #17171A; color: #FFF8EC; border-color: #17171A; }
-        .profile-sidebar-item { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; border-radius: 12px; padding: 11px 12px; margin-bottom: 4px; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--body); text-align: left; }
-        .profile-sidebar-item:hover { background: var(--card); }
-        .profile-sidebar-item.active { background: var(--card); color: var(--text); border: 1px solid var(--border); }
-        .profile-menu-section-title { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--faint); font-weight: 700; margin: 18px 0 8px; }
-        .profile-menu-section-title:first-child { margin-top: 0; }
-        .profile-menu-row { display: flex; align-items: center; gap: 12px; width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 13px 14px; margin-bottom: 8px; cursor: pointer; font-family: inherit; color: var(--text); }
-        .profile-menu-icon { width: 30px; height: 30px; border-radius: 10px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--sub); }
-        .profile-menu-label { flex: 1; text-align: left; font-size: 13.5px; font-weight: 600; }
-        .profile-menu-row svg:last-child { color: var(--faint); flex-shrink: 0; }
-        .profile-quick-card { display: flex; align-items: center; gap: 12px; width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; font-family: inherit; text-align: left; }
-        .profile-quick-card .avatar-mini { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; flex-shrink: 0; }
-        .profile-quick-card-name { font-size: 14px; font-weight: 700; color: var(--text); margin: 0; }
-        .profile-quick-card-sub { font-size: 12px; color: var(--sub); margin: 2px 0 0; }
-        .profile-badges-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
-        .profile-badges-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-        .profile-badges-count { font-size: 12.5px; color: var(--faint); font-weight: 600; }
-        .profile-badges-bar { height: 6px; border-radius: 999px; background: var(--surface); overflow: hidden; }
-        .profile-badges-bar-fill { height: 100%; background: linear-gradient(90deg, #FF4D8D, #FF8A4D); border-radius: 999px; }
-        .empty-tab { font-size: 12px; color: var(--faint); padding: 20px 0; }
-        .empty-state-cta { text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 30px 20px; }
-        .empty-state-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--surface); color: var(--sub); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
-        .empty-state-title { font-size: 14px; font-weight: 700; color: var(--text); margin: 0 0 4px; }
-        .empty-state-text { font-size: 12.5px; color: var(--sub); margin: 0 0 16px; }
-        .empty-state-cta .btn.primary { display: inline-flex; align-items: center; gap: 6px; }
-        .mini-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; text-align: left; }
-        .mini-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
-        .mini-row .mini-card { flex: 0 0 160px; }
-        .related-heading { margin-top: 20px; }
-        .mini-card { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; transition: transform .12s ease, border-color .12s ease; }
-        .mini-card:hover { transform: translateY(-2px); border-color: #7FD8D055; }
-        .profile-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); margin: 4px 0 10px; }
-        .mini-card.sold { opacity: 0.6; }
-        .mini-swatch { height: 60px; position: relative; }
-        .mini-featured-badge { position: absolute; top: 4px; left: 4px; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: var(--bg); font-size: 8px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 6px; }
-        .mini-title { font-size: 12px; font-weight: 600; margin: 8px 10px 2px; }
-        .mini-price { font-size: 12px; font-weight: 700; color: #7FD8D0; margin: 0 10px 10px; }
-        .own-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .own-grid-item { display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
-        .own-grid-item-sold { cursor: default; opacity: 0.55; }
-        .own-grid-photo { position: relative; aspect-ratio: 1 / 1; border-radius: 14px; background-size: cover; background-position: center; background-color: var(--surface); overflow: hidden; border: 2.5px solid var(--border); }
-        .own-grid-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 8px 6px; background: linear-gradient(to top, #000000CC, transparent); }
-        .own-grid-title { color: #fff; font-size: 11px; font-weight: 600; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .own-grid-price { color: #7FD8D0; font-size: 12px; font-weight: 800; margin: 0; }
-        .own-grid-featured { position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: var(--bg); display: flex; align-items: center; justify-content: center; }
-        .own-grid-sold-tag { position: absolute; top: 6px; left: 6px; background: #1A1A1E; border: 1px solid #ffffff33; color: #fff; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; padding: 3px 7px; border-radius: 7px; }
-        .own-grid-actions { display: flex; gap: 5px; }
-        .own-grid-actions button { flex: 1; height: 26px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--input-border); display: flex; align-items: center; justify-content: center; color: var(--sub); cursor: pointer; }
-        .own-grid-actions button:hover { border-color: #FF4D8D; color: #FF4D8D; }
-        button { transition: transform .1s ease, opacity .1s ease; }
-        button:active { transform: scale(0.96); }
-        .btn { display: flex; align-items: center; gap: 6px; border: none; border-radius: 20px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .btn.primary { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); }
-        .btn.ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--input-border); }
-        .admin-toggle { display: flex; align-items: center; gap: 6px; border: 1px solid var(--input-border); background: var(--surface2); color: var(--sub); border-radius: 20px; padding: 9px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .admin-toggle.on { background: linear-gradient(135deg, #8C7CFF, #4DA8FF); color: var(--bg); border-color: transparent; }
-        .admin-delete-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 10px; border: 1px solid #FF4D8D55; background: #FF4D8D15; color: #FF4D8D; border-radius: 14px; padding: 11px; font-weight: 600; font-size: 12px; cursor: pointer; font-family: inherit; }
-        .admin-delete-btn:hover { background: #FF4D8D25; }
-
-        .hero { padding: 46px 26px 10px; max-width: 640px; }
-        .hero h2 { font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; margin: 0 0 10px; }
-        .hero span.accent { background: linear-gradient(135deg, #FF4D8D, #8C7CFF); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .hero p { color: var(--sub); font-size: 14px; }
-
-        .search-row { padding: 20px 26px 4px; display: flex; gap: 10px; align-items: center; }
-        .filter-toggle-btn { flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--input-border); color: var(--sub); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color .15s ease, color .15s ease; }
-        .filter-toggle-btn:disabled { opacity: 0.6; cursor: default; }
-        .photo-search-banner { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; margin: 0 26px 14px; font-size: 12.5px; color: var(--body); }
-        .photo-search-banner strong { color: var(--text); }
-        .photo-search-banner button { margin-left: auto; display: flex; align-items: center; gap: 4px; background: none; border: none; color: var(--sub); font-size: 12px; cursor: pointer; font-family: inherit; }
-        .photo-search-banner button:hover { color: #FF4D8D; }
-        @media (max-width: 640px) { .photo-search-banner { margin: 0 16px 14px; } }
-        .filter-toggle-btn.active { border-color: #FF4D8D; color: #FF4D8D; background: #FF4D8D14; }
-        .filter-panel { margin: 10px 26px 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-        .filter-panel-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .filter-panel-row label { font-size: 12.5px; font-weight: 600; color: var(--body); flex-shrink: 0; }
-        .filter-panel-row select { background: var(--bg); border: 1px solid var(--input-border); color: var(--text); border-radius: 10px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
-        .filter-price-inputs { display: flex; align-items: center; gap: 6px; }
-        .filter-price-inputs input { width: 68px; background: var(--bg); border: 1px solid var(--input-border); color: var(--text); border-radius: 10px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
-        .filter-price-inputs span { color: var(--faint); }
-        .filter-clear-btn { background: none; border: none; color: #FF4D8D; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; align-self: flex-start; display: flex; align-items: center; gap: 6px; }
-        .saved-searches-list { display: flex; flex-direction: column; gap: 6px; }
-        .saved-search-chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; }
-        .saved-search-chip span { font-size: 12px; color: var(--body); cursor: pointer; }
-        .saved-search-chip button { background: none; border: none; color: var(--faint); cursor: pointer; display: flex; padding: 2px; }
-        .filter-location-prompt { display: flex; align-items: center; gap: 6px; background: #7FD8D014; border: 1px solid #7FD8D033; color: #7FD8D0; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: 10px; cursor: pointer; font-family: inherit; }
-        .cat-scroll { display: flex; gap: 8px; padding: 14px 26px 6px; overflow-x: auto; scrollbar-width: none; }
-        .cat-scroll::-webkit-scrollbar { display: none; }
-        .cat-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; font-family: inherit; flex-shrink: 0; color: var(--sub); width: 68px; }
-        .cat-icon-wrap { width: 52px; height: 52px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 18px; transition: border-color .15s ease, transform .15s ease; }
-        .cat-circle span:last-child { font-size: 10.5px; font-weight: 600; text-align: center; line-height: 1.25; }
-        .cat-circle.active { color: var(--text); }
-        .cat-circle.active .cat-icon-wrap { border-color: #FF4D8D; background: linear-gradient(135deg, #FF4D8D33, #FF8A4D33); transform: translateY(-2px); }
-        .cat-circle.active .cat-icon-wrap.forYou { border-color: #FF4D8D; }
-        .cat-circle:hover .cat-icon-wrap { border-color: #4A4A52; }
-        .search-box { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--input-border); border-radius: 20px; padding: 10px 16px; flex: 1; min-width: 200px; }
-        .search-box-wrap { position: relative; }
-        .search-suggestions { position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; box-shadow: 0 16px 40px -16px rgba(0,0,0,0.35); overflow: hidden; z-index: 20; }
-        .search-suggestion-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 14px; background: none; border: none; border-bottom: 1px solid var(--border); cursor: pointer; text-align: left; font-family: inherit; }
-        .search-suggestion-row:last-child { border-bottom: none; }
-        .search-suggestion-row:hover { background: var(--surface2); }
-        .search-suggestion-thumb { width: 34px; height: 34px; border-radius: 8px; background-size: cover; background-position: center; flex-shrink: 0; background-color: var(--bg); }
-        .search-suggestion-text { display: flex; flex-direction: column; min-width: 0; }
-        .search-suggestion-title { font-size: 12.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .search-suggestion-price { font-size: 11px; color: var(--sub); font-weight: 700; }
-        .search-box input { border: none; outline: none; background: transparent; color: var(--text); font-size: 16px; width: 100%; font-family: inherit; }
-        .chip { border: 1px solid var(--input-border); background: var(--surface2); color: var(--body); border-radius: 20px; padding: 8px 14px; font-size: 12px; cursor: pointer; font-family: inherit; }
-        .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
-        select.chip { appearance: none; }
-
-        .two-col { display: flex; gap: 14px; padding: 10px 20px 110px; align-items: flex-start; }
-
-        @media (min-width: 780px) {
-          header.top, .hero, .search-row, .cat-scroll, .two-col {
-            max-width: 1300px; margin-left: auto; margin-right: auto; width: 100%;
-          }
-          header.top { border-radius: 0 0 20px 20px; }
-        }
-        @media (min-width: 1500px) {
-          header.top, .hero, .search-row, .cat-scroll, .two-col {
-            max-width: 1600px;
-          }
-        }
-
-        .col { flex: 1; min-width: 0; max-width: 300px; display: flex; flex-direction: column; gap: 14px; }
-        .card { background: var(--card); border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; border: 3px solid var(--border); }
-        .card:hover { transform: translateY(-4px); border-color: #FF4D8D55; box-shadow: 0 12px 30px -14px #FF4D8D33; }
-        .card-media { height: 150px; position: relative; flex-shrink: 0; overflow: hidden; background: var(--surface2); }
-        .card-media-img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
-        .heart { border: none; background: #00000055; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; position: absolute; top: 10px; right: 10px; }
-        .new-ribbon { position: absolute; top: 10px; left: 10px; background: #7FD8D0; color: var(--bg); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 10px; z-index: 2; }
-        .featured-ribbon { position: absolute; left: 10px; background: linear-gradient(135deg, #FFC24D, #FF8A4D); color: var(--bg); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 4px 9px; border-radius: 10px; z-index: 2; }
-        .card-sold .card-media { filter: grayscale(0.6) brightness(0.55); }
-        .card-sold .card-info { opacity: 0.6; }
-        .item-shipping-box { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
-        .sold-ribbon { position: absolute; top: 12px; left: 50%; transform: translateX(-50%) rotate(-6deg); background: #1A1A1E; border: 1px solid #ffffff33; color: #fff; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 5px 16px; border-radius: 8px; z-index: 2; }
-        .price-pill { position: absolute; bottom: 10px; left: 10px; background: #7FD8D0; border: 2px solid var(--border); border-radius: 14px; padding: 4px 10px; font-size: 13px; font-weight: 800; z-index: 2; color: #04342C; }
-        .card-info { padding: 12px 14px 14px; height: 96px; display: flex; flex-direction: column; justify-content: flex-start; overflow: hidden; }
-        .card-info h3 { font-size: 14px; margin: 0 0 4px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 35px; }
-        .card-info p { font-size: 12px; color: var(--sub); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-city { display: flex; align-items: center; gap: 3px; margin-top: 3px !important; font-size: 10px !important; color: var(--faint) !important; }
-        .chip.forYou.active { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); border-color: transparent; }
-        .sort-chip { min-width: 150px; }
-        .price-filter { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--body); background: var(--surface2); border: 1px solid var(--input-border); border-radius: 20px; padding: 7px 14px; }
-        .price-filter input[type=range] { width: 90px; accent-color: #FF4D8D; }
-        .follow-btn { display: flex; align-items: center; gap: 5px; border: 1px solid var(--input-border); background: var(--bg); color: var(--body); border-radius: 12px; padding: 7px 11px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
-        .follow-btn.on { background: linear-gradient(135deg, #7FD8D0, #4DA8FF); color: var(--bg); border-color: transparent; }
-        .offer-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1.5px solid #FFC24D; background: #FFC24D22; color: #FFC24D; border-radius: 14px; padding: 11px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
-        .offer-modal { max-width: 340px; }
-        .offer-sent { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 0; font-weight: 700; }
-        .league-btn { position: relative; }
-        .league-modal { max-width: 400px; }
-        .admin-modal { max-width: 560px; max-height: 84vh; overflow-y: auto; padding: 30px; }
-        .admin-panel-btn { color: #8C7CFF; border-color: #8C7CFF55; }
-        .admin-summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; margin-top: 14px; }
-        .admin-summary-box { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 8px; text-align: center; }
-        .admin-summary-box strong { display: block; font-size: 16px; font-weight: 800; color: var(--text); }
-        .admin-summary-box span { font-size: 10px; color: var(--sub); }
-        .admin-menu-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .admin-menu-item { display: flex; align-items: center; gap: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; cursor: pointer; font-family: inherit; text-align: left; transition: border-color .15s ease, background .15s ease; }
-        .admin-menu-item:hover { border-color: #8C7CFF55; background: #17171c; }
-        .admin-menu-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; color: #8C7CFF; flex-shrink: 0; }
-        .admin-menu-label { flex: 1; font-size: 14.5px; font-weight: 700; }
-        .admin-menu-badge { background: #FF4D8D; color: var(--text); font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 10px; }
-        .admin-menu-arrow { color: var(--faint); font-size: 18px; }
-        .admin-back-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-        .admin-user-list { display: flex; flex-direction: column; gap: 12px; max-height: 440px; overflow-y: auto; margin-top: 16px; padding-right: 4px; }
-        .admin-user-row { display: flex; align-items: center; gap: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
-        .admin-user-info { flex: 1; min-width: 0; }
-        .admin-user-name { font-size: 13.5px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px; }
-        .admin-username-edit-btn { display: flex; align-items: center; justify-content: center; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 3px; color: var(--sub); cursor: pointer; }
-        .admin-username-edit-btn:hover { color: #FF4D8D; border-color: #FF4D8D; }
-        .admin-role-badge { background: linear-gradient(135deg, #8C7CFF, #4DA8FF); color: var(--bg); font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 2px 7px; border-radius: 8px; }
-        .admin-user-email { font-size: 11.5px; color: var(--sub); margin: 3px 0; }
-        .admin-user-meta { font-size: 11px; color: var(--faint); margin: 0; line-height: 1.5; }
-        .admin-user-date { font-size: 10px; color: var(--faint); flex-shrink: 0; white-space: nowrap; }
-        .admin-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
-        .admin-stat-box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 5px; }
-        .admin-stat-box strong { font-size: 21px; font-weight: 800; }
-        .admin-stat-box span { font-size: 11.5px; color: var(--sub); }
-        .admin-stat-box.highlight { border-color: #7FD8D055; background: #7FD8D010; }
-        .admin-stat-box.highlight strong { color: #7FD8D0; }
-        .admin-stat-box.total { grid-column: 1 / -1; border-color: #FFC24D55; background: #FFC24D10; }
-        .admin-stat-box.total strong { color: #FFC24D; font-size: 26px; }
-        .admin-stat-box.warning { grid-column: 1 / -1; border-color: #FF4D8D55; background: #FF4D8D10; }
-        .admin-stat-box.warning strong { color: #FF4D8D; }
-        .admin-dispute-row { background: var(--bg); border: 1px solid #FF4D8D33; border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
-        .admin-dispute-reason { font-size: 12px; color: var(--body); font-style: italic; margin: 8px 0; line-height: 1.5; }
-        .admin-dispute-evidence { width: 100%; max-width: 220px; border-radius: 10px; border: 1.5px solid var(--border); margin: 6px 0; cursor: pointer; display: block; }
-        .admin-dispute-seller-response { font-size: 12px; color: var(--body); background: var(--card-alt); border-radius: 10px; padding: 8px 12px; margin: 8px 0; line-height: 1.5; }
-        .admin-dispute-flag { font-size: 11.5px; color: #854F0B; background: #FAEEDA; border-radius: 8px; padding: 6px 10px; margin: 6px 0; font-weight: 700; }
-        .admin-dispute-chat { margin: 8px 0; font-size: 11.5px; }
-        .admin-dispute-chat summary { cursor: pointer; color: var(--sub); font-weight: 700; }
-        .admin-dispute-chat-msg { color: var(--body); margin: 6px 0 0; padding-left: 8px; border-left: 2px solid var(--border); line-height: 1.4; }
-        .seller-dispute-box { background: #FF4D8D14; border: 1.5px solid #FF4D8D55; border-radius: 14px; padding: 14px 16px; margin: 10px 0; }
-        .dispute-evidence-preview { position: relative; margin-top: 8px; }
-        .dispute-evidence-preview img { width: 100%; max-height: 160px; object-fit: cover; border-radius: 10px; border: 1.5px solid var(--border); }
-        .dispute-evidence-preview button { margin-top: 6px; }
-        .dispute-evidence-upload { display: flex; align-items: center; justify-content: center; gap: 6px; border: 1.5px dashed var(--input-border); border-radius: 12px; padding: 12px; font-size: 12.5px; color: var(--faint); cursor: pointer; margin-top: 8px; }
-        .dispute-evidence-upload:hover { border-color: #FF4D8D88; color: #FF4D8D; }
-        .admin-refund-btn { width: 100%; margin-top: 10px; padding: 10px; font-size: 12.5px; }
-        .admin-search-row { display: flex; gap: 8px; margin-bottom: 16px; margin-top: 4px; }
-        .admin-filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-        .admin-filter-select { flex: 1; min-width: 120px; background: var(--bg); border: 1px solid var(--input-border); color: var(--text); border-radius: 10px; padding: 8px 10px; font-size: 12px; font-family: inherit; }
-        .admin-export-btn { font-size: 12px; padding: 8px 14px; white-space: nowrap; }
-        .admin-role-select { margin-top: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 4px 8px; font-size: 11px; font-family: inherit; }
-        .admin-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; }
-        .admin-page-label { font-size: 12px; color: var(--sub); }
-        .admin-settings-form label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: var(--sub); margin: 14px 0 6px; }
-        .admin-settings-form label:first-child { margin-top: 6px; }
-        .maintenance-toggle-row { display: flex; align-items: center; gap: 14px; background: var(--card-alt); border: 2px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
-        .maintenance-toggle-title { font-size: 13px; font-weight: 800; color: var(--text); margin: 0 0 3px; }
-        .maintenance-toggle-sub { font-size: 11.5px; color: var(--sub); margin: 0; line-height: 1.4; }
-        .maintenance-toggle { flex-shrink: 0; width: 46px; height: 26px; border-radius: 999px; border: 2px solid var(--border); background: var(--surface2); cursor: pointer; position: relative; padding: 0; }
-        .maintenance-toggle.on { background: #FF4D8D; }
-        .maintenance-toggle-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid var(--border); transition: transform .15s ease; }
-        .maintenance-toggle.on .maintenance-toggle-knob { transform: translateX(20px); }
-        .input-plain { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit; margin-bottom: 12px; }
-        .faq-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
-        .faq-item { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
-        .faq-item summary { font-size: 13.5px; font-weight: 700; cursor: pointer; list-style: none; }
-        .faq-item summary::-webkit-details-marker { display: none; }
-        .faq-item summary::before { content: "+ "; color: #7FD8D0; font-weight: 800; }
-        .faq-item[open] summary::before { content: "− "; }
-        .faq-item p { font-size: 12.5px; color: var(--sub); margin: 10px 0 0; line-height: 1.5; }
-        .admin-search-row .search-box { flex: 1; padding: 8px 12px; }
-        .admin-search-row .search-box input { font-size: 16px; }
-        .admin-search-btn { padding: 0 16px; font-size: 12px; }
-        .admin-user-row.banned { opacity: 0.7; border-color: #FF4D8D55; }
-        .admin-user-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
-        .admin-ban-btn, .admin-unban-btn { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 8px; cursor: pointer; border: none; font-family: inherit; }
-        .admin-ban-btn { background: #FF4D8D22; color: #FF4D8D; }
-        .admin-unban-btn { background: #7FD8D022; color: #7FD8D0; }
-        .banned-badge { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); }
-        .admin-chart { display: flex; align-items: flex-end; gap: 3px; height: 64px; margin-bottom: 18px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px 4px; }
-        .admin-chart-bar-wrap { flex: 1; display: flex; align-items: flex-end; height: 100%; cursor: default; }
-        .admin-chart-bar { width: 100%; background: linear-gradient(180deg, #FF4D8D, #FF8A4D); border-radius: 2px 2px 0 0; min-height: 2px; }
-        .admin-category-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-        .admin-category-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; }
-        .admin-category-count { font-weight: 800; color: #7FD8D0; }
-        .admin-log-row { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
-        .broadcast-form { display: flex; flex-direction: column; }
-        .broadcast-form label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--faint); margin: 14px 0 6px; }
-        .broadcast-form label:first-child { margin-top: 0; }
-        .broadcast-channel-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .chip-toggle { background: var(--bg); border: 1.5px solid var(--border); color: var(--body); font-size: 12.5px; font-weight: 700; padding: 8px 14px; border-radius: 20px; cursor: pointer; font-family: inherit; }
-        .chip-toggle.active { background: #FF4D8D; border-color: #1A1A1A; color: #1A1A1A; }
-        .admin-dispute-row.reviewed { opacity: 0.55; }
-        .report-textarea { width: 100%; background: var(--bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; color: var(--text); font-size: 16px; font-family: inherit; resize: none; margin-bottom: 10px; }
-        .report-flag-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--sub); font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 8px 14px; border-radius: 20px; }
-        .report-flag-btn:hover { color: #FF4D8D; border-color: #FF4D8D55; background: #FF4D8D0F; }
-        .report-flag-link { display: inline-flex; align-items: center; gap: 5px; background: none; border: none; color: var(--faint); font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 8px 0; margin-top: 6px; }
-        .report-flag-link:hover { color: #FF4D8D; text-decoration: underline; }
-        .report-modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
-        .report-modal-icon { width: 38px; height: 38px; border-radius: 12px; background: #FF4D8D18; display: flex; align-items: center; justify-content: center; color: #FF4D8D; flex-shrink: 0; }
-        .report-submit-btn { width: 100%; margin-top: 10px; padding: 12px; font-size: 13px; font-weight: 700; border: none; border-radius: 14px; cursor: pointer; font-family: inherit; background: linear-gradient(135deg, #FF4D8D, #B23A55); color: var(--text); }
-        .admin-toolbar { display: inline-flex; align-items: center; gap: 8px; margin-top: 24px; margin-bottom: 28px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 8px 6px 14px; }
-        .admin-toolbar-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--faint); }
-        .admin-icon-action { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--border); color: var(--sub); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .admin-icon-action:hover { background: var(--input-border); color: var(--text); }
-        .admin-icon-action.danger:hover { background: #FF4D8D22; color: #FF4D8D; }
-        .league-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-        .league-explainer { background: var(--card-alt); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; margin-bottom: 20px; }
-        .league-explainer-title { font-size: 13px; font-weight: 700; color: var(--text); margin: 0 0 8px; }
-        .league-explainer ul { margin: 0 0 10px; padding-left: 18px; }
-        .league-explainer li { font-size: 12.5px; color: var(--body); line-height: 1.6; }
-        .league-explainer li strong { color: #FFC24D; }
-        .league-explainer-note { font-size: 11.5px; color: var(--faint); margin: 0; line-height: 1.5; }
-        .leaderboard { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; max-height: 360px; overflow-y: auto; padding-right: 4px; }
-        .lb-row { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; }
-        .lb-row.first { border-color: #FFC24D55; background: #FFC24D0d; }
-        .lb-rank { font-size: 12px; font-weight: 800; color: var(--faint); width: 20px; }
-        .lb-row.first .lb-rank { color: #FFC24D; }
-        .lb-info { flex: 1; }
-        .lb-name { font-size: 13px; font-weight: 700; margin: 0; }
-        .lb-city { font-size: 10px; color: var(--sub); margin: 2px 0 0; display: flex; align-items: center; gap: 3px; }
-        .lb-points { font-size: 12px; font-weight: 700; color: #7FD8D0; }
-        .lb-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-        .lb-benefit { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px; padding: 2px 7px; border-radius: 8px; }
-        .lb-benefit.tier-gold { background: #FFC24D22; color: #FFC24D; }
-        .lb-benefit.tier-silver { background: #C8C8CE22; color: var(--body); }
-        .lb-benefit.tier-bronze { background: #FF4D8D22; color: #FF4D8D; }
-        .icon-btn { position: relative; border: 1px solid var(--input-border); background: var(--surface2); color: var(--text); border-radius: 12px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .notif-dot { position: absolute; top: -4px; right: -4px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: #FF4D8D; color: var(--bg); font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
-        .notif-modal { max-width: 360px; }
-        .favorites-modal { max-width: 420px; }
-        .favorites-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .fav-card { cursor: pointer; }
-        .fav-swatch { height: 110px; border-radius: 14px; position: relative; background-size: cover; background-position: center; margin-bottom: 6px; }
-        .fav-swatch .heart { top: 8px; right: 8px; }
-        .fav-title { font-size: 12px; font-weight: 600; margin: 0 0 2px; }
-        .fav-price { font-size: 12px; font-weight: 700; color: #7FD8D0; margin: 0; }
-        .notif-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
-        .notif-row.unread .notif-text { font-weight: 700; }
-        .notif-row.unread .notif-icon { color: #FF4D8D; }
-        .notif-row:last-child { border-bottom: none; }
-        .notif-icon { width: 28px; height: 28px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #7FD8D0; }
-        .notif-text { font-size: 13px; margin: 0; }
-        .notif-time { font-size: 11px; color: var(--faint); margin: 2px 0 0; }
-        .settings-modal { max-width: 380px; }
-        .location-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 16px; }
-        .location-current { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin: 0; }
-        .location-hint { font-size: 11px; color: var(--sub); margin: 4px 0 0; }
-        .cookie-pref-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 16px; }
-        .cookie-pref-current { font-size: 13px; font-weight: 600; margin: 0; }
-        .cookie-pref-hint { font-size: 11px; color: var(--sub); margin: 4px 0 0; }
-        .stripe-box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 16px 0; }
-        .referral-balance-box { display: flex; align-items: center; gap: 12px; background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 12px 16px; margin: 12px 0; }
-        .referral-balance-num { font-size: 22px; font-weight: 900; color: var(--text); margin: 0; line-height: 1; }
-        .referral-balance-label { font-size: 12px; color: var(--sub); margin: 2px 0 0; }
-        .stripe-post-reminder { display: flex; align-items: center; gap: 12px; background: #FFC24D14; border: 1px solid #FFC24D33; border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; flex-wrap: wrap; }
-        .stripe-post-reminder-title { font-size: 13px; font-weight: 700; color: #FFC24D; margin: 0 0 3px; }
-        .stripe-post-reminder-text { font-size: 12px; color: var(--body); margin: 0; line-height: 1.4; }
-        .stripe-post-reminder button { flex-shrink: 0; margin-left: auto; background: #FFC24D; color: var(--bg); border: none; border-radius: 10px; padding: 9px 16px; font-weight: 700; font-size: 12.5px; cursor: pointer; font-family: inherit; }
-        .email-unverified-banner { background: #FFC24D14; border: 1px solid #FFC24D33; border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; }
-        .email-unverified-banner p { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #FFC24D; font-weight: 600; margin: 0 0 8px; }
-        .email-unverified-banner button { width: 100%; border: none; border-radius: 10px; background: #FFC24D; color: var(--bg); padding: 9px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
-        .email-unverified-banner button:disabled { opacity: 0.6; cursor: default; }
-        .stripe-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; margin: 0 0 8px; }
-        .stripe-status { font-size: 12px; color: var(--sub); margin: 0 0 10px; line-height: 1.4; }
-        .stripe-status-note { font-size: 11px; color: var(--faint); margin: -4px 0 12px; line-height: 1.4; }
-        .stripe-status.ok { display: flex; align-items: center; gap: 6px; color: #7FD8D0; margin: 0; }
-        .stripe-connect-btn { width: 100%; border: none; border-radius: 12px; background: linear-gradient(135deg, #635BFF, #4A42E8); color: #fff; padding: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
-        .orders-modal { max-width: 420px; }
-        .profile-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); margin: 16px 0 10px; }
-        .orders-subheading { font-size: 12px; font-weight: 700; color: var(--text); margin: 12px 0 8px; }
-        .related-box { background: var(--card-alt); border: 1px solid #24242a; border-radius: 20px; padding: 20px 22px; margin-top: 16px; }
-        .related-box .profile-section-title:first-child { margin-top: 0; }
-        .order-card { background: var(--card); border: 2.5px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
-        .order-top { display: flex; gap: 12px; margin-bottom: 12px; }
-        .order-thumb { width: 52px; height: 52px; border-radius: 12px; background-size: cover; background-position: center; background-color: var(--surface); border: 2px solid var(--border); flex-shrink: 0; }
-        .order-top-info { flex: 1; min-width: 0; }
-        .order-title { font-size: 13.5px; font-weight: 800; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .order-price { font-size: 13px; font-weight: 800; color: #04342C; background: #7FD8D0; display: inline-block; padding: 1px 8px; border-radius: 8px; margin: 0; }
-        .order-seller { font-size: 11px; color: var(--sub); margin: 3px 0 0; }
-        .order-steps { display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: var(--card-alt); border-radius: 12px; }
-        .order-step { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--faint); font-size: 9px; text-transform: uppercase; letter-spacing: .3px; flex-shrink: 0; }
-        .order-step svg { width: 20px; height: 20px; padding: 4px; border-radius: 50%; background: var(--surface2); border: 2px solid var(--border); box-sizing: content-box; }
-        .order-step.done { color: #04342C; font-weight: 700; }
-        .order-step.done svg { background: #7FD8D0; border-color: var(--border); color: #04342C; }
-        .order-step-line { flex: 1; height: 2px; background: var(--border); margin: 0 4px 16px; }
-        .order-step-line.done { background: #7FD8D0; }
-        .order-action-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border: 2px solid var(--border); border-radius: 12px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #1A1A1A; padding: 10px; font-weight: 800; font-size: 12px; cursor: pointer; font-family: inherit; margin-top: 6px; }
-        .order-action-btn.secondary { background: var(--surface2); color: var(--text); }
-        .order-delivery-tag { font-size: 11px; font-weight: 800; color: var(--text); background: var(--card-alt); border: 2px solid var(--border); display: inline-block; padding: 3px 10px; border-radius: 999px; margin: 4px 0 8px; }
-        .order-hint { font-size: 11px; color: var(--faint); margin: 0 0 8px; line-height: 1.4; }
-        .dispute-link { font-size: 11px; color: var(--faint); text-decoration: underline; cursor: pointer; margin: 8px 0 0; text-align: center; }
-        .dispute-link:hover { color: #FF4D8D; }
-        .rating-modal { max-width: 340px; }
-        .star-picker { display: flex; justify-content: center; gap: 8px; margin-bottom: 18px; }
-        .star-picker button { background: none; border: none; cursor: pointer; padding: 2px; }
-        .settings-toggle-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin: 14px 0; }
-        .settings-toggle-row input { width: auto; accent-color: #FF4D8D; }
-        .logout-btn { width: 100%; margin-top: 10px; border: 1px solid #FF4D8D55; background: transparent; color: #FF4D8D; border-radius: 14px; padding: 11px; font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit; }
-        .danger-zone { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--border); }
-        .danger-zone-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #FF4D8D; font-weight: 700; margin: 0 0 12px; }
-        .danger-zone-btn { width: 100%; background: #FF4D8D; color: #fff; border: none; border-radius: 14px; padding: 12px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
-        .danger-zone-btn:disabled { opacity: 0.6; cursor: default; }
-        .delete-confirm-box { display: flex; flex-direction: column; gap: 10px; }
-        .delete-confirm-text { font-size: 12.5px; color: var(--body); line-height: 1.5; margin: 0; }
-        .delete-confirm-input { width: 100%; border: 1px solid #FF4D8D55; border-radius: 12px; padding: 10px 12px; font-size: 16px; background: var(--bg); color: var(--text); font-family: inherit; }
-        .delete-confirm-actions { display: flex; gap: 10px; }
-        .delete-confirm-actions .btn { flex: 1; }
-        .delete-confirm-actions .danger-zone-btn { flex: 1; }
-        .checkout-modal { max-width: 460px; }
-        .checkout-more-rates-btn { width: 100%; background: none; border: 1.5px dashed var(--border); border-radius: 12px; padding: 10px; font-size: 12.5px; font-weight: 700; color: var(--sub); cursor: pointer; font-family: inherit; margin-bottom: 14px; }
-        .checkout-more-rates-btn:hover { border-color: #FF4D8D; color: #FF4D8D; }
-        .admin-modal-wide { max-width: 1000px; max-height: 85vh; }
-        .admin-modal-wide .profile-desktop-flex.has-sidebar { align-items: flex-start; }
-        .admin-modal-wide .profile-sidebar-menu { max-height: 75vh; overflow-y: auto; }
-        .admin-modal-wide .profile-desktop-content { max-height: 75vh; overflow-y: auto; padding-right: 4px; }
-        .checkout-section-label { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--sub); font-weight: 800; margin: 0 0 8px; }
-        .delivery-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
-        .delivery-option { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 2px solid var(--border); background: var(--card); color: var(--text); border-radius: 12px; padding: 10px; font-weight: 700; font-size: 12.5px; cursor: pointer; font-family: inherit; }
-        .delivery-option.active { background: #FF4D8D; color: #1A1A1A; }
-        .checkout-locker-chosen { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--card-alt); border: 2px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
-        .checkout-locker-name { font-size: 12.5px; font-weight: 800; margin: 0; }
-        .checkout-locker-address { font-size: 11px; color: var(--sub); margin: 2px 0 0; }
-        .checkout-locker-change { flex-shrink: 0; background: none; border: none; color: #FF4D8D; font-size: 11.5px; font-weight: 800; text-decoration: underline; cursor: pointer; font-family: inherit; }
-        .checkout-summary { background: var(--bg); border: 2px solid var(--border); border-radius: 14px; padding: 12px 14px; margin: 16px 0; }
-        .checkout-note { font-size: 11px; color: var(--faint); margin: 0; line-height: 1.4; }
-        .checkout-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--sub); padding: 4px 0; }
-        .checkout-row.total { color: var(--text); font-weight: 700; font-size: 14px; border-top: 2px solid var(--border); margin-top: 6px; padding-top: 10px; }
-        .checkout-row-commission { color: var(--faint); }
-        .checkout-row-commission em { font-style: normal; font-size: 10.5px; }
-        .checkout-sub { font-size: 12px; color: var(--sub); text-align: center; font-weight: 400; }
-        .own-card { position: relative; }
-        .own-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; }
-        .own-actions button { border: none; background: #00000088; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-
-        .skeleton-card { background: var(--card); border-radius: 18px; overflow: hidden; border: 2px solid var(--border); padding-bottom: 12px; }
-        .skeleton-media { height: 150px; }
-        .skeleton-line { height: 10px; border-radius: 5px; margin: 10px 14px 0; }
-        .shimmer { background: linear-gradient(100deg, var(--surface2) 30%, var(--shimmer-highlight) 50%, var(--surface2) 70%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
-        @keyframes shimmer { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
-
-        .load-more-row { display: flex; justify-content: center; padding: 24px 0 8px; }
-        .empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 70px 30px; text-align: center; }
-        .cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: var(--card); border-top: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between; box-shadow: 0 -8px 24px rgba(0,0,0,0.35); }
-        .cookie-banner p { font-size: 12.5px; color: var(--body); margin: 0; max-width: 640px; line-height: 1.5; flex: 1; min-width: 220px; }
-        .cookie-link { background: none; border: none; color: #7FD8D0; text-decoration: underline; cursor: pointer; font-size: 12.5px; font-family: inherit; padding: 0; }
-        .cookie-actions { display: flex; gap: 10px; flex-shrink: 0; }
-        @media (max-width: 600px) {
-          .cookie-banner { flex-direction: column; align-items: stretch; }
-          .cookie-actions { justify-content: stretch; }
-          .cookie-actions .btn { flex: 1; justify-content: center; }
-        }
-        .site-footer { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; padding: 20px 26px 100px; color: var(--faint); font-size: 11px; }
-        .site-footer button { background: none; border: none; color: var(--faint); font-size: 11px; cursor: pointer; font-family: inherit; text-decoration: underline; }
-        .site-footer button:hover { color: var(--text); }
-        .legal-modal { max-width: 460px; }
-        .legal-text { font-size: 13px; color: var(--body); line-height: 1.6; max-height: 55vh; overflow-y: auto; }
-        .how-it-works-intro { font-size: 14px; color: var(--sub); margin: 0 0 18px; }
-        .how-it-works-list { display: flex; flex-direction: column; gap: 10px; max-height: 55vh; overflow-y: auto; }
-        .how-it-works-card { display: flex; align-items: flex-start; gap: 14px; background: var(--card); border: 2.5px solid var(--border); border-radius: 16px; padding: 14px 16px; }
-        .how-it-works-num { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: #1A1A1A; border: 2px solid var(--border); flex-shrink: 0; }
-        .how-it-works-title { font-size: 14px; font-weight: 800; color: var(--text); margin: 0 0 4px; }
-        .how-it-works-text { font-size: 13px; color: var(--sub); margin: 0; line-height: 1.5; }
-        .about-impact-box { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #7FD8D014, #7FD8D008); border: 2px solid var(--border); border-radius: 14px; padding: 14px 16px; margin: 4px 0 20px; }
-        .about-impact-box p { margin: 0; font-size: 12.5px; color: var(--body); line-height: 1.5; }
-        .about-impact-box strong { color: #7FD8D0; }
-        .about-block { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 10px; background: var(--card); border: 2.5px solid var(--border); border-radius: 16px; padding: 14px 16px; }
-        .about-block-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2px solid var(--border); }
-        .about-block-title { margin: 0 0 3px; font-size: 14px; font-weight: 800; color: var(--text); }
-        .about-block-text { margin: 0; font-size: 13px; color: var(--sub); line-height: 1.5; }
-        .about-block-link { background: none; border: none; padding: 0; margin: 0; font-size: 13px; color: #FF4D8D; font-weight: 700; cursor: pointer; text-decoration: underline; font-family: inherit; }
-        .updates-counter { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #7FD8D0; font-weight: 600; margin: 0 0 20px; }
-        .update-entry { margin-bottom: 22px; }
-        .update-date { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #FF4D8D; font-weight: 700; margin: 0 0 10px; }
-        .update-bubbles { display: flex; flex-direction: column; gap: 8px; }
-        .update-bubble { display: flex; align-items: flex-start; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
-        .update-bubble-icon { width: 30px; height: 30px; border-radius: 10px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .update-bubble p { margin: 3px 0 0; font-size: 13px; color: var(--body); line-height: 1.5; }
-        .update-type-tag { font-size: 10px; font-weight: 700; border: 1px solid; border-radius: 999px; padding: 2px 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .updates-subscribe-box { background: linear-gradient(135deg, #8C7CFF14, #FF4D8D0a); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-top: 4px; }
-        .updates-subscribe-title { margin: 0 0 10px; font-size: 13px; color: var(--text); font-weight: 700; }
-        .updates-subscribe-form { display: flex; gap: 8px; }
-        .updates-subscribe-form input { flex: 1; border: 1px solid var(--input-border); border-radius: 10px; padding: 9px 12px; font-size: 12.5px; background: var(--bg); color: var(--text); font-family: inherit; }
-        .updates-subscribe-form .btn.primary { padding: 9px 16px; font-size: 12.5px; border-radius: 10px; }
-        .updates-subscribe-done { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; color: #7FD8D0; font-weight: 700; justify-content: center; }
-        .legal-text p { margin: 0 0 12px; }
-        .empty-title { font-size: 14px; font-weight: 700; margin: 6px 0 0; }
-        .empty-sub { font-size: 12px; color: var(--faint); margin: 0 0 14px; max-width: 260px; }
-
-        .detail-media-actions { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; }
-        .gallery-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: #00000066; border: none; color: #fff; width: 30px; height: 30px; border-radius: 50%; font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
-        .gallery-arrow.left { left: 10px; }
-        .gallery-arrow.right { right: 10px; }
-        .gallery-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 2; }
-        .gallery-dot { width: 6px; height: 6px; border-radius: 50%; background: #ffffff66; cursor: pointer; }
-        .gallery-dot.active { background: #fff; width: 16px; border-radius: 3px; }
-        .detail-description { font-size: 13px; color: var(--body); line-height: 1.5; margin: 0 0 16px; white-space: pre-wrap; }
-        .detail-icon-btn { position: static; }
-        .trend-tag { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #7FD8D0; margin: 3px 0 0; white-space: nowrap; }
-
-        .profile-progress { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; text-align: left; }
-        .progress-label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 6px; }
-        .progress-track { height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #7FD8D0, #4DA8FF); border-radius: 4px; }
-        .progress-hint { font-size: 10px; color: var(--faint); margin: 6px 0 0; }
-        .cover-btn { position: absolute; bottom: 8px; right: 80px; display: flex; align-items: center; gap: 5px; background: #00000066; border: none; color: #fff; font-size: 10px; padding: 5px 10px; border-radius: 12px; cursor: pointer; font-family: inherit; }
-        .share-profile-btn { position: absolute; bottom: 8px; right: 10px; background: #00000066; border: none; color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .milestone-badges { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
-        .verified-badge { margin-left: 6px; color: #0F6E56 !important; background: #E1F5EE !important; border-color: #5DCAA5 !important; }
-        .mstone { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: var(--surface2); border: 1px solid var(--input-border); border-radius: 50%; font-size: 10px; color: #FFC24D; }
-        .profile-meta-row { font-size: 11px; color: var(--sub); margin: 4px 0 0; }
-        .streak-text { font-size: 11px; color: #FFC24D; margin: 4px 0 10px; font-weight: 600; }
-        .verify-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
-        .profile-city-line { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 12.5px; color: var(--sub); margin: 0 0 16px; }
-        .verify-chip { display: flex; align-items: center; gap: 4px; font-size: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--faint); padding: 4px 9px; border-radius: 12px; }
-        .seller-mini-verify { display: flex; gap: 6px; margin-top: 5px; }
-        .seller-mini-verify .verify-chip { padding: 2px 7px; font-size: 9px; }
-        .verify-chip.done { color: #7FD8D0; border-color: #7FD8D033; }
-        .ig-link { display: block; font-size: 11px; color: var(--sub); text-decoration: none; margin-bottom: 16px; }
-        .ig-link:hover { color: #FF4D8D; }
-        .rating-breakdown { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; text-align: left; }
-        .reviews-list { display: flex; flex-direction: column; gap: 10px; text-align: left; margin-bottom: 16px; }
-        .review-row { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
-        .review-row-top { display: flex; align-items: center; justify-content: space-between; }
-        .review-author { font-size: 12.5px; font-weight: 700; }
-        .review-stars { display: flex; gap: 1px; }
-        .review-comment { font-size: 12.5px; color: var(--body); margin: 6px 0 4px; line-height: 1.4; }
-        .review-date { font-size: 10.5px; color: var(--faint); }
-        .rb-row { font-size: 11px; margin-bottom: 8px; }
-        .rb-row:last-child { margin-bottom: 0; }
-        .rb-row span { display: block; margin-bottom: 4px; color: var(--body); }
-        .rb-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
-        .rb-fill { height: 100%; background: linear-gradient(90deg, #7FD8D0, #4DA8FF); border-radius: 3px; }
-        .chat-modal { max-width: 380px; display: flex; flex-direction: column; height: 560px; max-height: 82vh; padding: 0; overflow: hidden; border: 2.5px solid var(--border); }
-        .chat-main-col { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100%; overflow: hidden; }
-        .chat-header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 2px solid var(--border); position: relative; flex-shrink: 0; background: var(--card); }
-        .chat-back-btn { background: none; border: none; padding: 4px; margin-right: 2px; color: var(--text); cursor: pointer; display: flex; align-items: center; flex-shrink: 0; }
-        .chat-avatar-ring { padding: 2px; border-radius: 50%; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); flex-shrink: 0; }
-        .chat-avatar-ring .mini-avatar { border: 2px solid var(--card); }
-        .chat-seller-name { font-size: 13.5px; font-weight: 800; margin: 0; }
-        .chat-item-ref { font-size: 11px; color: var(--sub); margin: 2px 0 0; }
-        .chat-item-strip { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card-alt); border-bottom: 2px solid var(--border); cursor: pointer; flex-shrink: 0; transition: background .15s ease; }
-        .chat-item-strip:hover { background: var(--surface2); }
-        .chat-item-thumb { width: 42px; height: 42px; border-radius: 10px; background-size: cover; background-position: center; flex-shrink: 0; border: 2px solid var(--border); }
-        .chat-item-strip-info { flex: 1; min-width: 0; }
-        .chat-item-strip-title { font-size: 12px; font-weight: 700; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .chat-item-strip-price { font-size: 12px; font-weight: 800; color: #04342C; background: #7FD8D0; display: inline-block; padding: 1px 7px; border-radius: 8px; margin: 2px 0 0; }
-        .chat-item-strip-link { font-size: 11px; color: #FF4D8D; font-weight: 700; flex-shrink: 0; }
-        .chat-thread { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 2px; background: var(--bg); }
-        .chat-msg-row { display: flex; flex-direction: column; margin-bottom: 14px; }
-        .chat-safety-banner { display: flex; align-items: flex-start; gap: 8px; background: #FFF3D6; border: 2px solid #1A1A1A; border-radius: 12px; padding: 10px 12px; font-size: 11px; color: #8A5A00; line-height: 1.4; margin-bottom: 16px; }
-        .chat-safety-banner svg { flex-shrink: 0; margin-top: 1px; }
-        .chat-quick-replies { display: flex; gap: 6px; padding: 10px 14px 0; overflow-x: auto; flex-shrink: 0; background: var(--card); }
-        .chat-quick-reply-chip { border: 2px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 999px; padding: 6px 12px; font-size: 11.5px; font-weight: 600; white-space: nowrap; cursor: pointer; font-family: inherit; flex-shrink: 0; }
-        .chat-quick-reply-chip:hover { border-color: #FF4D8D; }
-        .chat-attach-btn { background: var(--surface2); border: 2px solid var(--border); color: var(--text); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-        .chat-attach-btn:disabled { opacity: 0.5; cursor: default; }
-        .chat-photo-bubble { display: block; width: 160px; border-radius: 14px; overflow: hidden; border: 2px solid var(--border); }
-        .chat-photo-bubble img { width: 100%; display: block; }
-        .chat-msg-row.grouped { margin-top: -8px; }
-        .chat-msg-row.me { align-items: flex-end; }
-        .chat-msg-row.seller { align-items: flex-start; }
-        .chat-bubble { max-width: 78%; padding: 10px 14px; border-radius: 18px; font-size: 13px; line-height: 1.45; border: 2px solid var(--border); }
-        .chat-bubble.seller { background: var(--card); border-bottom-left-radius: 5px; }
-        .chat-bubble.me { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #1A1A1A; border-bottom-right-radius: 5px; font-weight: 700; }
-        .chat-bubble.offer-bubble { font-weight: 800; border-color: #FFC24D; }
-        .chat-bubble.seller.offer-bubble { background: #FFF3D6; color: #8A5A00; }
-        .offer-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
-        .offer-resp-btn { border: 2px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 800; cursor: pointer; font-family: inherit; }
-        .offer-resp-btn.accept { background: #7FD8D0; color: #04342C; }
-        .offer-resp-btn.reject { background: var(--card); color: var(--body); }
-        .offer-resp-btn.counter { background: var(--card); color: var(--body); }
-        .offer-resp-btn:disabled { opacity: 0.6; cursor: default; }
-        .offer-counter-row { display: flex; gap: 6px; width: 100%; margin-top: 4px; }
-        .offer-counter-row input { flex: 1; min-width: 0; border: 2px solid var(--input-border); border-radius: 10px; padding: 6px 10px; font-size: 16px; background: var(--card); color: var(--text); font-family: inherit; }
-        .offer-status-tag { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; border: 2px solid var(--border); }
-        .offer-status-tag.pending { background: #FFF3D6; color: #8A5A00; }
-        .offer-status-tag.accepted { background: #7FD8D0; color: #04342C; }
-        .offer-status-tag.rejected { background: #FFD9E6; color: #8A1A45; }
-        .chat-msg-time { font-size: 10px; color: var(--faint); margin: 4px 4px 0; }
-        .chat-input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 2px solid var(--border); flex-shrink: 0; align-items: center; background: var(--card); }
-        .chat-input-row input { flex: 1; border: 2px solid var(--input-border); border-radius: 22px; padding: 11px 16px; background: var(--bg); color: var(--text); font-size: 16px; font-family: inherit; transition: border-color .15s ease; }
-        .chat-input-row input:focus { outline: none; border-color: #FF4D8D; }
-        .chat-send-btn { border: 2px solid var(--border); background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #1A1A1A; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: opacity .15s ease, transform .1s ease; }
-        .chat-send-btn:disabled { opacity: 0.4; box-shadow: none; cursor: default; }
-        .chat-send-btn:not(:disabled):active { transform: scale(0.92); }
-
-        .overlay { position: fixed; inset: 0; background: rgba(10,10,12,0.85); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
-        .cropper-overlay { z-index: 50; }
-        .cropper-box { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; width: 100%; max-width: 420px; }
-        .cropper-canvas { position: relative; width: 100%; height: 320px; background: #000; border-radius: 12px; overflow: hidden; }
-        .cropper-zoom-slider { width: 100%; margin: 16px 0 4px; accent-color: #FF4D8D; }
-        .cropper-actions { display: flex; gap: 10px; margin-top: 14px; }
-        .cropper-actions .btn { flex: 1; justify-content: center; }
-        .overlay-top { z-index: 15; }
-        .overlay-top-most { z-index: 25; }
-        .modal { background: var(--card); border: 1px solid var(--border); border-radius: 22px; max-width: 400px; width: 100%; padding: 26px; position: relative; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-        .modal h3 { font-size: 19px; font-weight: 700; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
-        .close-btn { position: absolute; top: 16px; right: 16px; background: var(--surface2); border: 2px solid var(--border); border-radius: 50%; width: 28px; height: 28px; color: var(--text); cursor: pointer; z-index: 5; display: flex; align-items: center; justify-content: center; }
-        label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; color: var(--sub); }
-        input, select { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; }
-        .post-textarea { width: 100%; border: 1px solid var(--input-border); border-radius: 12px; padding: 10px 12px; font-size: 16px; background: var(--bg); color: var(--text); font-family: inherit; resize: vertical; margin-bottom: 4px; }
-        .submit-btn { margin-top: 20px; width: 100%; border: none; border-radius: 14px; padding: 13px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); font-weight: 700; font-size: 13px; cursor: pointer; }
-        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .detail-price { font-size: 30px; font-weight: 800; margin: 10px 0 14px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .detail-price-old { font-size: 16px; font-weight: 600; color: var(--faint); text-decoration: line-through; margin-right: 8px; -webkit-text-fill-color: var(--faint); }
-        .seller-row { font-size: 13px; color: var(--sub); margin-bottom: 18px; }
-        .detail-modal { max-width: 400px; padding: 0; }
-        @media (max-width: 780px) {
-          .detail-overlay { padding: 0; align-items: stretch; }
-          .detail-overlay .detail-modal { max-width: 100%; width: 100%; height: 100vh; height: 100dvh; border-radius: 0; margin: 0; max-height: none; }
-          .detail-overlay .detail-modal.auth-modal { display: flex; flex-direction: column; justify-content: center; padding: 30px 32px; background: radial-gradient(circle at 50% 0%, #FF4D8D22, transparent 60%), var(--card); }
-          .chat-overlay { padding: 0; align-items: stretch; }
-          .chat-modal { max-width: 100%; width: 100%; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; border-width: 0; }
-        }
-        .item-page { padding: 20px 26px 100px; max-width: 1100px; margin: 0 auto; }
-        @media (min-width: 1500px) {
-          .item-page { max-width: 1400px; }
-        }
-        @media (min-width: 1900px) {
-          .item-page { max-width: 1600px; }
-        }
-        .post-page { padding: 20px 26px 100px; max-width: 900px; margin: 0 auto; }
-        .post-page-solo { padding: 32px 34px 100px; }
-        .post-solo-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 32px 36px 36px; margin-top: 18px; max-width: 1100px; box-shadow: 0 24px 60px -30px rgba(0,0,0,0.35); }
-        @media (min-width: 1500px) {
-          .post-solo-card { max-width: 1300px; }
-        }
-        .post-solo-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1.5px solid var(--border); }
-        .post-solo-icon { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
-        .legal-page { padding: 20px 26px 100px; max-width: 700px; margin: 0 auto; }
-        .profile-page-wide { max-width: 1300px; margin: 0 auto; }
-        @media (min-width: 1500px) {
-          .profile-page-wide { max-width: 1600px; }
-        }
-        .legal-page .legal-text { max-height: none; }
-        .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 0; margin-bottom: 16px; font-family: inherit; }
-        .back-btn:hover { color: var(--text); }
-        .item-page-grid { display: flex; gap: 40px; align-items: flex-start; justify-content: center; }
-        .item-page-gallery { flex: 1.1; min-width: 0; max-width: 620px; }
-        .community-impact { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #7FD8D014, #7FD8D008); border: 1px solid #7FD8D033; border-radius: 16px; padding: 14px 18px; margin: 20px auto 0; max-width: 700px; font-size: 12.5px; color: var(--body); line-height: 1.5; }
-        .community-impact svg { flex-shrink: 0; }
-        .community-impact strong { color: #7FD8D0; font-weight: 700; }
-        .newsletter-outer { background: linear-gradient(120deg, #8C7CFF, #FF4D8D 70%); margin-top: 34px; }
-        .newsletter-band { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto; padding: 44px 40px; }
-        .newsletter-title { color: var(--bg); font-size: 20px; font-weight: 800; margin: 0 0 5px; }
-        .newsletter-sub { color: var(--bg); opacity: 0.75; font-size: 13.5px; margin: 0; }
-        .newsletter-form { display: flex; gap: 10px; flex-wrap: wrap; }
-        .newsletter-form input { width: 260px; border: none; border-radius: 12px; padding: 13px 16px; font-size: 16px; background: #ffffffee; color: var(--bg); font-family: inherit; }
-        .newsletter-form input::placeholder { color: var(--faint); }
-        .newsletter-form .btn.primary { background: #121214; color: #fff; border: none; padding: 13px 22px; border-radius: 12px; font-weight: 700; font-size: 13px; }
-        .newsletter-thanks { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--bg); font-weight: 700; }
-        @media (max-width: 640px) {
-          .newsletter-band { padding: 30px 20px; }
-          .newsletter-form { width: 100%; }
-          .newsletter-form input { flex: 1; min-width: 0; width: auto; }
-        }
-
-        .site-footer-rich { position: relative; background: var(--card-alt); border-top: 1.5px solid var(--border); padding: 48px 40px 100px; margin-top: 32px; }
-        .detail-body .site-footer-rich { margin-left: -22px; margin-right: -22px; }
-        .site-footer-rich::before { content: ""; position: absolute; top: -1.5px; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #FF4D8D, #FF8A4D, #B49CE8, #7FD8D0); }
-        .footer-inner { max-width: 1100px; margin: 0 auto; }
-        .footer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 34px; padding-bottom: 24px; border-bottom: 2.5px solid var(--border); }
-        .footer-brand-group { display: flex; align-items: center; gap: 12px; }
-        .footer-brand-mark { width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-        .footer-brand-line { font-size: 13px; letter-spacing: 1.5px; color: var(--text); text-transform: uppercase; margin: 0; font-weight: 900; }
-        .footer-social-row { display: flex; align-items: center; gap: 10px; }
-        .footer-social-label { font-size: 11px; letter-spacing: 1px; color: var(--sub); text-transform: uppercase; font-weight: 800; }
-        .footer-social-row a { color: var(--text); display: flex; width: 34px; height: 34px; border-radius: 50%; background: var(--card); border: 2px solid var(--border); align-items: center; justify-content: center; transition: background .15s ease; }
-        .footer-social-row a:hover { background: #FF4D8D; color: #1A1A1A; }
-        .footer-cols { display: flex; gap: 56px; flex-wrap: wrap; margin-bottom: 34px; }
-        .footer-col { display: flex; flex-direction: column; gap: 12px; }
-        .footer-col-title { font-size: 11px; letter-spacing: 1.2px; color: #FF4D8D; text-transform: uppercase; margin: 0 0 4px; font-weight: 900; }
-        .footer-col button { background: none; border: none; color: var(--body); font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; text-align: left; padding: 0; transition: color .15s ease; }
-        .footer-col button:hover { color: #FF4D8D; }
-        .footer-bottom-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 22px; border-top: 2.5px solid var(--border); color: var(--sub); font-size: 11.5px; font-weight: 600; }
-        .footer-bottom-bar button { background: none; border: none; color: var(--sub); font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; text-decoration: none; }
-        .footer-bottom-bar button:hover { color: var(--text); text-decoration: underline; }
-        .footer-link-accent { color: #FF4D8D !important; font-weight: 800; }
-        .footer-link-plain { color: var(--body); font-size: 13.5px; font-weight: 600; text-decoration: none; }
-        .footer-link-plain:hover { color: var(--text); }
-        .footer-trust-badge { display: flex; align-items: center; gap: 5px; background: #7FD8D0; color: #04342C; border: 2px solid var(--border); border-radius: 999px; padding: 5px 12px; margin-left: auto; font-size: 11px; font-weight: 800; }
-        .footer-trust-badge strong { color: #04342C; font-weight: 900; }
-        @media (max-width: 640px) { .footer-trust-badge { margin-left: 0; } }
-        @media (max-width: 640px) {
-          .site-footer-rich { padding: 36px 20px 100px; }
-          .footer-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 20px; }
-        }
-        @media (max-width: 640px) {
-          .community-impact { padding: 16px 20px; margin: 16px 16px 0; }
-        }
-        .related-full { margin-top: 30px; }
-        .related-full .mini-row .mini-card { flex: 0 0 180px; }
-        .item-page-info { flex: 1; min-width: 0; max-width: 480px; }
-        @media (min-width: 1500px) {
-          .item-page-info { max-width: 560px; }
-        }
-        @media (min-width: 781px) {
-          .item-page-info { background: var(--card-alt); border: 1px solid #24242a; border-radius: 22px; padding: 26px 28px; }
-          .item-page-gallery .detail-media { box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6); }
-          .chat-modal { max-width: 760px; width: 90vw; height: 640px; max-height: 86vh; flex-direction: row; }
-          .chat-item-strip { flex-direction: column; align-items: flex-start; width: 240px; flex-shrink: 0; height: 100%; padding: 22px 20px; gap: 14px; border-bottom: none; border-right: 2px solid var(--border); overflow-y: auto; }
-          .chat-item-thumb { width: 100%; height: 200px; border-radius: 14px; }
-          .chat-item-strip-info { width: 100%; }
-          .chat-item-strip-title { white-space: normal; font-size: 14px; }
-          .chat-item-strip-price { font-size: 13px; }
-          .chat-item-strip-link { margin-top: auto; }
-        }
-        @media (max-width: 780px) {
-          .item-page-grid { flex-direction: column; }
-          .item-page-gallery { position: static; width: 100%; }
-          .item-page-info { max-width: 100%; }
-        }
-        .item-page .detail-media { height: 480px; border-radius: 20px; position: sticky; top: 90px; }
-        @media (max-width: 780px) {
-          .item-page .detail-media { height: 340px; border-radius: 16px; }
-        }
-        .detail-media { height: 220px; position: relative; border-radius: 22px 22px 0 0; }
-        .dark-close { top: 14px; right: 14px; background: #00000066; }
-        .dark-close-left { top: 14px; left: 14px; right: auto; background: #00000066; z-index: 6; }
-        .detail-heart { position: absolute; top: 14px; right: 14px; }
-        .detail-body { padding: 20px 22px 24px; }
-        .detail-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-        .detail-title { font-size: 18px; font-weight: 700; margin: 0; line-height: 1.25; }
-        .detail-meta-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--faint); margin: 6px 0 0; }
-        .detail-meta-row span { display: flex; align-items: center; gap: 4px; }
-        .detail-section-label { font-size: 12px; font-weight: 700; color: var(--text); margin: 14px 0 4px; }
-        .detail-modal .detail-price { margin: 0; white-space: nowrap; }
-        .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 18px; }
-        .info-tag { font-size: 11px; background: var(--bg); border: 1px solid var(--border); color: var(--body); padding: 5px 11px; border-radius: 20px; }
-        .seller-card { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; margin-bottom: 18px; box-shadow: 0 8px 20px -12px rgba(0,0,0,0.35); }
-        .seller-avatar { width: 34px; height: 34px; font-size: 14px; }
-        .seller-name { font-size: 13px; font-weight: 700; margin: 0; }
-        .seller-rating { font-size: 11px; color: var(--sub); margin: 2px 0 0; display: flex; align-items: center; gap: 4px; }
-        .impact-box { display: flex; gap: 10px; align-items: flex-start; background: #7FD8D014; border: 1px solid #7FD8D033; border-radius: 14px; padding: 12px 14px; margin-bottom: 18px; }
-        .mini-map { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 18px; }
-        .mini-map iframe { width: 100%; height: 160px; border: none; display: block; filter: grayscale(0.3) brightness(0.85) contrast(1.1); }
-        .mini-map-note { font-size: 10.5px; color: var(--faint); text-align: center; padding: 6px 0; margin: 0; background: var(--bg); }
-        .impact-title { font-size: 12px; font-weight: 700; margin: 0 0 3px; color: #7FD8D0; }
-        .impact-sub { font-size: 11px; color: var(--sub); margin: 0; line-height: 1.4; }
-        .shipping-box { display: flex; gap: 10px; align-items: flex-start; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-bottom: 18px; box-shadow: 0 8px 20px -12px rgba(0,0,0,0.35); }
-        .shipping-title { font-size: 12px; font-weight: 700; margin: 0 0 3px; color: var(--text); }
-        .shipping-sub { font-size: 11px; color: var(--sub); margin: 0; line-height: 1.4; }
-        .seller-reviews-box { margin-bottom: 18px; }
-        .seller-reviews-more { display: block; margin-top: 8px; }
-        .questions-box { margin-bottom: 18px; }
-        .questions-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--text); margin: 0 0 10px; }
-        .questions-empty { font-size: 12px; color: var(--faint); margin: 0 0 10px; }
-        .question-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
-        .question-text { font-size: 12.5px; color: var(--body); margin: 0; line-height: 1.5; }
-        .question-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-        .question-mini-actions { display: flex; gap: 4px; flex-shrink: 0; }
-        .question-mini-actions button { background: none; border: none; color: var(--faint); cursor: pointer; padding: 2px; display: flex; }
-        .question-mini-actions button:hover { color: #FF4D8D; }
-        .question-text strong { color: var(--text); }
-        .answer-text { font-size: 12.5px; color: var(--sub); margin: 6px 0 0; line-height: 1.5; padding-top: 6px; border-top: 1px solid var(--border); }
-        .answer-text strong { color: #7FD8D0; }
-        .answer-pending { font-size: 11px; color: var(--faint); margin: 6px 0 0; font-style: italic; }
-        .answer-form, .ask-form { display: flex; gap: 6px; margin-top: 8px; }
-        .answer-form input, .ask-form input { flex: 1; border: 1px solid var(--input-border); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; background: var(--bg); color: var(--text); font-family: inherit; }
-        .answer-form button, .ask-form button { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); border: none; border-radius: 10px; width: 34px; display: flex; align-items: center; justify-content: center; color: var(--bg); cursor: pointer; }
-        .answer-form button:disabled, .ask-form button:disabled { opacity: 0.6; }
-        .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .in-person-alt-btn { display: flex; align-items: center; justify-content: center; gap: 6px; background: none; border: none; color: var(--sub); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 2px 4px; text-align: center; flex-basis: 100%; }
-        .in-person-alt-btn:hover { color: #FF4D8D; }
-        .mark-sold-btn { flex-basis: 100%; }
-        .detail-actions .chat-btn { flex: 1; margin: 0; }
-        .buy-btn { flex: 1.3; border: none; border-radius: 14px; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: var(--bg); font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 8px 20px -8px #FF4D8D66; }
-        .chat-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: 1px solid var(--input-border); border-radius: 14px; background: transparent; color: var(--text); padding: 12px; font-weight: 600; font-size: 13px; cursor: pointer; }
-        .chat-btn:hover { background: var(--border); }
-        .empty { padding: 60px 26px; text-align: center; color: var(--faint); font-size: 13px; }
-        .toggle-link { font-size: 12px; margin-top: 14px; text-align: center; cursor: pointer; color: #7FD8D0; }
-        .auth-modal { max-width: 400px; padding: 34px 30px; }
-        .auth-brand { text-align: center; margin-bottom: 26px; }
-        .social-auth-col { display: flex; flex-direction: column; gap: 12px; align-items: center; margin-bottom: 20px; }
-        .google-signin-slot { display: flex; justify-content: center; width: 100%; min-height: 42px; }
-        .auth-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: var(--faint); font-size: 11px; letter-spacing: 0.3px; }
-        .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-        .auth-mark { margin: 0 auto 16px; }
-        @media (max-width: 780px) {
-          .detail-overlay .auth-mark { width: 46px; height: 46px; }
-          .detail-overlay .auth-mark svg, .detail-overlay .auth-mark img { width: 22px; height: 22px; }
-        }
-        .auth-title { font-size: 21px; font-weight: 700; margin: 0 0 6px; }
-        .auth-subtitle { font-size: 13px; color: var(--sub); margin: 0; line-height: 1.5; }
-        .tabs { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 4px; margin-bottom: 24px; }
-        .tab { flex: 1; border: none; background: transparent; color: var(--sub); padding: 11px; border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
-        .tab.active { background: var(--text); color: var(--bg); }
-        .pedidos-subtabs { display: flex; gap: 8px; margin-bottom: 18px; }
-        .stats-list { display: flex; flex-direction: column; gap: 10px; }
-        .stats-row { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
-        .stats-row-thumb { width: 52px; height: 52px; border-radius: 10px; background-color: var(--bg); background-size: cover; background-position: center; flex-shrink: 0; }
-        .stats-row-info { flex: 1; min-width: 0; }
-        .stats-row-title { font-size: 13.5px; font-weight: 700; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .stats-row-meta { font-size: 11.5px; color: var(--sub); margin: 0; display: flex; align-items: center; gap: 4px; }
-        .stats-row-tip { font-size: 11px; color: #FF4D8D; font-weight: 600; margin: 5px 0 0; display: flex; align-items: center; gap: 4px; }
-        .stats-row-price { font-size: 14px; font-weight: 800; flex-shrink: 0; }
-        .pedidos-subtab { border: 2px solid var(--border); background: var(--card); color: var(--sub); padding: 7px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
-        .pedidos-subtab.active { background: #FF4D8D; color: #1A1A1A; border-color: var(--border); }
-        .auth-modal label { margin: 18px 0 7px; }
-        .auth-modal label:first-of-type { margin-top: 0; }
-        .input-icon { display: flex; align-items: center; gap: 10px; border: 1px solid var(--input-border); border-radius: 13px; padding: 0 14px; background: var(--bg); transition: border-color 0.15s; }
-        .input-icon:focus-within { border-color: #FF4D8D88; }
-        .input-icon svg { color: var(--faint); flex-shrink: 0; }
-        .input-icon input { border: none; padding: 13px 0; background: transparent; font-size: 16px; }
-        .auth-modal .submit-btn { margin-top: 26px; padding: 15px; font-size: 14px; border-radius: 14px; }
-        .auth-modal .toggle-link { margin-top: 16px; font-size: 12.5px; }
-        .post-modal { max-width: 400px; padding: 22px 18px; }
-        .post-mobile-header { display: none; }
-        .post-section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text); font-weight: 800; margin: 24px 0 10px; display: flex; align-items: center; gap: 8px; }
-        .post-section-label:first-of-type { margin-top: 6px; }
-        @media (max-width: 780px) {
-          .post-section-label:first-of-type { margin-top: 22px; }
-        }
-        .post-section-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #FF4D8D; display: inline-block; }
-        .post-step-num { display: none; }
-        .post-submit-bar { margin-top: 22px; }
-        @media (max-width: 780px) {
-          .post-mobile-header { display: flex; align-items: center; padding: 16px 14px; margin: -22px -18px 0; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card); z-index: 3; }
-          .post-mobile-close { background: none; border: none; color: var(--text); display: flex; padding: 4px; cursor: pointer; }
-          .post-mobile-title { flex: 1; text-align: center; margin: 0; font-size: 16px; font-weight: 700; margin-right: 26px; }
-          .post-modal .close-btn { display: none; }
-          .post-modal .auth-title, .post-modal .auth-subtitle { display: none; }
-          .post-modal { padding-top: 0; padding-bottom: 88px; }
-          .post-submit-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); margin: 0; border-top: 1.5px solid var(--border); box-shadow: 0 -8px 20px rgba(0,0,0,0.12); z-index: 5; }
-          .post-submit-bar .submit-btn { margin: 0; }
-          .post-step-num { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #fff; font-size: 11px; font-weight: 900; flex-shrink: 0; }
-          .post-section-label { gap: 8px; font-size: 12.5px; }
-          .post-section-label::before { display: none; }
-          .post-form-card { box-shadow: 0 6px 18px -8px rgba(0,0,0,0.15); }
-          .pill { padding: 8px 14px; font-size: 12.5px; }
-          .pill.active { box-shadow: 0 4px 12px -4px #FF4D8D66; }
-        }
-        @media (min-width: 780px) {
-          .post-modal { max-width: 760px; }
-          .post-modal-grid { display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start; }
-        }
-        .upload-box { display: flex; flex-direction: column; align-items: center; gap: 8px; border: 2.5px dashed var(--border); border-radius: 18px; padding: 30px 16px; margin-bottom: 12px; color: var(--body); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; background: var(--card); transition: border-color 0.15s, background 0.15s; }
-        .upload-box:hover { border-color: #FF4D8D; background: #FF4D8D0d; }
-        .upload-icon-badge { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #FF4D8D, #FF8A4D); display: flex; align-items: center; justify-content: center; margin-bottom: 2px; }
-        .upload-box-title { font-size: 14px; font-weight: 800; color: var(--text); }
-        .image-preview-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
-        .image-preview.uploading { display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--faint); }
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .image-preview { position: relative; width: 100%; aspect-ratio: 1; border-radius: 12px; overflow: hidden; border: 2px solid var(--border); }
-        .image-preview img { width: 100%; height: 100%; object-fit: cover; }
-        .image-preview button { position: absolute; top: 4px; right: 4px; background: #000000aa; border: none; color: #fff; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
-        .upload-hint { font-size: 11px; color: var(--faint); font-weight: 400; }
-        .pill-group { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
-        .pill { border: 2px solid var(--border); background: var(--card); color: var(--text); border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .pill.active { background: linear-gradient(135deg, #FF4D8D, #FF8A4D); color: #fff; border-color: var(--border); font-weight: 800; }
-        .price-input { max-width: 140px; }
-        .euro-prefix { color: var(--faint); font-weight: 700; font-size: 14px; }
-        .post-preview-card { border: 2.5px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--card); margin-top: 18px; }
-        .post-preview-media { height: 140px; background: var(--surface); display: flex; align-items: center; justify-content: center; color: var(--faint); background-size: contain; background-repeat: no-repeat; background-position: center; }
-        .post-preview-body { padding: 10px 12px; }
-        .post-preview-price { color: #fff; background: #1A1A1E; display: inline-block; padding: 3px 10px; border-radius: 12px; font-weight: 800; font-size: 13px; margin: 0 0 6px; }
-        .post-form-card { background: var(--card); border: 2.5px solid var(--border); border-radius: 16px; padding: 16px 18px 18px; }
-        .post-form-card label:first-child { margin-top: 0; }
-        .post-preview-title { font-size: 12.5px; color: var(--body); margin: 3px 0 0; }
-        .post-preview-meta { font-size: 11px; color: var(--faint); margin: 3px 0 0; }
-      `}</style>
-
-      <header className="top">
-        <div className="brand" onClick={goHome} style={{ cursor: "pointer" }}>
-          <div className="brand-mark">
-            <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <rect x="66" y="18" width="15" height="15" fill="#FF4D8D" />
-              <text x="47" y="80" fontFamily="Manrope, Arial, sans-serif" fontSize="75" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
-            </svg>
-          </div>
-          <h1>Ropelin</h1>
-        </div>
-        <div className="top-actions">
-          <button className="icon-btn" onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))} title={theme === "dark" ? "Modo claro" : "Modo oscuro"} aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
-            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-          {loggedIn && (
-            <button className="icon-btn" onClick={() => { setShowProfile(true); setProfileMenuView("pedidos"); }} aria-label={`Mis pedidos${pendingShipmentsCount > 0 ? ` (${pendingShipmentsCount} pendientes)` : ""}`}>
-              <Package size={16} />
-              {pendingShipmentsCount > 0 && <span className="notif-dot">{pendingShipmentsCount}</span>}
-            </button>
-          )}
-          {loggedIn && (
-            <button className="icon-btn hide-on-mobile-nav" onClick={handleOpenNotifs} aria-label={`Notificaciones${notifications.some((n) => !n.read) ? ` (${notifications.filter((n) => !n.read).length} sin leer)` : ""}`}>
-              <Bell size={16} />
-              {notifications.some((n) => !n.read) && (
-                <span className="notif-dot">{notifications.filter((n) => !n.read).length}</span>
-              )}
-            </button>
-          )}
-          {loggedIn && (
-            <button className="icon-btn hide-on-mobile-nav" onClick={() => setShowFavorites(true)} aria-label={`Favoritos${saved.size > 0 ? ` (${saved.size})` : ""}`}>
-              <Heart size={16} fill={saved.size > 0 ? "#FF4D8D" : "none"} color={saved.size > 0 ? "#FF4D8D" : "currentColor"} />
-              {saved.size > 0 && <span className="notif-dot">{saved.size}</span>}
-            </button>
-          )}
-          {loggedIn && (
-            <span className="badge profile-badge hide-on-mobile-nav" onClick={viewProfile} role="button" tabIndex={0} aria-label={`Ver mi perfil, @${username}`} onKeyDown={(e) => { if (e.key === "Enter") viewProfile(); }}>
-              <span className="mini-avatar" style={{ background: avatarColor }}>{username[0]?.toUpperCase()}</span>
-              @{username}
-            </span>
-          )}
-          <button className="btn primary hide-on-mobile-nav" onClick={openPostForm}><Plus size={14} /> Vender</button>
-          {!loggedIn && (
-            <button className="btn ghost hide-on-mobile-nav" onClick={() => setShowAuth(true)}><LogIn size={14} /> <span className="btn-label">Entrar</span></button>
-          )}
-
-          {installPrompt && (
-            <button className="icon-btn" onClick={handleInstallApp} title="Instalar app" aria-label="Instalar la app de Ropelin">
-              <Download size={16} />
-            </button>
-          )}
-        </div>
-      </header>
-
-      {showIosInstallBanner && (
-        <div className="ios-install-banner">
-          <button className="ios-install-close" onClick={dismissIosInstallBanner}><X size={13} /></button>
-          <img src="/icon-192.png" alt="Ropelin" className="ios-install-icon" />
-          <div className="ios-install-text">
-            <p className="ios-install-title">Instala Ropelin</p>
-            <p className="ios-install-steps">
-              Toca <Share2 size={13} style={{ verticalAlign: "middle" }} /> y luego <strong>"Añadir a pantalla de inicio"</strong>
-            </p>
-          </div>
-        </div>
-      )}
-
-      {!anyModalOpen && !(showPost && numCols < 3) && (
-      <div className="mobile-bottom-nav">
-        <button onClick={goHome}>
-          <Home size={20} />
-          <span>Inicio</span>
-        </button>
-        {loggedIn && (
-          <button onClick={() => setShowFavorites(true)}>
-            <Heart size={20} fill={saved.size > 0 ? "#FF4D8D" : "none"} color={saved.size > 0 ? "#FF4D8D" : "currentColor"} />
-            <span>Favoritos</span>
-            {saved.size > 0 && <span className="notif-dot bottom-nav-dot">{saved.size}</span>}
-          </button>
-        )}
-        <button
-          className="mobile-nav-sell"
-          onClick={openPostForm}
-        >
-          <Plus size={22} />
-        </button>
-        {loggedIn ? (
-          <button onClick={handleOpenNotifs}>
-            <Bell size={20} />
-            <span>Avisos</span>
-            {notifications.some((n) => !n.read) && <span className="notif-dot bottom-nav-dot">{notifications.filter((n) => !n.read).length}</span>}
-          </button>
-        ) : (
-          <button onClick={() => setShowAuth(true)}>
-            <LogIn size={20} />
-            <span>Entrar</span>
-          </button>
-        )}
-        {loggedIn && (
-          <button onClick={viewProfile}>
-            <span className="mini-avatar bottom-nav-avatar" style={{ background: avatarColor }}>{username[0]?.toUpperCase()}</span>
-            <span>Perfil</span>
-          </button>
-        )}
-      </div>
-      )}
-
-      {!hidesFeedOnDesktop && (
-        <div className="hero">
-          <h2>Lo que ya no usas, <span className="accent">alguien lo está buscando</span>.</h2>
-          <p>Compra y vende de todo, de segunda mano. Busca, publica, negocia.</p>
-        </div>
-      )}
-
-      <div className="search-row">
+  // Buscador (con búsqueda por foto y filtros): en escritorio va dentro de la cabecera, en móvil justo debajo
+  const searchEl = (
+    <>
         <div className="search-box search-box-wrap">
-          <Search size={15} color="#9A9AA3" />
+          <Search size={15} color="var(--faint)" />
           <input
             placeholder="Buscar artículos..."
             value={query}
@@ -4512,7 +3400,159 @@ export default function RopelinApp() {
         <button className={"filter-toggle-btn" + (showFilters ? " active" : "")} onClick={() => setShowFilters(!showFilters)} aria-label={showFilters ? "Ocultar filtros" : "Mostrar filtros"}>
           <SlidersHorizontal size={15} />
         </button>
+    </>
+  );
+
+  // La portada "de escaparate" solo se muestra sin búsqueda ni filtros; si no, se ve la lista de resultados
+  const filtersActive = !!(priceFilter.min || priceFilter.max || sizeFilter || distanceFilter || sortBy !== "recent");
+  const isHomeView = category === "Para ti" && !query && photoSearchResults === null && !filtersActive && !loading && !loadError && allItems.length > 0;
+  // En escritorio, cuando NO estamos en la portada (es decir, se está buscando o navegando una
+  // categoría), los filtros pasan de desplegable a barra lateral fija — como cualquier
+  // marketplace real. En móvil siempre es la hoja deslizante, da igual la vista.
+  const useExploreSidebar = numCols >= 3 && !isHomeView;
+  const shownItems = photoSearchResults !== null ? photoSearchResults : items;
+  const resultsTitle = query ? `Resultados para “${query}”` : photoSearchResults !== null ? "Resultados de tu foto" : category === "Para ti" || category === "Todo" ? "Todos los artículos" : category;
+
+  return (
+    <div className="app">
+      {!cookieChoice && (
+        <div className="cookie-banner">
+          <p>
+            Usamos cookies propias y de terceros para que la web funcione, recordar tu sesión y entender cómo la usas.{" "}
+            <button className="cookie-link" onClick={() => openLegal("cookies")}>Más información</button>
+          </p>
+          <div className="cookie-actions">
+            <button className="btn ghost" onClick={() => handleCookieChoice("rejected")}>Solo necesarias</button>
+            <button className="btn primary" onClick={() => handleCookieChoice("accepted")}>Aceptar todo</button>
+          </div>
+        </div>
+      )}
+      <Toaster
+        position="bottom-center"
+        toastOptions={{
+          style: {
+            background: "var(--card)", color: "var(--text)", border: "1px solid var(--border)",
+            boxShadow: "var(--shadow-m)", borderRadius: "12px", fontFamily: "var(--font-body)", fontSize: "13.5px", fontWeight: 600,
+          },
+          success: { iconTheme: { primary: "var(--ok)", secondary: "var(--card)" } },
+          error: { iconTheme: { primary: "var(--accent)", secondary: "var(--card)" } },
+        }}
+      />
+
+      <div className="ann-bar">
+        <b>Pago protegido</b> en todas tus compras<span>·</span>Envíos con seguimiento<span>·</span>Vendedores verificados
       </div>
+
+      <header className="top">
+        <div className="brand" onClick={goHome} style={{ cursor: "pointer" }}>
+          <div className="brand-mark">
+            <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <rect x="66" y="18" width="15" height="15" fill="var(--accent)" />
+              <text x="47" y="80" fontFamily="Manrope, Arial, sans-serif" fontSize="75" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
+            </svg>
+          </div>
+          <h1>Ropelin</h1>
+        </div>
+        {numCols >= 3 && <div className="hd-search">{searchEl}</div>}
+        <div className="top-actions">
+          <button className="icon-btn" onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))} title={theme === "dark" ? "Modo claro" : "Modo oscuro"} aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          {loggedIn && (
+            <button className="icon-btn" onClick={() => { setShowProfile(true); setProfileMenuView("pedidos"); }} aria-label={`Mis pedidos${pendingShipmentsCount > 0 ? ` (${pendingShipmentsCount} pendientes)` : ""}`}>
+              <Package size={16} />
+              {pendingShipmentsCount > 0 && <span className="notif-dot">{pendingShipmentsCount}</span>}
+            </button>
+          )}
+          {loggedIn && (
+            <button className="icon-btn hide-on-mobile-nav" onClick={handleOpenNotifs} aria-label={`Notificaciones${notifications.some((n) => !n.read) ? ` (${notifications.filter((n) => !n.read).length} sin leer)` : ""}`}>
+              <Bell size={16} />
+              {notifications.some((n) => !n.read) && (
+                <span className="notif-dot">{notifications.filter((n) => !n.read).length}</span>
+              )}
+            </button>
+          )}
+          {loggedIn && (
+            <button className="icon-btn hide-on-mobile-nav" onClick={() => setShowFavorites(true)} aria-label={`Favoritos${saved.size > 0 ? ` (${saved.size})` : ""}`}>
+              <Heart size={16} fill={saved.size > 0 ? "var(--accent)" : "none"} color={saved.size > 0 ? "var(--accent)" : "currentColor"} />
+              {saved.size > 0 && <span className="notif-dot">{saved.size}</span>}
+            </button>
+          )}
+          {loggedIn && (
+            <span className="badge profile-badge hide-on-mobile-nav" onClick={viewProfile} role="button" tabIndex={0} aria-label={`Ver mi perfil, @${username}`} onKeyDown={(e) => { if (e.key === "Enter") viewProfile(); }}>
+              <span className="mini-avatar" style={{ background: avatarColor }}>{username[0]?.toUpperCase()}</span>
+              @{username}
+            </span>
+          )}
+          <button className="btn primary hide-on-mobile-nav" onClick={openPostForm}><Plus size={14} /> Vender</button>
+          {!loggedIn && (
+            <button className="btn ghost hide-on-mobile-nav" onClick={() => setShowAuth(true)}><LogIn size={14} /> <span className="btn-label">Entrar</span></button>
+          )}
+
+          {installPrompt && (
+            <button className="icon-btn" onClick={handleInstallApp} title="Instalar app" aria-label="Instalar la app de Ropelin">
+              <Download size={16} />
+            </button>
+          )}
+        </div>
+      </header>
+
+      {showIosInstallBanner && (
+        <div className="ios-install-banner">
+          <button className="ios-install-close" onClick={dismissIosInstallBanner}><X size={13} /></button>
+          <img src="/icon-192.png" alt="Ropelin" className="ios-install-icon" />
+          <div className="ios-install-text">
+            <p className="ios-install-title">Instala Ropelin</p>
+            <p className="ios-install-steps">
+              Toca <Share2 size={13} style={{ verticalAlign: "middle" }} /> y luego <strong>"Añadir a pantalla de inicio"</strong>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!anyModalOpen && !(showPost && numCols < 3) && (
+      <div className="mobile-bottom-nav">
+        <button onClick={goHome}>
+          <Home size={20} />
+          <span>Inicio</span>
+        </button>
+        {loggedIn && (
+          <button onClick={() => setShowFavorites(true)}>
+            <Heart size={20} fill={saved.size > 0 ? "var(--accent)" : "none"} color={saved.size > 0 ? "var(--accent)" : "currentColor"} />
+            <span>Favoritos</span>
+            {saved.size > 0 && <span className="notif-dot bottom-nav-dot">{saved.size}</span>}
+          </button>
+        )}
+        <button
+          className="mobile-nav-sell"
+          onClick={openPostForm}
+        >
+          <Plus size={22} />
+        </button>
+        {loggedIn ? (
+          <button onClick={handleOpenNotifs}>
+            <Bell size={20} />
+            <span>Avisos</span>
+            {notifications.some((n) => !n.read) && <span className="notif-dot bottom-nav-dot">{notifications.filter((n) => !n.read).length}</span>}
+          </button>
+        ) : (
+          <button onClick={() => setShowAuth(true)}>
+            <LogIn size={20} />
+            <span>Entrar</span>
+          </button>
+        )}
+        {loggedIn && (
+          <button onClick={viewProfile}>
+            <span className="mini-avatar bottom-nav-avatar" style={{ background: avatarColor }}>{username[0]?.toUpperCase()}</span>
+            <span>Perfil</span>
+          </button>
+        )}
+      </div>
+      )}
+
+      {numCols < 3 && (
+        <div className="search-row">{searchEl}</div>
+      )}
 
       {photoSearchResults !== null && (
         <div className="photo-search-banner">
@@ -4522,101 +3562,45 @@ export default function RopelinApp() {
         </div>
       )}
 
-      {showFilters && (
-        <div className="filter-panel">
-          <div className="filter-panel-row">
-            <label>Precio</label>
-            <div className="filter-price-inputs">
-              <input type="number" placeholder="Mín." value={priceFilter.min} onChange={(e) => { setPriceFilter((p) => ({ ...p, min: e.target.value })); if (openItem) closeItemView(); }} />
-              <span>-</span>
-              <input type="number" placeholder="Máx." value={priceFilter.max} onChange={(e) => { setPriceFilter((p) => ({ ...p, max: e.target.value })); if (openItem) closeItemView(); }} />
+      {showFilters && numCols < 3 && (
+        <div className="fp-mobile-sheet" onClick={() => setShowFilters(false)}>
+          <div className="fp-backdrop" />
+          <div className="fp-card" onClick={(e) => e.stopPropagation()}>
+            <div className="fp-mobile-head">
+              <h3>Filtros y orden</h3>
+              <button onClick={() => setShowFilters(false)} aria-label="Cerrar filtros"><X size={17} /></button>
             </div>
+            <FilterPanel
+              priceFilter={priceFilter} setPriceFilter={setPriceFilter}
+              sizeFilter={sizeFilter} setSizeFilter={setSizeFilter}
+              sortBy={sortBy} setSortBy={setSortBy}
+              distanceFilter={distanceFilter} setDistanceFilter={setDistanceFilter}
+              myLocation={myLocation} locatingMe={locatingMe} onDetectLocation={detectMyLocation}
+              onClearFilters={() => { setPriceFilter({ min: "", max: "" }); setSizeFilter(""); setDistanceFilter(""); setSortBy("recent"); }}
+              hasActiveFilters={!!(priceFilter.min || priceFilter.max || sizeFilter || distanceFilter || sortBy !== "recent")}
+              onCloseItemView={() => { if (openItem) closeItemView(); }}
+              canSaveSearch={loggedIn && !!(query || (category !== "Para ti" && category !== "Todo"))}
+              onSaveSearch={handleSaveCurrentSearch}
+              savedSearches={loggedIn ? savedSearches : null}
+              onPickSavedSearch={(s) => { setQuery(s.query || ""); setCategory(s.category || "Todo"); }}
+              onDeleteSavedSearch={handleDeleteSavedSearch}
+            />
+            <button className="fp-mobile-apply" onClick={() => setShowFilters(false)}>Ver resultados</button>
           </div>
-          <div className="filter-panel-row">
-            <label>Talla</label>
-            <select value={sizeFilter} onChange={(e) => { setSizeFilter(e.target.value); if (openItem) closeItemView(); }}>
-              <option value="">Todas</option>
-              {SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div className="filter-panel-row">
-            <label>Ordenar por</label>
-            <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); if (openItem) closeItemView(); }}>
-              <option value="recent">Más recientes</option>
-              <option value="price_asc">Precio: menor a mayor</option>
-              <option value="price_desc">Precio: mayor a menor</option>
-              {myLocation && <option value="distance">Distancia: más cerca</option>}
-            </select>
-          </div>
-
-          {myLocation ? (
-            <div className="filter-panel-row">
-              <label>Distancia máxima</label>
-              <select value={distanceFilter} onChange={(e) => { setDistanceFilter(e.target.value); if (openItem) closeItemView(); }}>
-                <option value="">Cualquier distancia</option>
-                <option value="5">Menos de 5 km</option>
-                <option value="10">Menos de 10 km</option>
-                <option value="25">Menos de 25 km</option>
-                <option value="50">Menos de 50 km</option>
-                <option value="100">Menos de 100 km</option>
-              </select>
-            </div>
-          ) : (
-            <button className="filter-location-prompt" onClick={detectMyLocation} disabled={locatingMe}>
-              <MapPin size={13} /> {locatingMe ? "Detectando..." : "Activar ubicación para ver la distancia"}
-            </button>
-          )}
-
-          {(priceFilter.min || priceFilter.max || sizeFilter || distanceFilter || sortBy !== "recent") && (
-            <button className="filter-clear-btn" onClick={() => { setPriceFilter({ min: "", max: "" }); setSizeFilter(""); setDistanceFilter(""); setSortBy("recent"); }}>
-              Quitar filtros
-            </button>
-          )}
-
-          {loggedIn && (query || (category !== "Para ti" && category !== "Todo")) && (
-            <button className="filter-clear-btn" style={{ background: "var(--surface)", color: "var(--body)" }} onClick={handleSaveCurrentSearch}>
-              <Heart size={13} /> Guardar esta búsqueda
-            </button>
-          )}
-
-          {loggedIn && savedSearches.length > 0 && (
-            <div className="saved-searches-list">
-              <p className="filter-panel-row label" style={{ fontSize: 12, fontWeight: 600, color: "var(--faint)", margin: 0 }}>Tus búsquedas guardadas</p>
-              {savedSearches.map((s) => (
-                <div key={s.id} className="saved-search-chip">
-                  <span onClick={() => { setQuery(s.query || ""); setCategory(s.category || "Todo"); }}>
-                    {s.query || s.category || "Todos"}{s.query && s.category ? ` en ${s.category}` : ""}
-                  </span>
-                  <button onClick={() => handleDeleteSavedSearch(s.id)}><X size={11} /></button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
-      <div className="cat-scroll">
-        <button className={"cat-circle" + (category === "Para ti" ? " active" : "")} onClick={() => { setCategory("Para ti"); if (openItem) closeItemView(); }}>
-          <span className="cat-icon-wrap forYou">✨</span>
-          <span>Para ti</span>
-        </button>
-        {["Todo", ...platformSettings.categories].map((c) => {
-          const Icon = CATEGORY_ICONS[c] || Tag;
-          const accent = CATEGORY_COLORS[c] || "#9A9AA3";
-          return (
-            <button key={c} className={"cat-circle" + (category === c ? " active" : "")} onClick={() => { setCategory(c); if (openItem) closeItemView(); }}>
-
-              <span
-                className="cat-icon-wrap"
-                style={category === c ? {} : { borderColor: accent + "33", background: accent + "14", color: accent }}
-              >
-                <Icon size={18} />
-              </span>
-              <span>{c}</span>
-            </button>
-          );
-        })}
-      </div>
+      <nav className="cat-tabs" aria-label="Categorías">
+        {["Para ti", "Todo", ...platformSettings.categories].map((c) => (
+          <button
+            key={c}
+            className={"cat-tab" + (category === c ? " active" : "")}
+            onClick={() => { setCategory(c); if (openItem) closeItemView(); }}
+          >
+            {c}
+          </button>
+        ))}
+      </nav>
 
       {showProfile && (() => {
         const profileUsername = viewingProfile || username;
@@ -4668,7 +3652,7 @@ export default function RopelinApp() {
                 )}
               </p>
               <p className="profile-sub">
-                {profileRating ? <><Star size={12} fill="#FFC24D" color="#FFC24D" /> {profileRating} ({profileReviews.total})</> : "Sin valoraciones todavía"} · miembro desde 2026
+                {profileRating ? <><Star size={12} fill="var(--amber)" color="var(--amber)" /> {profileRating} ({profileReviews.total})</> : "Sin valoraciones todavía"} · miembro desde 2026
               </p>
               {(() => {
                 const avgSaleDays = isOwnProfile ? myProfileExtra.avgSaleDays : otherProfileData?.avgSaleDays;
@@ -4711,24 +3695,24 @@ export default function RopelinApp() {
                 </div>
                 <div className="about-me-col">
                   <p className="about-me-heading">Información verificada</p>
-                  <p className="about-me-line"><CheckCircle size={13} color="#7FD8D0" /> E-mail</p>
+                  <p className="about-me-line"><CheckCircle size={13} color="var(--ok)" /> E-mail</p>
                 </div>
               </div>
 
               <div className="stats-row">
                 <button className="stat-box stat-box-clickable" onClick={() => setProfileMenuView("venta")}>
-                  <Tag size={13} color="#9A9AA3" />
+                  <Tag size={13} color="var(--faint)" />
                   <strong>{profileItems.length}</strong>
                   <span>En venta</span>
                 </button>
                 <button className="stat-box stat-box-clickable" onClick={() => setProfileMenuView("vendidos")}>
-                  <CheckCircle size={13} color="#9A9AA3" />
+                  <CheckCircle size={13} color="var(--faint)" />
                   <strong>{profileSold.length}</strong>
                   <span>Vendidos</span>
                 </button>
                 {isOwnProfile && (
                   <button className="stat-box stat-box-clickable" onClick={() => setProfileMenuView("favoritos")}>
-                    <Heart size={13} color="#9A9AA3" />
+                    <Heart size={13} color="var(--faint)" />
                     <strong>{saved.size}</strong>
                     <span>Favoritos</span>
                   </button>
@@ -4737,7 +3721,7 @@ export default function RopelinApp() {
 
               {isOwnProfile && loggedIn && stripeStatus && !stripeStatus.onboarded && (
                 <div className="stripe-post-reminder">
-                  <HandCoins size={18} color="#FFC24D" />
+                  <HandCoins size={18} color="var(--amber)" />
                   <div>
                     <p className="stripe-post-reminder-title">Conecta tu cuenta para poder cobrar</p>
                     <p className="stripe-post-reminder-text">Nadie podrá comprarte nada hasta que conectes Stripe (cuenta bancaria y algún dato de identidad). Solo se hace una vez.</p>
@@ -4796,7 +3780,7 @@ export default function RopelinApp() {
                       return (
                         <button className="profile-badges-card" style={{ width: "100%", textAlign: "left", cursor: "pointer", border: "1px solid var(--border)" }} onClick={openLeague}>
                           <div className="profile-badges-card-top">
-                            <span className="profile-menu-icon"><Trophy size={17} color="#FFC24D" /></span>
+                            <span className="profile-menu-icon"><Trophy size={17} color="var(--amber)" /></span>
                             <span className="profile-menu-label">Liga de vendedores</span>
                             <span className="profile-badges-count">
                               {myRanking ? `#${myRanking.rank} · ${myRanking.points} pts` : "Sin puntos todavía"}
@@ -4981,7 +3965,7 @@ export default function RopelinApp() {
                             </div>
                           </div>
                           <div className="own-grid-actions">
-                            <button onClick={(e) => { e.stopPropagation(); toggleSave(i.id); }} title="Quitar de favoritos"><Heart size={13} fill="#FF4D8D" color="#FF4D8D" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); toggleSave(i.id); }} title="Quitar de favoritos"><Heart size={13} fill="var(--accent)" color="var(--accent)" /></button>
                           </div>
                         </div>
                       ))}
@@ -4998,7 +3982,7 @@ export default function RopelinApp() {
                             <span className="review-author">@{r.authorUsername}</span>
                             <span className="review-stars">
                               {Array.from({ length: 5 }).map((_, i) => (
-                                <Star key={i} size={11} fill={i < r.rating ? "#FFC24D" : "none"} color="#FFC24D" />
+                                <Star key={i} size={11} fill={i < r.rating ? "var(--amber)" : "none"} color="var(--amber)" />
                               ))}
                             </span>
                           </div>
@@ -5054,7 +4038,7 @@ export default function RopelinApp() {
                       )}
                       {pushStatus === "on" && (
                         <button className="btn ghost" onClick={handleDisablePush} style={{ marginBottom: 20, width: "100%" }}>
-                          <CheckCircle size={14} color="#7FD8D0" /> Activadas — tocar para desactivar
+                          <CheckCircle size={14} color="var(--ok)" /> Activadas — tocar para desactivar
                         </button>
                       )}
 
@@ -5227,7 +4211,7 @@ export default function RopelinApp() {
                       <p className="stripe-status">Por cada amigo que se registre con tu enlace y publique su primer artículo, ganas <strong>1 destacado gratis</strong> para uno de tus artículos.</p>
 
                       <div className="referral-balance-box">
-                        <TrendingUp size={20} color="#FF4D8D" />
+                        <TrendingUp size={20} color="var(--accent)" />
                         <div>
                           <p className="referral-balance-num">{myProfileExtra.freeBoosts || 0}</p>
                           <p className="referral-balance-label">destacado{myProfileExtra.freeBoosts === 1 ? "" : "s"} gratis disponible{myProfileExtra.freeBoosts === 1 ? "" : "s"}</p>
@@ -5309,7 +4293,7 @@ export default function RopelinApp() {
                 onClick={() => handleShare(`${window.location.origin}/item/${openItem.id}`, openItem.title)}
               ><Share2 size={16} /></button>
               <button className={"heart detail-icon-btn" + (saved.has(openItem.id) ? " on" : "")} onClick={() => toggleSave(openItem.id)}>
-                <Heart size={18} fill={saved.has(openItem.id) ? "#FF4D8D" : "none"} color={saved.has(openItem.id) ? "#FF4D8D" : "#fff"} />
+                <Heart size={18} fill={saved.has(openItem.id) ? "var(--accent)" : "none"} color={saved.has(openItem.id) ? "var(--accent)" : "#fff"} />
               </button>
             </div>
           </div>
@@ -5378,10 +4362,9 @@ export default function RopelinApp() {
             </div>
 
             {openItem.description && (
-              <>
-                <p className="detail-section-label">Descripción</p>
+              <Accordion title="Descripción">
                 <p className="detail-description">{openItem.description}</p>
-              </>
+              </Accordion>
             )}
 
             <div className="seller-card">
@@ -5395,10 +4378,10 @@ export default function RopelinApp() {
               <div style={{ flex: 1, cursor: "pointer" }} onClick={() => { setOpenItem(null); openProfile(openItem.seller); }}>
                 <p className="seller-name">
                   @{openItem.seller}
-                  {openItem.verified && <CheckCircle size={13} color="#7FD8D0" style={{ marginLeft: 5, verticalAlign: -2 }} />}
+                  {openItem.verified && <CheckCircle size={13} color="var(--ok)" style={{ marginLeft: 5, verticalAlign: -2 }} />}
                 </p>
                 <p className="seller-rating">
-                  <Star size={11} fill="#FFC24D" color="#FFC24D" /> 4.8 · 32 ventas
+                  <Star size={11} fill="var(--amber)" color="var(--amber)" /> 4.8 · 32 ventas
                   {openItem.distanceKm !== null && <> · <MapPin size={11} /> a {openItem.distanceKm < 1 ? "menos de 1" : Math.round(openItem.distanceKm)} km</>}
                   {openItem.distanceKm === null && openItem.city && <> · <MapPin size={11} /> {openItem.city}</>}
                 </p>
@@ -5413,7 +4396,7 @@ export default function RopelinApp() {
             </div>
 
             <div className="shipping-box">
-              <Truck size={16} color="#9A9AA3" />
+              <Truck size={16} color="var(--faint)" />
               <div>
                 <p className="shipping-title">Cómo se entrega</p>
                 <p className="shipping-sub">Por correo, con el precio real del transportista calculado al pagar (varía según destino), o en mano si quedáis cerca — lo acordáis por chat</p>
@@ -5421,8 +4404,8 @@ export default function RopelinApp() {
             </div>
 
             {sellerReviews && sellerReviews.reviews && sellerReviews.reviews.length > 0 && (
-              <div className="seller-reviews-box">
-                <p className="detail-section-label">Reseñas de @{openItem.seller} ({sellerReviews.total})</p>
+              <Accordion title={`Reseñas de @${openItem.seller} (${sellerReviews.total})`}>
+                <div className="seller-reviews-box">
                 <div className="reviews-list">
                   {sellerReviews.reviews.slice(0, 1).map((r) => (
                     <div key={r.id} className="review-row">
@@ -5430,7 +4413,7 @@ export default function RopelinApp() {
                         <span className="review-author">@{r.authorUsername}</span>
                         <span className="review-stars">
                           {Array.from({ length: 5 }).map((_, i) => (
-                            <Star key={i} size={11} fill={i < r.rating ? "#FFC24D" : "none"} color="#FFC24D" />
+                            <Star key={i} size={11} fill={i < r.rating ? "var(--amber)" : "none"} color="var(--amber)" />
                           ))}
                         </span>
                       </div>
@@ -5440,7 +4423,8 @@ export default function RopelinApp() {
                   ))}
                 </div>
                 <button className="about-block-link seller-reviews-more" onClick={() => openProfile(openItem.seller)}>Ver {sellerReviews.total > 1 ? `las ${sellerReviews.total} reseñas` : "todas las reseñas"} →</button>
-              </div>
+                </div>
+              </Accordion>
             )}
 
             {openItem.seller === username && openItem.status !== "sold" && !stripeStatus?.onboarded && (
@@ -5571,7 +4555,7 @@ export default function RopelinApp() {
         const leagueContentEl = (
           <>
             <div className="league-header">
-              <Trophy size={20} color="#FFC24D" />
+              <Trophy size={20} color="var(--amber)" />
               <p className="auth-title" style={{ margin: 0 }}>Liga de vendedores</p>
             </div>
             <p className="auth-subtitle" style={{ marginBottom: 18 }}>Gana puntos vendiendo y recibiendo buenas valoraciones</p>
@@ -5637,7 +4621,7 @@ export default function RopelinApp() {
         const helpContentEl = (
           <>
             <div className="league-header">
-              <MessageCircle size={20} color="#7FD8D0" />
+              <MessageCircle size={20} color="var(--ok)" />
               <p className="auth-title" style={{ margin: 0 }}>Centro de ayuda</p>
             </div>
 
@@ -5695,11 +4679,11 @@ export default function RopelinApp() {
                       <div key={m.id} className={"admin-dispute-row" + (m.status === "resolved" ? " reviewed" : "")}>
                         <p className="admin-user-name">
                           {m.subject}
-                          {m.status === "resolved" ? <span className="admin-role-badge">Respondido</span> : <span className="admin-role-badge" style={{ background: "#FFC24D" }}>Pendiente</span>}
+                          {m.status === "resolved" ? <span className="admin-role-badge">Respondido</span> : <span className="admin-role-badge" style={{ background: "var(--amber-soft)" }}>Pendiente</span>}
                         </p>
                         <p className="admin-user-meta">{new Date(m.createdAt).toLocaleDateString("es-ES")}</p>
                         <p className="admin-dispute-reason">{m.message}</p>
-                        {m.adminReply && <p className="admin-dispute-reason" style={{ color: "#7FD8D0" }}>Respuesta de Ropelin: {m.adminReply}</p>}
+                        {m.adminReply && <p className="admin-dispute-reason" style={{ color: "var(--ok)" }}>Respuesta de Ropelin: {m.adminReply}</p>}
                       </div>
                     ))}
                   </div>
@@ -5748,7 +4732,7 @@ export default function RopelinApp() {
                 { Icon: Shield, type: "Nuevo", text: "Banner de consentimiento de cookies" },
                 { Icon: LayoutGrid, type: "Mejora", text: "Rediseño del formulario de publicar y del pie de página" },
               ];
-              const TYPE_COLORS = { Nuevo: "#7FD8D0", Mejora: "#8C7CFF", Arreglo: "#FF8A4D" };
+              const TYPE_COLORS = { Nuevo: "var(--ok)", Mejora: "var(--sub)", Arreglo: "var(--accent)" };
               const total = AGOSTO.length + JULIO.length;
 
               return (
@@ -5759,14 +4743,14 @@ export default function RopelinApp() {
                       <p style={{ whiteSpace: "pre-wrap" }}>{platformSettings.updatesText}</p>
                     ) : (
                       <>
-                        <p className="updates-counter"><Sparkles size={13} color="#7FD8D0" /> {total} novedades este mes</p>
+                        <p className="updates-counter"><Sparkles size={13} color="var(--ok)" /> {total} novedades este mes</p>
 
                         <div className="update-entry">
                           <p className="update-date">Agosto 2026</p>
                           <div className="update-bubbles">
                             {AGOSTO.map(({ Icon, type, text }) => (
                               <div className="update-bubble" key={text}>
-                                <div className="update-bubble-icon"><Icon size={15} color="#9A9AA3" /></div>
+                                <div className="update-bubble-icon"><Icon size={15} color="var(--faint)" /></div>
                                 <div>
                                   <span className="update-type-tag" style={{ color: TYPE_COLORS[type], borderColor: `${TYPE_COLORS[type]}55` }}>{type}</span>
                                   <p>{text}</p>
@@ -5781,7 +4765,7 @@ export default function RopelinApp() {
                           <div className="update-bubbles">
                             {JULIO.map(({ Icon, type, text }) => (
                               <div className="update-bubble" key={text}>
-                                <div className="update-bubble-icon"><Icon size={15} color="#9A9AA3" /></div>
+                                <div className="update-bubble-icon"><Icon size={15} color="var(--faint)" /></div>
                                 <div>
                                   <span className="update-type-tag" style={{ color: TYPE_COLORS[type], borderColor: `${TYPE_COLORS[type]}55` }}>{type}</span>
                                   <p>{text}</p>
@@ -5795,7 +4779,7 @@ export default function RopelinApp() {
 
                     <div className="updates-subscribe-box">
                       {newsletterSubscribed ? (
-                        <p className="updates-subscribe-done"><CheckCircle size={14} color="#7FD8D0" /> Te avisaremos por email de las novedades</p>
+                        <p className="updates-subscribe-done"><CheckCircle size={14} color="var(--ok)" /> Te avisaremos por email de las novedades</p>
                       ) : (
                         <>
                           <p className="updates-subscribe-title">¿Quieres que te avisemos?</p>
@@ -5820,11 +4804,11 @@ export default function RopelinApp() {
                 <p className="how-it-works-intro">Comprar y vender de segunda mano en Ropelin es sencillo y está protegido en cada paso.</p>
                 <div className="how-it-works-list">
                   {[
-                    { color: "#FF4D8D", title: "Encuentra o publica un artículo", text: "Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio." },
-                    { color: "#B49CE8", title: "Habla, oferta o compra directamente", text: "Pregunta al vendedor, haz una oferta más baja, o compra al precio marcado. El pago se hace dentro de Ropelin con Stripe — nunca por fuera, para que quede constancia de todo." },
-                    { color: "#7FD8D0", title: "El vendedor envía o quedáis en persona", text: "Tras el pago, el vendedor genera una etiqueta de envío con un par de clics, o podéis quedar en persona si os viene mejor." },
-                    { color: "#FFC24D", title: "Confirmas que lo has recibido", text: "En cuanto te llegue, confirmas la recepción desde tu perfil — así queda cerrado el pedido para las dos partes." },
-                    { color: "#FF8A4D", title: "Valorad la compra", text: "Al confirmar la entrega, comprador y vendedor podéis valoraros mutuamente — así se construye la confianza de la comunidad." },
+                    { color: "var(--accent)", title: "Encuentra o publica un artículo", text: "Busca por categoría, talla o cercanía. ¿Tienes algo que ya no usas? Publícalo en menos de un minuto con fotos y precio." },
+                    { color: "var(--sub)", title: "Habla, oferta o compra directamente", text: "Pregunta al vendedor, haz una oferta más baja, o compra al precio marcado. El pago se hace dentro de Ropelin con Stripe — nunca por fuera, para que quede constancia de todo." },
+                    { color: "var(--ok)", title: "El vendedor envía o quedáis en persona", text: "Tras el pago, el vendedor genera una etiqueta de envío con un par de clics, o podéis quedar en persona si os viene mejor." },
+                    { color: "var(--amber)", title: "Confirmas que lo has recibido", text: "En cuanto te llegue, confirmas la recepción desde tu perfil — así queda cerrado el pedido para las dos partes." },
+                    { color: "var(--accent)", title: "Valorad la compra", text: "Al confirmar la entrega, comprador y vendedor podéis valoraros mutuamente — así se construye la confianza de la comunidad." },
                   ].map((step, i) => (
                     <div className="how-it-works-card" key={i}>
                       <span className="how-it-works-num" style={{ background: step.color }}>{i + 1}</span>
@@ -5843,10 +4827,10 @@ export default function RopelinApp() {
                 <p className="how-it-works-intro">Una guía rápida para sacarle partido a la app, paso a paso.</p>
                 <div className="how-it-works-list">
                   {[
-                    { color: "#FF4D8D", title: "Crea tu cuenta", text: "Regístrate con tu email o con Google. Añade tu ciudad para ver artículos cerca de ti." },
-                    { color: "#B49CE8", title: "Busca o publica", text: "Explora por categoría, o busca por texto o foto. Para vender, pulsa \"Vender\", sube fotos y pon un precio — lleva menos de un minuto." },
-                    { color: "#7FD8D0", title: "Habla y compra seguro", text: "Pregunta por chat, haz una oferta más baja, o compra directamente. El pago queda protegido hasta que confirmes que todo ha llegado bien." },
-                    { color: "#FFC24D", title: "Recibe y valora", text: "Por correo, o en persona si quedáis cerca. Al recibirlo, confirmas desde tu perfil y podéis valoraros mutuamente." },
+                    { color: "var(--accent)", title: "Crea tu cuenta", text: "Regístrate con tu email o con Google. Añade tu ciudad para ver artículos cerca de ti." },
+                    { color: "var(--sub)", title: "Busca o publica", text: "Explora por categoría, o busca por texto o foto. Para vender, pulsa \"Vender\", sube fotos y pon un precio — lleva menos de un minuto." },
+                    { color: "var(--ok)", title: "Habla y compra seguro", text: "Pregunta por chat, haz una oferta más baja, o compra directamente. El pago queda protegido hasta que confirmes que todo ha llegado bien." },
+                    { color: "var(--amber)", title: "Recibe y valora", text: "Por correo, o en persona si quedáis cerca. Al recibirlo, confirmas desde tu perfil y podéis valoraros mutuamente." },
                   ].map((step, i) => (
                     <div className="how-it-works-card" key={i}>
                       <span className="how-it-works-num" style={{ background: step.color }}>{i + 1}</span>
@@ -5869,7 +4853,7 @@ export default function RopelinApp() {
 
                   {allItems.length > 0 && (
                     <div className="about-impact-box">
-                      <Leaf size={18} color="#7FD8D0" />
+                      <Leaf size={18} color="var(--ok)" />
                       <p>
                         Entre toda la comunidad ya se han ahorrado{" "}
                         <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 2.1, 0)).toLocaleString("es-ES")} kg de CO₂</strong>
@@ -5880,7 +4864,7 @@ export default function RopelinApp() {
                   )}
 
                   <div className="about-block">
-                    <div className="about-block-icon" style={{ background: "#FF4D8D" }}><User size={16} color="#1A1A1A" /></div>
+                    <div className="about-block-icon" style={{ background: "var(--accent)" }}><User size={16} color="#1A1A1A" /></div>
                     <div>
                       <p className="about-block-title">Quién hay detrás</p>
                       <p className="about-block-text">Creado por una sola persona, con ganas de cambiar cómo compramos y vendemos de segunda mano.</p>
@@ -5888,7 +4872,7 @@ export default function RopelinApp() {
                   </div>
 
                   <div className="about-block">
-                    <div className="about-block-icon" style={{ background: "#B49CE8" }}><ShieldCheck size={16} color="#1A1A1A" /></div>
+                    <div className="about-block-icon" style={{ background: "var(--sub)" }}><ShieldCheck size={16} color="#1A1A1A" /></div>
                     <div>
                       <p className="about-block-title">Por qué confiar en Ropelin</p>
                       <p className="about-block-text">Los pagos se procesan con Stripe, y la comunidad está moderada para mantener la web segura para todos.</p>
@@ -5896,7 +4880,7 @@ export default function RopelinApp() {
                   </div>
 
                   <div className="about-block">
-                    <div className="about-block-icon" style={{ background: "#FFC24D" }}><Mail size={16} color="#1A1A1A" /></div>
+                    <div className="about-block-icon" style={{ background: "var(--amber-soft)" }}><Mail size={16} color="#1A1A1A" /></div>
                     <div>
                       <p className="about-block-title">¿Alguna duda?</p>
                       <button className="about-block-link" onClick={() => { setShowLegal(null); openHelpCenter(); }}>Escríbenos desde el Centro de ayuda →</button>
@@ -5911,25 +4895,25 @@ export default function RopelinApp() {
                 <a href="/terminos" target="_blank" rel="noopener" className="about-block-link" style={{ display: "inline-block", marginBottom: 14 }}>Ver el documento legal completo →</a>
                 <div className="how-it-works-list">
                   {[
-                    { color: "#FF4D8D", title: "1. Objeto", text: "Ropelin es una plataforma que conecta a compradores y vendedores de artículos de segunda mano. Actuamos como intermediarios: no somos propietarios de los artículos publicados ni parte del contrato de compraventa entre usuarios, y no garantizamos la veracidad, calidad ni estado real de los artículos." },
-                    { color: "#B49CE8", title: "2. Quién puede usar Ropelin", text: "Debes ser mayor de 18 años y aportar datos veraces al crear tu cuenta. Solo puedes tener una cuenta activa. Eres responsable de la confidencialidad de tu contraseña." },
-                    { color: "#7FD8D0", title: "3. Cómo funciona la compraventa", text: "El vendedor publica el artículo; el comprador puede preguntar, ofertar o comprar directamente. El pago se hace a través de Stripe, y el envío se gestiona a un precio real elegido por el comprador antes de pagar (o queda en persona)." },
-                    { color: "#FFC24D", title: "4. Precio, comisiones y pago", text: "El vendedor fija el precio. Ropelin cobra una comisión sobre cada venta, mostrada antes de pagar, además del coste real del envío. No almacenamos datos de tarjetas ni cuentas bancarias — los procesa Stripe." },
-                    { color: "#FF8A4D", title: "5. Retención de fondos", text: "En envíos por correo, el pago se retiene 48 horas desde que el comprador confirma la recepción, por si quiere reclamar. En entregas en persona, se libera al vendedor al momento. Si hay una reclamación abierta, el pago queda retenido hasta resolverla." },
-                    { color: "#8C7CFF", title: "6. Reclamaciones y devoluciones", text: "El comprador puede reclamar con foto como prueba dentro de esas 48 horas. Podemos exigir que devuelva el artículo al vendedor (con etiqueta de devolución gratuita) antes de procesar cualquier reembolso. Ropelin decide en última instancia, revisando las pruebas de ambas partes." },
-                    { color: "#FF4D8D", title: "7. Envíos", text: "Los envíos se gestionan con transportistas externos (Correos, InPost...) a través de Sendcloud. Facilitamos la generación de etiquetas y el seguimiento, pero no respondemos de retrasos o daños causados por el transportista." },
-                    { color: "#B49CE8", title: "8. Verificación de identidad", text: "Podemos ofrecer o pedir la verificación de tu identidad (subiendo un documento) como medida antifraude. Es una comprobación interna nuestra, no una verificación legal o notarial." },
-                    { color: "#7FD8D0", title: "9. Conducta prohibida", text: "No se permite publicar artículos falsificados, robados o de venta restringida; manipular reseñas o crear cuentas falsas; abrir reclamaciones fraudulentas; ni acordar la venta fuera de la plataforma para eludir la comisión." },
-                    { color: "#FFC24D", title: "10. Suspensión de cuentas", text: "Podemos suspender, limitar o cerrar cuentas que incumplan estas condiciones, acumulen reclamaciones perdidas de forma reiterada, o muestren patrones de fraude." },
-                    { color: "#FF8A4D", title: "11. Bloqueo entre usuarios", text: "Cualquier usuario puede bloquear a otro. El bloqueo impide escribiros y deshace el seguimiento mutuo; no afecta a transacciones ya en curso." },
-                    { color: "#8C7CFF", title: "12. Propiedad intelectual", text: "Las fotos y descripciones que publiques deben ser tuyas o contar con tu autorización. Al publicarlas, nos concedes permiso para mostrarlas dentro del servicio y con fines promocionales del artículo." },
-                    { color: "#FF4D8D", title: "13. Limitación de responsabilidad", text: "Salvo lo relativo a pagos y reclamaciones descrito arriba, no respondemos de la calidad o legalidad real de los artículos, del comportamiento entre usuarios, ni de incidencias de terceros (Stripe, Sendcloud, transportistas)." },
-                    { color: "#B49CE8", title: "14. Modificaciones", text: "Podemos modificar estas condiciones en cualquier momento; los cambios importantes se avisarán a los usuarios registrados." },
-                    { color: "#7FD8D0", title: "15. Ley aplicable", text: "Estas condiciones se rigen por la legislación española, sometiéndonos a los juzgados y tribunales que correspondan según la normativa de consumidores aplicable." },
-                    { color: "#FFC24D", title: "16. Contacto", text: "Para cualquier duda sobre estas condiciones: hola@ropelin.com" },
-                    { color: "#FF8A4D", title: "17. Vendedores particulares y profesionales", text: "Si vendes fuera de una actividad empresarial eres un vendedor particular. Si vendes de forma profesional, debes identificarte como tal — te pediremos NIF y datos de contacto adicionales, y estarás sujeto a la normativa de consumidores que corresponda a los vendedores profesionales." },
-                    { color: "#8C7CFF", title: "18. Sistema de reclamaciones", text: "Puedes recurrir cualquier decisión de moderación (retirada de un anuncio, suspensión...) desde el Centro de ayuda, explicando los motivos. Revisaremos la decisión y te comunicaremos el resultado." },
-                    { color: "#7FD8D0", title: "19. Protección del comprador", text: "Cubre casos como artículo no recibido, diferente, falsificado, dañado o incompleto. No es un seguro — su aplicación depende de las pruebas disponibles y de las condiciones de Stripe." },
+                    { color: "var(--accent)", title: "1. Objeto", text: "Ropelin es una plataforma que conecta a compradores y vendedores de artículos de segunda mano. Actuamos como intermediarios: no somos propietarios de los artículos publicados ni parte del contrato de compraventa entre usuarios, y no garantizamos la veracidad, calidad ni estado real de los artículos." },
+                    { color: "var(--sub)", title: "2. Quién puede usar Ropelin", text: "Debes ser mayor de 18 años y aportar datos veraces al crear tu cuenta. Solo puedes tener una cuenta activa. Eres responsable de la confidencialidad de tu contraseña." },
+                    { color: "var(--ok)", title: "3. Cómo funciona la compraventa", text: "El vendedor publica el artículo; el comprador puede preguntar, ofertar o comprar directamente. El pago se hace a través de Stripe, y el envío se gestiona a un precio real elegido por el comprador antes de pagar (o queda en persona)." },
+                    { color: "var(--amber)", title: "4. Precio, comisiones y pago", text: "El vendedor fija el precio. Ropelin cobra una comisión sobre cada venta, mostrada antes de pagar, además del coste real del envío. No almacenamos datos de tarjetas ni cuentas bancarias — los procesa Stripe." },
+                    { color: "var(--accent)", title: "5. Retención de fondos", text: "En envíos por correo, el pago se retiene 48 horas desde que el comprador confirma la recepción, por si quiere reclamar. En entregas en persona, se libera al vendedor al momento. Si hay una reclamación abierta, el pago queda retenido hasta resolverla." },
+                    { color: "var(--sub)", title: "6. Reclamaciones y devoluciones", text: "El comprador puede reclamar con foto como prueba dentro de esas 48 horas. Podemos exigir que devuelva el artículo al vendedor (con etiqueta de devolución gratuita) antes de procesar cualquier reembolso. Ropelin decide en última instancia, revisando las pruebas de ambas partes." },
+                    { color: "var(--accent)", title: "7. Envíos", text: "Los envíos se gestionan con transportistas externos (Correos, InPost...) a través de Sendcloud. Facilitamos la generación de etiquetas y el seguimiento, pero no respondemos de retrasos o daños causados por el transportista." },
+                    { color: "var(--sub)", title: "8. Verificación de identidad", text: "Podemos ofrecer o pedir la verificación de tu identidad (subiendo un documento) como medida antifraude. Es una comprobación interna nuestra, no una verificación legal o notarial." },
+                    { color: "var(--ok)", title: "9. Conducta prohibida", text: "No se permite publicar artículos falsificados, robados o de venta restringida; manipular reseñas o crear cuentas falsas; abrir reclamaciones fraudulentas; ni acordar la venta fuera de la plataforma para eludir la comisión." },
+                    { color: "var(--amber)", title: "10. Suspensión de cuentas", text: "Podemos suspender, limitar o cerrar cuentas que incumplan estas condiciones, acumulen reclamaciones perdidas de forma reiterada, o muestren patrones de fraude." },
+                    { color: "var(--accent)", title: "11. Bloqueo entre usuarios", text: "Cualquier usuario puede bloquear a otro. El bloqueo impide escribiros y deshace el seguimiento mutuo; no afecta a transacciones ya en curso." },
+                    { color: "var(--sub)", title: "12. Propiedad intelectual", text: "Las fotos y descripciones que publiques deben ser tuyas o contar con tu autorización. Al publicarlas, nos concedes permiso para mostrarlas dentro del servicio y con fines promocionales del artículo." },
+                    { color: "var(--accent)", title: "13. Limitación de responsabilidad", text: "Salvo lo relativo a pagos y reclamaciones descrito arriba, no respondemos de la calidad o legalidad real de los artículos, del comportamiento entre usuarios, ni de incidencias de terceros (Stripe, Sendcloud, transportistas)." },
+                    { color: "var(--sub)", title: "14. Modificaciones", text: "Podemos modificar estas condiciones en cualquier momento; los cambios importantes se avisarán a los usuarios registrados." },
+                    { color: "var(--ok)", title: "15. Ley aplicable", text: "Estas condiciones se rigen por la legislación española, sometiéndonos a los juzgados y tribunales que correspondan según la normativa de consumidores aplicable." },
+                    { color: "var(--amber)", title: "16. Contacto", text: "Para cualquier duda sobre estas condiciones: hola@ropelin.com" },
+                    { color: "var(--accent)", title: "17. Vendedores particulares y profesionales", text: "Si vendes fuera de una actividad empresarial eres un vendedor particular. Si vendes de forma profesional, debes identificarte como tal — te pediremos NIF y datos de contacto adicionales, y estarás sujeto a la normativa de consumidores que corresponda a los vendedores profesionales." },
+                    { color: "var(--sub)", title: "18. Sistema de reclamaciones", text: "Puedes recurrir cualquier decisión de moderación (retirada de un anuncio, suspensión...) desde el Centro de ayuda, explicando los motivos. Revisaremos la decisión y te comunicaremos el resultado." },
+                    { color: "var(--ok)", title: "19. Protección del comprador", text: "Cubre casos como artículo no recibido, diferente, falsificado, dañado o incompleto. No es un seguro — su aplicación depende de las pruebas disponibles y de las condiciones de Stripe." },
                   ].map((s, i) => (
                     <div className="how-it-works-card" key={i}>
                       <span className="how-it-works-num" style={{ background: s.color }}>{i + 1}</span>
@@ -5949,16 +4933,16 @@ export default function RopelinApp() {
                 <a href="/privacidad" target="_blank" rel="noopener" className="about-block-link" style={{ display: "inline-block", marginBottom: 14 }}>Ver el documento legal completo →</a>
                 <div className="how-it-works-list">
                   {[
-                    { color: "#FF4D8D", title: "1. Responsable", text: "Ropelin es responsable del tratamiento de los datos personales recogidos a través de ropelin.com y la app. Contacto: hola@ropelin.com" },
-                    { color: "#B49CE8", title: "2. Qué datos recogemos", text: "Cuenta (email, usuario, contraseña cifrada), perfil (foto, bio, ciudad), dirección de envío, fotos y mensajes, reseñas, y — solo si te verificas o te lo pedimos por prevención de fraude — una foto de tu documento de identidad. Los datos de pago los procesa Stripe directamente; nosotros no los almacenamos." },
-                    { color: "#7FD8D0", title: "3. Base legal", text: "Tratamos tus datos para ejecutar el contrato de uso de la plataforma, con tu consentimiento (verificación voluntaria, notificaciones, cookies no esenciales), por interés legítimo (prevenir fraude, resolver disputas) y por obligación legal cuando aplica." },
-                    { color: "#FFC24D", title: "4. Para qué los usamos", text: "Gestionar tu cuenta y tus compras/ventas, procesar pagos y envíos, enviarte notificaciones, revisar reclamaciones y solicitudes de verificación, prevenir fraude, y cumplir obligaciones legales." },
-                    { color: "#FF8A4D", title: "5. Con quién los compartimos", text: "Stripe (pagos, verificación de vendedores, reembolsos), Sendcloud (etiquetas y seguimiento de envíos), y nuestros proveedores de alojamiento e imágenes — solo lo necesario para prestar el servicio. Nunca vendemos tus datos a terceros con fines publicitarios." },
-                    { color: "#8C7CFF", title: "6. Cuánto los conservamos", text: "Mientras tu cuenta esté activa, y el tiempo que exija la ley después de darte de baja (por ejemplo, datos fiscales de transacciones). Los documentos de identidad se conservan solo el tiempo necesario para revisar la solicitud." },
-                    { color: "#FF4D8D", title: "7. Tus derechos", text: "Puedes acceder, rectificar o suprimir tus datos, oponerte o limitar su uso, y pedir la portabilidad, escribiendo a hola@ropelin.com. También puedes reclamar ante la Agencia Española de Protección de Datos (AEPD)." },
-                    { color: "#B49CE8", title: "8. Seguridad", text: "Aplicamos medidas técnicas y organizativas razonables (cifrado de contraseñas, conexiones seguras) para proteger tus datos. Si detectamos una brecha que te afecte, te lo notificaremos conforme a la normativa aplicable." },
-                    { color: "#7FD8D0", title: "9. Menores de edad", text: "Ropelin no está dirigido a menores de 18 años y no recogemos conscientemente datos de menores." },
-                    { color: "#FFC24D", title: "10. Cambios y contacto", text: "Podemos actualizar esta política; los cambios importantes se avisarán a los usuarios registrados. Para cualquier duda: hola@ropelin.com" },
+                    { color: "var(--accent)", title: "1. Responsable", text: "Ropelin es responsable del tratamiento de los datos personales recogidos a través de ropelin.com y la app. Contacto: hola@ropelin.com" },
+                    { color: "var(--sub)", title: "2. Qué datos recogemos", text: "Cuenta (email, usuario, contraseña cifrada), perfil (foto, bio, ciudad), dirección de envío, fotos y mensajes, reseñas, y — solo si te verificas o te lo pedimos por prevención de fraude — una foto de tu documento de identidad. Los datos de pago los procesa Stripe directamente; nosotros no los almacenamos." },
+                    { color: "var(--ok)", title: "3. Base legal", text: "Tratamos tus datos para ejecutar el contrato de uso de la plataforma, con tu consentimiento (verificación voluntaria, notificaciones, cookies no esenciales), por interés legítimo (prevenir fraude, resolver disputas) y por obligación legal cuando aplica." },
+                    { color: "var(--amber)", title: "4. Para qué los usamos", text: "Gestionar tu cuenta y tus compras/ventas, procesar pagos y envíos, enviarte notificaciones, revisar reclamaciones y solicitudes de verificación, prevenir fraude, y cumplir obligaciones legales." },
+                    { color: "var(--accent)", title: "5. Con quién los compartimos", text: "Stripe (pagos, verificación de vendedores, reembolsos), Sendcloud (etiquetas y seguimiento de envíos), y nuestros proveedores de alojamiento e imágenes — solo lo necesario para prestar el servicio. Nunca vendemos tus datos a terceros con fines publicitarios." },
+                    { color: "var(--sub)", title: "6. Cuánto los conservamos", text: "Mientras tu cuenta esté activa, y el tiempo que exija la ley después de darte de baja (por ejemplo, datos fiscales de transacciones). Los documentos de identidad se conservan solo el tiempo necesario para revisar la solicitud." },
+                    { color: "var(--accent)", title: "7. Tus derechos", text: "Puedes acceder, rectificar o suprimir tus datos, oponerte o limitar su uso, y pedir la portabilidad, escribiendo a hola@ropelin.com. También puedes reclamar ante la Agencia Española de Protección de Datos (AEPD)." },
+                    { color: "var(--sub)", title: "8. Seguridad", text: "Aplicamos medidas técnicas y organizativas razonables (cifrado de contraseñas, conexiones seguras) para proteger tus datos. Si detectamos una brecha que te afecte, te lo notificaremos conforme a la normativa aplicable." },
+                    { color: "var(--ok)", title: "9. Menores de edad", text: "Ropelin no está dirigido a menores de 18 años y no recogemos conscientemente datos de menores." },
+                    { color: "var(--amber)", title: "10. Cambios y contacto", text: "Podemos actualizar esta política; los cambios importantes se avisarán a los usuarios registrados. Para cualquier duda: hola@ropelin.com" },
                   ].map((s, i) => (
                     <div className="how-it-works-card" key={i}>
                       <span className="how-it-works-num" style={{ background: s.color }}>{i + 1}</span>
@@ -5978,10 +4962,10 @@ export default function RopelinApp() {
                 <a href="/cookies" target="_blank" rel="noopener" className="about-block-link" style={{ display: "inline-block", marginBottom: 14 }}>Ver el documento legal completo →</a>
                 <div className="how-it-works-list">
                   {[
-                    { color: "#FF4D8D", title: "Cookies esenciales", text: "Necesarias para que funcione el inicio de sesión, el carrito y la seguridad de la plataforma. No se pueden desactivar porque la web no funcionaría sin ellas." },
-                    { color: "#7FD8D0", title: "Cookies de preferencia", text: "Recuerdan cosas como el tema claro/oscuro o el idioma elegido, para no tener que configurarlo cada vez." },
-                    { color: "#FFC24D", title: "Cookies de análisis (opcionales)", text: "Nos ayudan a entender cómo se usa la web (páginas más visitadas, errores) para mejorarla. Solo se activan si aceptas todas las cookies." },
-                    { color: "#B49CE8", title: "Cómo elegir", text: "Al entrar en Ropelin puedes aceptar todas las cookies o solo las necesarias, con el mismo peso para ambas opciones. Puedes cambiar tu elección en cualquier momento desde Ajustes." },
+                    { color: "var(--accent)", title: "Cookies esenciales", text: "Necesarias para que funcione el inicio de sesión, el carrito y la seguridad de la plataforma. No se pueden desactivar porque la web no funcionaría sin ellas." },
+                    { color: "var(--ok)", title: "Cookies de preferencia", text: "Recuerdan cosas como el tema claro/oscuro o el idioma elegido, para no tener que configurarlo cada vez." },
+                    { color: "var(--amber)", title: "Cookies de análisis (opcionales)", text: "Nos ayudan a entender cómo se usa la web (páginas más visitadas, errores) para mejorarla. Solo se activan si aceptas todas las cookies." },
+                    { color: "var(--sub)", title: "Cómo elegir", text: "Al entrar en Ropelin puedes aceptar todas las cookies o solo las necesarias, con el mismo peso para ambas opciones. Puedes cambiar tu elección en cualquier momento desde Ajustes." },
                   ].map((s, i) => (
                     <div className="how-it-works-card" key={i}>
                       <span className="how-it-works-num" style={{ background: s.color }}>{i + 1}</span>
@@ -6142,7 +5126,7 @@ export default function RopelinApp() {
                 </div>
 
                 <div className="post-submit-bar">
-                  {postError && <p style={{ color: "#FF4D8D", fontSize: 12, margin: "0 0 8px" }}>{postError}</p>}
+                  {postError && <p style={{ color: "var(--accent)", fontSize: 12, margin: "0 0 8px" }}>{postError}</p>}
                   <button className="submit-btn" type="submit" disabled={uploadingImages.length > 0}>
                     {uploadingImages.length > 0 ? "Subiendo fotos..." : !loggedIn ? "Iniciar sesión para publicar" : editingItem ? "Guardar cambios" : "Publicar artículo"}
                   </button>
@@ -6154,7 +5138,7 @@ export default function RopelinApp() {
 
         const stripeReminderEl = loggedIn && stripeStatus && !stripeStatus.onboarded && (
           <div className="stripe-post-reminder">
-            <HandCoins size={18} color="#FFC24D" />
+            <HandCoins size={18} color="var(--amber)" />
             <div>
               <p className="stripe-post-reminder-title">Conecta tu cuenta para poder cobrar</p>
               <p className="stripe-post-reminder-text">Puedes publicar igualmente, pero necesitarás conectar Stripe (cuenta bancaria y algún dato de identidad, solo una vez) antes de que alguien pueda comprarte algo.</p>
@@ -6196,10 +5180,56 @@ export default function RopelinApp() {
       })()}
 
       {!hidesFeedOnDesktop && !hidesFeedCardsOnDesktop && (
+      <div className={useExploreSidebar ? "explore-layout" : undefined}>
+      {useExploreSidebar && (
+        <aside className="explore-side">
+          <div className="explore-side-title"><SlidersHorizontal size={15} /> Filtros y orden</div>
+          <FilterPanel
+            priceFilter={priceFilter} setPriceFilter={setPriceFilter}
+            sizeFilter={sizeFilter} setSizeFilter={setSizeFilter}
+            sortBy={sortBy} setSortBy={setSortBy}
+            distanceFilter={distanceFilter} setDistanceFilter={setDistanceFilter}
+            myLocation={myLocation} locatingMe={locatingMe} onDetectLocation={detectMyLocation}
+            onClearFilters={() => { setPriceFilter({ min: "", max: "" }); setSizeFilter(""); setDistanceFilter(""); setSortBy("recent"); }}
+            hasActiveFilters={!!(priceFilter.min || priceFilter.max || sizeFilter || distanceFilter || sortBy !== "recent")}
+            onCloseItemView={() => { if (openItem) closeItemView(); }}
+            canSaveSearch={loggedIn && !!(query || (category !== "Para ti" && category !== "Todo"))}
+            onSaveSearch={handleSaveCurrentSearch}
+            savedSearches={loggedIn ? savedSearches : null}
+            onPickSavedSearch={(s) => { setQuery(s.query || ""); setCategory(s.category || "Todo"); }}
+            onDeleteSavedSearch={handleDeleteSavedSearch}
+          />
+        </aside>
+      )}
+      <div className={useExploreSidebar ? "explore-main" : undefined}>
       <>
+      {isHomeView && (
+        <HomeSections
+          items={allItems.filter((i) => i.status !== "sold")}
+          categories={platformSettings.categories}
+          isDesktop={numCols >= 3}
+          hasLocation={!!myLocation}
+          saved={saved}
+          toggleSave={toggleSave}
+          onOpen={viewItem}
+          onSell={openPostForm}
+          onPickCategory={(c) => { setCategory(c); if (openItem) closeItemView(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+          onHowItWorks={() => openLegalPage("how-it-works")}
+          onNearMe={() => {
+            if (myLocation) { setCategory("Todo"); setSortBy("distance"); window.scrollTo({ top: 0, behavior: "smooth" }); }
+            else detectMyLocation();
+          }}
+        />
+      )}
+      {!loading && !loadError && shownItems.length > 0 && (
+        <div className="hm-head feed-head">
+          <h2>{isHomeView ? "Recién subido" : resultsTitle}</h2>
+          <span className="hm-sub">{shownItems.length.toLocaleString("es-ES")} artículo{shownItems.length === 1 ? "" : "s"}</span>
+        </div>
+      )}
       {loadError && !loading && (
         <div className="empty-state">
-          <RefreshCw size={32} color="#FF4D8D" />
+          <RefreshCw size={32} color="var(--accent)" />
           <p className="empty-title">{loadError}</p>
           <button className="btn primary" onClick={loadAllItems}><RefreshCw size={14} /> Reintentar</button>
         </div>
@@ -6221,7 +5251,7 @@ export default function RopelinApp() {
       )}
       {!loading && !loadError && items.length === 0 && (
         <div className="empty-state">
-          <PackageOpen size={38} color="#3A3A40" />
+          <PackageOpen size={38} color="var(--sub)" />
           <p className="empty-title">No hay artículos que coincidan</p>
           <p className="empty-sub">Prueba a cambiar los filtros, o sé el primero en publicar algo así.</p>
           <button className="btn primary" onClick={openPostForm}>
@@ -6251,19 +5281,21 @@ export default function RopelinApp() {
         </div>
         {displayItems.length > numCols * feedRowsShown && (
           <div className="load-more-row">
-            <RefreshCw size={16} className="spin" style={{ color: "#6A6A73" }} />
+            <RefreshCw size={16} className="spin" style={{ color: "var(--sub)" }} />
           </div>
         )}
         </>
         );
       })()}
       </>
+      </div>
+      </div>
       )}
       {!hidesFeedOnDesktop && (
         <>
         {category === "Para ti" && !query && allItems.length > 0 && (
           <div className="community-impact">
-            <Leaf size={18} color="#7FD8D0" />
+            <Leaf size={18} color="var(--ok)" />
             <p>
               Entre toda la comunidad ya se han ahorrado{" "}
               <strong>{Math.round(allItems.reduce((sum, i) => sum + i.price * 2.1, 0)).toLocaleString("es-ES")} kg de CO₂</strong>
@@ -6281,7 +5313,7 @@ export default function RopelinApp() {
                 <p className="newsletter-sub">No vuelvas a perderte ninguna oferta.</p>
               </div>
               {newsletterSubscribed ? (
-                <p className="newsletter-thanks"><CheckCircle size={16} color="#7FD8D0" /> ¡Ya estás suscrito!</p>
+                <p className="newsletter-thanks"><CheckCircle size={16} color="var(--ok)" /> ¡Ya estás suscrito!</p>
               ) : (
                 <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
                   <input
@@ -6307,7 +5339,7 @@ export default function RopelinApp() {
             <button className="close-btn" aria-label="Cerrar" onClick={() => { setShowForgotPassword(false); setForgotSent(false); setForgotError(null); }}><X size={14} /></button>
             {forgotSent ? (
               <div className="offer-sent">
-                <Mail size={26} color="#7FD8D0" />
+                <Mail size={26} color="var(--ok)" />
                 <p>¡Revisa tu email!</p>
                 <p className="checkout-sub">Si esa dirección está registrada, te hemos enviado un enlace para elegir una contraseña nueva.</p>
               </div>
@@ -6321,7 +5353,7 @@ export default function RopelinApp() {
                     <Mail size={14} />
                     <input value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="tu@email.com" />
                   </div>
-                  {forgotError && <p style={{ color: "#FF4D8D", fontSize: 12, marginTop: 10 }}>{forgotError}</p>}
+                  {forgotError && <p style={{ color: "var(--accent)", fontSize: 12, marginTop: 10 }}>{forgotError}</p>}
                   <button className="submit-btn" type="submit">Enviar enlace</button>
                 </form>
                 <p className="toggle-link" onClick={() => { setShowForgotPassword(false); setShowAuth(true); }}>Volver a iniciar sesión</p>
@@ -6339,7 +5371,7 @@ export default function RopelinApp() {
             <div className="auth-brand">
               <div className="brand-mark auth-mark">
                 <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="66" y="18" width="15" height="15" fill="#FF4D8D" />
+                  <rect x="66" y="18" width="15" height="15" fill="var(--accent)" />
                   <text x="47" y="80" fontFamily="Manrope, Arial, sans-serif" fontSize="75" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
                 </svg>
               </div>
@@ -6383,7 +5415,7 @@ export default function RopelinApp() {
                 <Lock size={14} />
                 <input type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} placeholder="••••••••" />
               </div>
-              {authError && <p style={{ color: "#FF4D8D", fontSize: 12, marginTop: 10 }}>{authError}</p>}
+              {authError && <p style={{ color: "var(--accent)", fontSize: 12, marginTop: 10 }}>{authError}</p>}
               <button className="submit-btn" type="submit">{authMode === "login" ? "Entrar" : "Crear cuenta"}</button>
             </form>
             {authMode === "login" && (
@@ -6418,7 +5450,7 @@ export default function RopelinApp() {
                   {disputeEvidence?.uploading ? "Subiendo…" : <><Camera size={14} /> Añadir foto del artículo recibido</>}
                 </label>
               )}
-              <p style={{ fontSize: 11, color: "#6A6A73", marginTop: 10 }}>Revisaremos tu caso y, si procede, se te devolverá el importe a través de Stripe. Tienes 48h desde que confirmaste la entrega para reclamar.</p>
+              <p style={{ fontSize: 11, color: "var(--sub)", marginTop: 10 }}>Revisaremos tu caso y, si procede, se te devolverá el importe a través de Stripe. Tienes 48h desde que confirmaste la entrega para reclamar.</p>
               <button className="submit-btn" type="submit">Enviar solicitud</button>
             </form>
           </div>
@@ -6437,7 +5469,7 @@ export default function RopelinApp() {
               <div className="input-icon">
                 <input value={sellerResponseText} onChange={(e) => setSellerResponseText(e.target.value)} placeholder="Explica tu versión de lo ocurrido..." />
               </div>
-              <p style={{ fontSize: 11, color: "#6A6A73", marginTop: 10 }}>Revisaremos las dos versiones antes de tomar una decisión — el pago se queda retenido mientras tanto.</p>
+              <p style={{ fontSize: 11, color: "var(--sub)", marginTop: 10 }}>Revisaremos las dos versiones antes de tomar una decisión — el pago se queda retenido mientras tanto.</p>
               <button className="submit-btn" type="submit">Enviar mi versión</button>
             </form>
           </div>
@@ -6448,7 +5480,7 @@ export default function RopelinApp() {
         <div className="overlay" onClick={() => setConfirmingMarkSold(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
             <div className="report-modal-header">
-              <div className="report-modal-icon" style={{ background: "#7FD8D018", color: "#7FD8D0" }}><CheckCircle size={18} /></div>
+              <div className="report-modal-icon" style={{ background: "color-mix(in srgb, var(--ok) 9%, transparent)", color: "var(--ok)" }}><CheckCircle size={18} /></div>
               <p className="auth-title" style={{ margin: 0 }}>¿Marcar como vendido?</p>
             </div>
             <p className="auth-subtitle" style={{ marginBottom: 20 }}>Ya no aparecerá disponible en la web. Esto no se puede deshacer.</p>
@@ -6504,7 +5536,7 @@ export default function RopelinApp() {
               <div className="star-picker">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button type="button" key={n} onClick={() => setReviewStars(n)}>
-                    <Star size={26} fill={n <= reviewStars ? "#FFC24D" : "none"} color={n <= reviewStars ? "#FFC24D" : "#4A4A52"} />
+                    <Star size={26} fill={n <= reviewStars ? "var(--amber)" : "none"} color={n <= reviewStars ? "var(--amber)" : "var(--sub)"} />
                   </button>
                 ))}
               </div>
@@ -6537,7 +5569,7 @@ export default function RopelinApp() {
                   >
                     <div className="fav-swatch" style={{ backgroundImage: `url(${item.photo})` }}>
                       <button className="heart on" onClick={(e) => { e.stopPropagation(); toggleSave(item.id); }}>
-                        <Heart size={14} fill="#FF4D8D" color="#FF4D8D" />
+                        <Heart size={14} fill="var(--accent)" color="var(--accent)" />
                       </button>
                     </div>
                     <p className="fav-title">{item.title}</p>
@@ -6782,7 +5814,7 @@ export default function RopelinApp() {
                 <>
                   <p className="stripe-status">Verifica tu identidad para desbloquear compras de más valor desde el primer día y dar más confianza al vender.</p>
                   {myIdVerification.status === "rejected" && (
-                    <p style={{ color: "#FF4D8D", fontSize: 12 }}>No se pudo verificar la última vez — puedes volver a intentarlo con otra foto.</p>
+                    <p style={{ color: "var(--accent)", fontSize: 12 }}>No se pudo verificar la última vez — puedes volver a intentarlo con otra foto.</p>
                   )}
                   <label className="dispute-evidence-upload">
                     <input type="file" accept="image/*" onChange={handleUploadIdVerification} style={{ display: "none" }} />
@@ -6959,7 +5991,7 @@ export default function RopelinApp() {
                   <p className="checkout-note">*Cubre la protección de tu compra: si el artículo no llega o no es como se describía, te ayudamos a resolverlo. El vendedor recibe el precio íntegro del artículo.</p>
                   <p className="checkout-note">Pago seguro procesado por Stripe.</p>
 
-                  {checkoutError && <p style={{ color: "#FF4D8D", fontSize: 12, margin: "10px 0 0" }}>{checkoutError}</p>}
+                  {checkoutError && <p style={{ color: "var(--accent)", fontSize: 12, margin: "10px 0 0" }}>{checkoutError}</p>}
 
                   <button className="submit-btn" onClick={confirmCheckout} disabled={!chosen}>Pagar {total.toFixed(2)}€ con Stripe</button>
                 </>
@@ -6967,7 +5999,7 @@ export default function RopelinApp() {
             })()}
 
             {!checkoutRatesLoading && checkoutRates.length === 0 && checkoutError && (
-              <p style={{ color: "#FF4D8D", fontSize: 12, margin: "10px 0 0" }}>{checkoutError}</p>
+              <p style={{ color: "var(--accent)", fontSize: 12, margin: "10px 0 0" }}>{checkoutError}</p>
             )}
           </div>
         </div>
@@ -7066,7 +6098,7 @@ export default function RopelinApp() {
               {adminSection === null ? (
                 <>
                   <div className="league-header">
-                    <ShieldCheck size={20} color="#8C7CFF" />
+                    <ShieldCheck size={20} color="var(--sub)" />
                     <p className="auth-title" style={{ margin: 0 }}>Panel de administración</p>
                   </div>
 
@@ -7420,7 +6452,7 @@ export default function RopelinApp() {
             <button className="close-btn" aria-label="Cerrar" onClick={() => setShowOffer(false)}><X size={14} /></button>
             {offerSent ? (
               <div className="offer-sent">
-                <HandCoins size={26} color="#7FD8D0" />
+                <HandCoins size={26} color="var(--ok)" />
                 <p>¡Oferta enviada!</p>
               </div>
             ) : (

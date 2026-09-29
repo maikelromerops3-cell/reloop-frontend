@@ -1,0 +1,71 @@
+/* =====================================================================
+   SISTEMA DE DISEÑO DE ROPELIN
+   Un solo color de acento (terracota), neutros cálidos (piedra y tinta),
+   verde para lo "bueno/seguro" y ámbar para avisos. Todo el color de la app
+   sale de estas variables: para cambiar de marca solo hay que tocar este bloque.
+   ===================================================================== */
+:root, html[data-theme="light"] {
+  --font-display: Manrope, Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --bg:#FAF8F4; --bg-translucent:#FAF8F4ee; --card:#FFFFFF; --card-alt:#F5F1EA; --surface:#F2EEE7; --surface2:#F6F3EC;
+  --border:#E5DFD4; --input-border:#D6CFC1; --text:#161513; --body:#3B3934; --sub:#6D6960; --faint:#857F74;
+  --shimmer-highlight:#FFFFFF;
+
+  --accent:#B93E16; --accent-hover:#9C3411; --accent-soft:#F7E6DE; --on-accent:#FFFFFF;
+  --ok:#1F7A4D; --ok-soft:#E3EAE0; --ok-ink:#2F4A3D;
+  --amber:#D9982B; --amber-soft:#FBF0D9; --amber-ink:#7A5310;
+  --info:#4A6A85; --danger:#B42318;
+
+  --shadow-s:0 1px 2px rgba(22,21,19,.05);
+  --shadow-m:0 8px 24px -10px rgba(22,21,19,.25);
+  --shadow-l:0 24px 60px -24px rgba(22,21,19,.35);
+  --radius:14px; --radius-l:22px;
+}
+html[data-theme="dark"] {
+  --bg:#131211; --bg-translucent:#131211ee; --card:#1C1B19; --card-alt:#22201D; --surface:#262421; --surface2:#201F1C;
+  --border:#2F2D29; --input-border:#3D3A35; --text:#F4F1EA; --body:#D8D3C8; --sub:#A39E92; --faint:#7C776C;
+  --shimmer-highlight:#2B2925;
+
+  --accent:#E4683C; --accent-hover:#EE7D55; --accent-soft:rgba(228,104,60,.15); --on-accent:#1A0F0A;
+  --ok:#6FCF9F; --ok-soft:#17261E; --ok-ink:#A9E0C6;
+  --amber:#E0AE45; --amber-soft:rgba(224,174,69,.16); --amber-ink:#F0CE87;
+  --info:#8FB0CC; --danger:#F0847A;
+
+  --shadow-s:0 1px 2px rgba(0,0,0,.4);
+  --shadow-m:0 8px 24px -10px rgba(0,0,0,.7);
+  --shadow-l:0 24px 60px -24px rgba(0,0,0,.8);
+}
+
+/* ---------- Tipografía ---------- */
+.app, .app button, .app input, .app textarea, .app select, .Toastify, [role="status"] { font-family: var(--font-body); }
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+h1, h2, h3, h4, .auth-title, .detail-title, .brand h1, .checkout-total, .price-pill { font-family: var(--font-display); letter-spacing: -.02em; }
+h2, h3 { font-weight: 800; }
+
+/* ---------- Logo: cuadrado de acento con la R en blanco ---------- */
+.brand-mark { background: var(--accent); border: none; border-radius: 10px; box-shadow: none; }
+.brand-mark svg rect { display: none; }
+.brand-mark svg text { fill: var(--on-accent); }
+.brand h1 { font-weight: 800; letter-spacing: -.03em; }
+
+/* ---------- Avatares y botones ---------- */
+.mini-avatar { color: #fff; }
+.btn.primary, .buy-btn, .submit-btn { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+.btn.primary:hover, .buy-btn:hover, .submit-btn:hover { background: var(--accent-hover); }
+.btn.ghost, .icon-btn, .filter-toggle-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); box-shadow: none; }
+.icon-btn:hover, .filter-toggle-btn:hover { border-color: var(--text); }
+.filter-toggle-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+.notif-dot { background: var(--accent); color: var(--on-accent); border: 2px solid var(--bg); }
+
+/* ---------- Ventanas, campos y etiquetas ---------- */
+.modal, .sheet-modal, .detail-modal { border: 1px solid var(--border); box-shadow: var(--shadow-l); }
+.overlay { background: rgba(20,19,17,.55); }
+.close-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); }
+.info-tag { background: var(--surface); border: 1px solid var(--border); color: var(--body); border-radius: 8px; font-weight: 600; }
+.pill { background: var(--card); border: 1px solid var(--input-border); color: var(--body); box-shadow: none; }
+.pill.active { background: var(--text); border-color: var(--text); color: var(--bg); }
+.search-box { background: var(--card); border: 1px solid var(--input-border); box-shadow: var(--shadow-s); }
+.search-box:focus-within { border-color: var(--text); }
+.sheet-rate-card { background: var(--card); border: 1px solid var(--input-border); border-radius: 12px; }
+.sheet-rate-card.selected { border-color: var(--accent); background: var(--accent-soft); }

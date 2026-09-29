@@ -1,0 +1,120 @@
+/* =====================================================================
+   FASE 3 — Buscar/explorar: filtros en panel lateral fijo (escritorio) o
+   en una hoja que se desliza desde abajo (móvil), en vez del desplegable
+   suelto de antes. El contenido del panel (FilterPanel.jsx) es el mismo
+   en los dos sitios; aquí solo se decide DÓNDE aparece.
+   ===================================================================== */
+
+/* ---------- Contenido del panel (compartido) ---------- */
+.fp-sec { padding: 18px 0; border-top: 1px solid var(--border); }
+.fp-sec:first-child { border-top: none; padding-top: 0; }
+.fp-sec h4 { font-family: var(--font-display); font-size: 13.5px; font-weight: 800; margin-bottom: 12px; color: var(--text); }
+
+.fp-sort { display: flex; flex-direction: column; gap: 2px; }
+.fp-sort-opt { text-align: left; background: none; border: none; padding: 7px 0; font-size: 13.5px; color: var(--body); font-family: inherit; cursor: pointer; border-radius: 8px; }
+.fp-sort-opt.on { color: var(--accent); font-weight: 700; }
+
+.fp-price { display: flex; align-items: center; gap: 8px; }
+.fp-price input { width: 0; flex: 1; border: 1px solid var(--input-border); background: var(--card); border-radius: 10px; padding: 9px 10px; font-size: 13.5px; color: var(--text); font-family: inherit; }
+.fp-price span { color: var(--faint); font-size: 13px; }
+.fp-eur { flex: none !important; }
+
+.fp-sizes { display: flex; gap: 7px; flex-wrap: wrap; }
+.fp-size { min-width: 40px; padding: 7px 9px; border-radius: 9px; border: 1px solid var(--input-border); background: var(--card); font-size: 12.5px; font-weight: 700; color: var(--body); cursor: pointer; font-family: inherit; }
+.fp-size.on { background: var(--text); border-color: var(--text); color: var(--bg); }
+
+.fp-select { width: 100%; border: 1px solid var(--input-border); background: var(--card); border-radius: 10px; padding: 9px 10px; font-size: 13px; color: var(--text); font-family: inherit; }
+.fp-locate { display: flex; align-items: center; gap: 7px; width: 100%; justify-content: center; background: var(--surface); border: 1px dashed var(--input-border); border-radius: 10px; padding: 10px; font-size: 12.5px; font-weight: 700; color: var(--body); cursor: pointer; font-family: inherit; }
+
+.fp-actions { display: flex; flex-direction: column; gap: 8px; }
+.fp-clear, .fp-save { border-radius: 10px; padding: 10px; font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: pointer; border: 1px solid var(--input-border); background: var(--card); color: var(--body); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.fp-clear:hover { border-color: var(--accent); color: var(--accent); }
+.fp-save { background: var(--accent-soft); border-color: transparent; color: var(--accent-hover); }
+
+.fp-saved { display: flex; flex-direction: column; gap: 6px; }
+.fp-saved-chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface); border-radius: 9px; padding: 8px 10px; }
+.fp-saved-chip span { font-size: 12.5px; color: var(--body); cursor: pointer; }
+.fp-saved-chip button { background: none; border: none; color: var(--faint); cursor: pointer; display: flex; }
+
+/* ---------- Móvil: hoja que se desliza desde abajo ---------- */
+.fp-mobile-sheet { position: fixed; inset: 0; z-index: 95; display: flex; align-items: flex-end; }
+.fp-mobile-sheet .fp-backdrop { position: absolute; inset: 0; background: rgba(22,21,19,.5); }
+.fp-mobile-sheet .fp-card { position: relative; width: 100%; max-height: 84vh; overflow-y: auto; background: var(--card); border-radius: 22px 22px 0 0; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); animation: fp-up .22s ease; }
+@keyframes fp-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.fp-mobile-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.fp-mobile-head h3 { font-family: var(--font-display); font-size: 17px; font-weight: 800; }
+.fp-mobile-head button { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--surface); display: grid; place-items: center; color: var(--text); }
+.fp-mobile-apply { position: sticky; bottom: 0; margin-top: 16px; width: 100%; background: var(--accent); color: var(--on-accent); border: none; border-radius: 12px; padding: 13px; font-weight: 700; font-size: 14px; font-family: inherit; }
+
+/* ---------- Escritorio: barra lateral fija junto al listado ---------- */
+.explore-layout { display: grid; grid-template-columns: 240px 1fr; gap: 36px; align-items: start; padding: 0 26px 40px; }
+.explore-side { position: sticky; top: 84px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-l); padding: 18px 20px; }
+.explore-side-title { font-family: var(--font-display); font-size: 15px; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.explore-main { min-width: 0; }
+.explore-chips { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 0 4px; }
+.explore-chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-hover); font-size: 12.5px; font-weight: 700; border: none; font-family: inherit; cursor: pointer; }
+@media (min-width: 900px) {
+  .explore-layout { max-width: 1280px; margin: 0 auto; padding: 0 40px 56px; }
+}
+@media (min-width: 1500px) {
+  .explore-layout { max-width: 1600px; }
+}
+/* En escritorio, dentro de la vista de exploración, el .two-col ya no necesita su propio
+   ancho máximo ni relleno lateral: los hereda de .explore-main. */
+.explore-main .two-col, .explore-main .feed-head { padding-left: 0; padding-right: 0; max-width: none; }
+
+/* =====================================================================
+   FASE 4 — Ficha de artículo: precio más grande y limpio, secciones en
+   acordeón (Descripción / Cómo se entrega / Reseñas) en vez de todo
+   desplegado de golpe, y la barra de comprar/ofertar/contactar fija
+   abajo del todo — en escritorio, pegada dentro de la columna de info.
+   ===================================================================== */
+.detail-modal .detail-price {
+  background: none !important; -webkit-background-clip: border-box !important; background-clip: border-box !important;
+  -webkit-text-fill-color: var(--text) !important; color: var(--text) !important;
+  font-family: var(--font-display); font-size: 34px; font-weight: 800; letter-spacing: -0.02em;
+}
+.detail-price-old { font-size: 16px; color: var(--faint); text-decoration: line-through; font-weight: 600; margin-right: 8px; }
+.trend-tag { display: inline-flex; align-items: center; gap: 5px; background: var(--ok-soft); color: var(--ok-ink); font-size: 11.5px; font-weight: 700; padding: 5px 10px; border-radius: 999px; margin-top: 6px; }
+.detail-title { font-size: 21px; font-weight: 700; line-height: 1.28; margin: 4px 0 2px; letter-spacing: -0.015em; }
+.detail-meta-row { font-size: 12.5px; color: var(--faint); display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+.tag-row { gap: 7px; }
+.info-tag { background: var(--surface); border-radius: 8px; font-weight: 600; }
+
+.seller-card { border: 1px solid var(--border); background: var(--card); border-radius: var(--radius-l); box-shadow: none; }
+.shipping-box { background: var(--sage, var(--ok-soft)); border: none; border-radius: var(--radius-l); box-shadow: none !important; padding: 14px 16px; }
+.shipping-box svg { color: var(--ok-ink); }
+.shipping-title { color: var(--ok-ink); font-weight: 800; }
+.shipping-sub { color: var(--ok-ink); opacity: 0.85; }
+
+/* ---------- Acordeón ---------- */
+.acc-item { border-top: 1px solid var(--border); padding: 4px 0; }
+.acc-head { width: 100%; display: flex; align-items: center; justify-content: space-between; background: none; border: none; padding: 14px 0; font-family: var(--font-display); font-weight: 800; font-size: 14.5px; color: var(--text); cursor: pointer; font-family: inherit; text-align: left; }
+.acc-chev { color: var(--faint); transition: transform .15s ease; flex: none; }
+.acc-chev.open { transform: rotate(180deg); }
+.acc-body { padding-bottom: 14px; font-size: 13.5px; color: var(--body); line-height: 1.55; }
+.acc-body .detail-description { margin: 0; }
+.acc-body .seller-reviews-box { margin: 0; }
+
+/* ---------- Barra de acciones: fija abajo en móvil, pegada en escritorio ---------- */
+@media (max-width: 780px) {
+  .detail-modal .detail-actions {
+    position: sticky; bottom: 0; margin: 18px -20px -20px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+    background: var(--card); border-top: 1px solid var(--border); flex-wrap: nowrap; z-index: 3;
+  }
+  .detail-modal .detail-actions .buy-btn { order: 3; flex: 1.3; }
+  .detail-modal .detail-actions .offer-btn { order: 2; flex: 1; }
+  .detail-modal .detail-actions .chat-btn:not(.mark-sold-btn) { order: 1; flex: none; width: 46px; padding: 0; justify-content: center; }
+  .detail-modal .detail-actions .chat-btn:not(.mark-sold-btn) span { display: none; }
+  .detail-modal .in-person-alt-btn { order: 4; flex-basis: 100%; }
+}
+@media (min-width: 900px) {
+  .item-page-info .detail-actions { position: sticky; bottom: 24px; background: var(--card); padding-top: 6px; }
+}
+.buy-btn, .offer-btn, .chat-btn { border-radius: 12px !important; font-weight: 700 !important; }
+.buy-btn { background: var(--accent) !important; color: var(--on-accent) !important; }
+.offer-btn, .chat-btn { background: var(--card) !important; border: 1px solid var(--input-border) !important; color: var(--text) !important; }
+
+/* La "X" de cerrar y la etiqueta "Destacado" competían por la misma esquina superior
+   izquierda de la galería — bajamos la etiqueta a la esquina inferior. */
+.detail-media .featured-ribbon, .detail-media .new-ribbon { top: auto !important; bottom: 16px !important; left: 16px !important; }
