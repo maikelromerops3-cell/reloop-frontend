@@ -956,6 +956,12 @@ export async function sendChatMessage(itemId, content, offerAmount, imageUrl) {
 
 // --- Notificaciones reales ---
 
+export async function fetchAllThreads() {
+  const res = await fetch(`${API_URL}/messages`, { headers: { ...authHeaders() } });
+  if (!res.ok) throw new Error("No se pudieron cargar tus conversaciones");
+  return res.json();
+}
+
 export async function fetchNotifications() {
   const res = await fetch(`${API_URL}/notifications`, { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error("No se pudieron cargar las notificaciones");

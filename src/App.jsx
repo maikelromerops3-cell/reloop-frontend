@@ -12,8 +12,7 @@ import "./styles/explore.css";
 import ItemCard from "./components/ItemCard";
 import HomeSections from "./components/HomeSections";
 import FilterPanel from "./components/FilterPanel";
-import Accordion from "./components/Accordion";
-import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, FileDown, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight, Clock, Download } from "lucide-react";
+import { Search, Plus, X, MessageCircle, Heart, Zap, User, Star, Mail, Lock, ImagePlus, Tag, Trash2, CheckCircle, Leaf, MapPin, HandCoins, UserPlus, UserCheck, Send, Trophy, Pencil, Bell, Settings, ShoppingBag, RefreshCw, LayoutGrid, Shirt, Footprints, Watch, TrendingDown, TrendingUp, Share2, PackageOpen, Truck, Package, ArrowLeft, ShieldCheck, FileWarning, SlidersHorizontal, FileCheck, FileDown, LogOut, LogIn, MoreHorizontal, Home, Instagram, Facebook, Twitter, Camera, Car, BookOpen, Sparkles, Baby, Wrench, Guitar, Crop, Shield, Eye, Sun, Moon, ChevronRight, ChevronDown, Clock, Download } from "lucide-react";
 import {
   fetchItems, fetchItem, createItem, updateItem, deleteItem,
   login as apiLogin, register as apiRegister, logout as apiLogout, isLoggedIn, getUsername, getRole,
@@ -28,7 +27,7 @@ import {
   fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer, markItemSold, notifySaleBuyer, fetchItemConversations,
   forgotPassword, resetPassword, verifyEmail,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
-  fetchNotifications, markAllNotificationsRead,
+  fetchAllThreads, fetchNotifications, markAllNotificationsRead,
   disputeTransaction,
   fetchAdminUsers, fetchAdminStats, fetchAdminDisputes, refundTransaction, rejectDispute, respondToDispute, requestReturn, markReturned, confirmReturnReceived,
   submitIdentityVerification, fetchAdminVerifications, approveVerification, rejectVerification,
@@ -246,6 +245,9 @@ export default function RopelinApp() {
   const [showAllShippingRates, setShowAllShippingRates] = useState(false);
   const [checkoutServicePoint, setCheckoutServicePoint] = useState(null); // { id, name, address }
   const [showNotifs, setShowNotifs] = useState(false);
+  const [notifsTab, setNotifsTab] = useState("notifs");
+  const [messageThreads, setMessageThreads] = useState([]);
+  const [loadingThreads, setLoadingThreads] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [myEmailVerified, setMyEmailVerified] = useState(true);
@@ -591,6 +593,8 @@ export default function RopelinApp() {
   useEffect(() => {
     if (showNotifs && loggedIn) {
       fetchNotifications().then(setNotifications).catch(() => {});
+      setLoadingThreads(true);
+      fetchAllThreads().then(setMessageThreads).catch(() => {}).finally(() => setLoadingThreads(false));
     }
   }, [showNotifs, loggedIn]);
 
@@ -4269,7 +4273,8 @@ export default function RopelinApp() {
             className="detail-media"
             style={{ backgroundImage: `url(${(openItem.images && openItem.images[galleryIndex]) || openItem.photo})`, backgroundSize: "cover", backgroundPosition: "center" }}
           >
-            {openItem.featured && <span className="featured-ribbon" style={{ top: 14 }}>Destacado</span>}
+            <span className="pv-cond-chip">{openItem.condition}</span>
+            {openItem.featured && <span className="featured-ribbon featured-ribbon-quiet">Destacado</span>}
             {openItem.images && openItem.images.length > 1 && (
               <>
                 <button
@@ -4335,9 +4340,10 @@ export default function RopelinApp() {
 
         const infoEl = (
           <>
-            <div className="detail-top">
+            <div className="pv-card">
+              <p className="pv-eyebrow">{openItem.category}{openItem.subcategory ? ` · ${openItem.subcategory}` : ""} · @{openItem.seller}</p>
               <h3 className="detail-title">{openItem.title}</h3>
-              <div>
+              <div className="pv-price-row">
                 <p className="detail-price">
                   {openItem.originalPrice && Number(openItem.originalPrice) > openItem.price && (
                     <span className="detail-price-old">{Number(openItem.originalPrice)}€</span>
@@ -4346,25 +4352,25 @@ export default function RopelinApp() {
                 </p>
                 {openItem.price < 25 && <p className="trend-tag"><TrendingDown size={11} /> Por debajo de la media</p>}
               </div>
-            </div>
 
-            <p className="detail-meta-row">
-              <span>Publicado {timeAgo(openItem.minutesAgo)}</span>
-              {typeof openItem.views === "number" && openItem.views > 0 && <span>· <Eye size={12} /> {openItem.views} {openItem.views === 1 ? "vista" : "vistas"}</span>}
-              {openItem.favoritesCount > 0 && <span>· <Heart size={12} /> {openItem.favoritesCount} en favoritos</span>}
-            </p>
+              <div className="pv-facts">
+                {openItem.size && <div className="pv-fact"><small>Talla</small><span>{openItem.size}</span></div>}
+                <div className="pv-fact"><small>Estado</small><span>{openItem.condition}</span></div>
+                <div className="pv-fact"><small>Ubicación</small><span>{openItem.city || "España"}</span></div>
+              </div>
 
-            <div className="tag-row">
-              <span className="info-tag">{openItem.category}</span>
-              {openItem.subcategory && <span className="info-tag">{openItem.subcategory}</span>}
-              {openItem.size && <span className="info-tag">Talla {openItem.size}</span>}
-              <span className="info-tag">{openItem.condition}</span>
+              <p className="detail-meta-row">
+                <span>Publicado {timeAgo(openItem.minutesAgo)}</span>
+                {typeof openItem.views === "number" && openItem.views > 0 && <span>· <Eye size={12} /> {openItem.views} {openItem.views === 1 ? "vista" : "vistas"}</span>}
+                {openItem.favoritesCount > 0 && <span>· <Heart size={12} /> {openItem.favoritesCount} en favoritos</span>}
+              </p>
             </div>
 
             {openItem.description && (
-              <Accordion title="Descripción">
+              <div className="pv-sec">
+                <p className="pv-sec-label">Descripción</p>
                 <p className="detail-description">{openItem.description}</p>
-              </Accordion>
+              </div>
             )}
 
             <div className="seller-card">
@@ -4404,7 +4410,8 @@ export default function RopelinApp() {
             </div>
 
             {sellerReviews && sellerReviews.reviews && sellerReviews.reviews.length > 0 && (
-              <Accordion title={`Reseñas de @${openItem.seller} (${sellerReviews.total})`}>
+              <details className="pv-sec pv-details" open={numCols < 3}>
+                <summary className="pv-sec-label">Reseñas de @{openItem.seller} ({sellerReviews.total}) <ChevronDown size={14} className="pv-details-chev" /></summary>
                 <div className="seller-reviews-box">
                 <div className="reviews-list">
                   {sellerReviews.reviews.slice(0, 1).map((r) => (
@@ -4424,7 +4431,7 @@ export default function RopelinApp() {
                 </div>
                 <button className="about-block-link seller-reviews-more" onClick={() => openProfile(openItem.seller)}>Ver {sellerReviews.total > 1 ? `las ${sellerReviews.total} reseñas` : "todas las reseñas"} →</button>
                 </div>
-              </Accordion>
+              </details>
             )}
 
             {openItem.seller === username && openItem.status !== "sold" && !stripeStatus?.onboarded && (
@@ -5586,7 +5593,17 @@ export default function RopelinApp() {
         <div className="overlay" onClick={() => setShowNotifs(false)}>
           <div className="modal notif-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" aria-label="Cerrar" onClick={() => setShowNotifs(false)}><X size={14} /></button>
-            <p className="auth-title" style={{ marginBottom: 16 }}>Notificaciones</p>
+            <p className="auth-title" style={{ marginBottom: 12 }}>Avisos</p>
+            <div className="notif-tabs">
+              <button className={notifsTab === "notifs" ? "on" : ""} onClick={() => setNotifsTab("notifs")}>
+                Notificaciones{notifications.some((n) => !n.read) && <em>{notifications.filter((n) => !n.read).length}</em>}
+              </button>
+              <button className={notifsTab === "messages" ? "on" : ""} onClick={() => setNotifsTab("messages")}>
+                Mensajes{messageThreads.some((t) => t.unreadCount > 0) && <em>{messageThreads.reduce((s, t) => s + t.unreadCount, 0)}</em>}
+              </button>
+            </div>
+
+            {notifsTab === "notifs" && <>
             {notifications.length === 0 && <p className="empty-tab">No tienes notificaciones todavía.</p>}
             {notifications.map((n) => (
               <div
@@ -5626,6 +5643,39 @@ export default function RopelinApp() {
                 </div>
               </div>
             ))}
+            </>}
+
+            {notifsTab === "messages" && <>
+            {loadingThreads && <p className="empty-tab">Cargando tus conversaciones...</p>}
+            {!loadingThreads && messageThreads.length === 0 && <p className="empty-tab">No tienes conversaciones todavía.</p>}
+            {messageThreads.map((t) => (
+              <div
+                key={t.itemId}
+                className={"thread-row" + (t.unreadCount > 0 ? " unread" : "")}
+                onClick={async () => {
+                  setShowNotifs(false);
+                  try {
+                    const found = normalizeItem(await fetchItem(t.itemId));
+                    openChat(found);
+                  } catch {
+                    toast.error("No se pudo abrir esta conversación (puede que el artículo ya no exista)");
+                  }
+                }}
+              >
+                <div className="thread-avatar" style={t.itemImage ? { backgroundImage: `url(${t.itemImage})`, backgroundSize: "cover", backgroundPosition: "center" } : { background: PALETTE[t.itemTitle.length % PALETTE.length] }}>
+                  {!t.itemImage && t.itemTitle[0]?.toUpperCase()}
+                </div>
+                <div className="thread-body">
+                  <p className="thread-title">{t.itemTitle}{t.itemSold && <span className="thread-sold"> · Vendido</span>}</p>
+                  <p className="thread-preview">{t.lastMessageIsMine ? "Tú: " : ""}{t.lastMessage}</p>
+                </div>
+                <div className="thread-meta">
+                  <span className="notif-time">{timeAgoFromDate(t.lastMessageAt)}</span>
+                  {t.unreadCount > 0 && <span className="notif-dot thread-unread-dot">{t.unreadCount}</span>}
+                </div>
+              </div>
+            ))}
+            </>}
           </div>
         </div>
       )}

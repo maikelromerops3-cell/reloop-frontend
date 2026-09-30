@@ -82,19 +82,31 @@
 .info-tag { background: var(--surface); border-radius: 8px; font-weight: 600; }
 
 .seller-card { border: 1px solid var(--border); background: var(--card); border-radius: var(--radius-l); box-shadow: none; }
-.shipping-box { background: var(--sage, var(--ok-soft)); border: none; border-radius: var(--radius-l); box-shadow: none !important; padding: 14px 16px; }
-.shipping-box svg { color: var(--ok-ink); }
-.shipping-title { color: var(--ok-ink); font-weight: 800; }
-.shipping-sub { color: var(--ok-ink); opacity: 0.85; }
+.shipping-box { background: none; border: none; box-shadow: none !important; padding: 0; display: flex; gap: 12px; align-items: flex-start; }
+.shipping-box svg { color: var(--text); margin-top: 2px; flex: none; }
+.shipping-title { color: var(--text); font-weight: 700; font-size: 13px; }
+.shipping-sub { color: var(--sub); font-size: 12.5px; line-height: 1.45; }
 
-/* ---------- Acordeón ---------- */
-.acc-item { border-top: 1px solid var(--border); padding: 4px 0; }
-.acc-head { width: 100%; display: flex; align-items: center; justify-content: space-between; background: none; border: none; padding: 14px 0; font-family: var(--font-display); font-weight: 800; font-size: 14.5px; color: var(--text); cursor: pointer; font-family: inherit; text-align: left; }
-.acc-chev { color: var(--faint); transition: transform .15s ease; flex: none; }
-.acc-chev.open { transform: rotate(180deg); }
-.acc-body { padding-bottom: 14px; font-size: 13.5px; color: var(--body); line-height: 1.55; }
-.acc-body .detail-description { margin: 0; }
-.acc-body .seller-reviews-box { margin: 0; }
+/* ---------- Secciones llanas (Descripción / Reseñas), con separador simple ---------- */
+.pv-sec { border-top: 1px solid var(--border); padding: 16px 0; }
+.pv-sec-label { font-family: var(--font-display); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); font-weight: 700; margin-bottom: 8px; }
+.pv-sec .seller-reviews-box { margin: 0; }
+
+/* ---------- Tarjeta de info "flotante" sobre la galería (estilo boutique de segunda mano) ---------- */
+.pv-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); font-weight: 700; margin-bottom: 6px; }
+.pv-price-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; }
+.detail-modal .pv-price-row .detail-price { margin: 0; }
+.detail-modal .trend-tag { margin: 0; }
+@media (max-width: 780px) {
+  .detail-modal .pv-card {
+    position: relative; margin: -32px 20px 0; background: var(--card); border-radius: var(--radius-l);
+    padding: 20px 20px 4px; box-shadow: 0 -10px 26px -10px rgba(22,21,19,.1); z-index: 2;
+  }
+  .detail-modal .detail-media { height: auto; aspect-ratio: 4 / 5; border-radius: 0; }
+}
+@media (min-width: 900px) {
+  .item-page-info .pv-card { padding-top: 0; }
+}
 
 /* ---------- Barra de acciones: fija abajo en móvil, pegada en escritorio ---------- */
 @media (max-width: 780px) {
@@ -117,4 +129,111 @@
 
 /* La "X" de cerrar y la etiqueta "Destacado" competían por la misma esquina superior
    izquierda de la galería — bajamos la etiqueta a la esquina inferior. */
-.detail-media .featured-ribbon, .detail-media .new-ribbon { top: auto !important; bottom: 16px !important; left: 16px !important; }
+.detail-media .featured-ribbon, .detail-media .new-ribbon { top: auto !important; bottom: 48px !important; left: 16px !important; }
+
+/* =====================================================================
+   Vuelta "de verdad profesional" a la ficha: menos cartel de oferta, más
+   boutique — foto con marco (no a sangre), pastilla de estado discreta
+   en vez de ribbon naranja, datos en columnas finas, y las reseñas como
+   acordeón nativo <details> para no alargar tanto la página.
+   ===================================================================== */
+.pv-cond-chip { position: absolute; left: 16px; top: 16px; background: rgba(255,255,255,.94); color: var(--text); font-size: 11px; font-weight: 700; letter-spacing: .02em; padding: 6px 12px; border-radius: 999px; z-index: 2; }
+.featured-ribbon-quiet { background: var(--text) !important; color: var(--bg) !important; box-shadow: none !important; border: none !important; font-size: 10.5px !important; padding: 6px 11px !important; }
+
+.pv-facts { display: flex; padding: 14px 0; margin-top: 4px; border-top: 1px solid var(--border); }
+.pv-fact { flex: 1; padding-right: 10px; border-right: 1px solid var(--border); }
+.pv-fact:last-child { border-right: none; padding-right: 0; }
+.pv-fact small { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); margin-bottom: 3px; }
+.pv-fact span { font-size: 13px; font-weight: 700; color: var(--text); }
+
+.detail-modal .trend-tag { background: none !important; color: var(--sage-ink, var(--ok-ink)) !important; padding: 0 !important; font-weight: 600 !important; }
+
+/* Acordeón nativo (Reseñas): sin marcador por defecto, con nuestra propia flechita */
+.pv-details summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+.pv-details summary::-webkit-details-marker { display: none; }
+.pv-details-chev { color: var(--faint); transition: transform .15s ease; flex: none; }
+.pv-details[open] .pv-details-chev { transform: rotate(180deg); }
+.pv-details .seller-reviews-box { margin-top: 10px; }
+
+@media (max-width: 780px) {
+  .detail-modal .detail-media { margin: 14px 20px 0; border-radius: 18px; width: calc(100% - 40px); }
+  .detail-modal .pv-card { margin-top: 16px; box-shadow: none; padding: 0 20px; }
+  .detail-modal .pv-cond-chip { left: 12px; top: 12px; }
+}
+
+/* Escritorio: columna de info más compacta — menos espacio vertical entre bloques */
+@media (min-width: 900px) {
+  .item-page-info .pv-card { padding-bottom: 4px; }
+  .item-page-info .pv-sec, .item-page-info .seller-card, .item-page-info .shipping-box { padding-top: 12px; padding-bottom: 12px; }
+  .item-page-info .detail-title { font-size: 22px; }
+  .item-page-info .detail-price { font-size: 28px; }
+}
+
+/* =====================================================================
+   Perfil — mismo criterio que la ficha de artículo: menos cajas con
+   fondo/color, más líneas finas y tipografía tranquila.
+   ===================================================================== */
+.profile-avatar-lg { border: 3px solid var(--card) !important; box-shadow: 0 0 0 1px var(--border) !important; }
+.profile-name { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+.about-me-box { background: none !important; border: none !important; border-top: 1px solid var(--border) !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important; padding: 16px 4px !important; }
+.about-me-heading { color: var(--faint) !important; letter-spacing: .06em !important; }
+
+.stats-row { background: none !important; border: none !important; padding: 0 !important; gap: 0 !important; }
+.stat-box { background: none !important; border: none !important; border-right: 1px solid var(--border) !important; border-radius: 0 !important; padding: 14px 6px !important; }
+.stat-box:last-child { border-right: none !important; }
+.stat-box strong { font-family: var(--font-display); font-size: 17px !important; }
+.stat-box span { font-size: 10.5px !important; text-transform: uppercase; letter-spacing: .05em; color: var(--faint) !important; }
+
+/* =====================================================================
+   Confirmar compra — mismo criterio de nuevo: quitamos las tarjetas con
+   fondo de color en las tarifas de envío y en el desglose de precio,
+   dejando líneas finas, como en la ficha y el perfil.
+   ===================================================================== */
+.sheet-rate-card { background: none !important; border: none !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important; padding: 14px 2px !important; }
+.sheet-rate-card:last-of-type { border-bottom: none !important; }
+.sheet-rate-card.selected { background: var(--surface) !important; border-radius: 12px !important; border-bottom: 1px solid transparent !important; }
+.sheet-rate-icon { background: none !important; border: none !important; width: 26px !important; height: 26px !important; }
+.sheet-rate-price { background: none !important; color: var(--text) !important; font-weight: 700 !important; padding: 0 !important; }
+.sheet-rate-radio { border: 1.5px solid var(--input-border) !important; }
+
+.checkout-summary { background: none !important; border: none !important; border-radius: 0 !important; padding: 14px 2px !important; border-top: 1px solid var(--border) !important; margin: 12px 0 0 !important; }
+
+/* =====================================================================
+   Avisos — pestañas de Notificaciones / Mensajes, y la fila de cada
+   conversación en la lista nueva de Mensajes.
+   ===================================================================== */
+.notif-tabs { display: flex; gap: 4px; background: var(--surface); border-radius: 12px; padding: 4px; margin-bottom: 14px; }
+.notif-tabs button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; background: none; padding: 9px 10px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--sub); font-family: inherit; cursor: pointer; }
+.notif-tabs button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.notif-tabs button em { font-style: normal; background: var(--accent); color: var(--on-accent); font-size: 10.5px; font-weight: 800; min-width: 17px; height: 17px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; }
+
+.thread-row { display: flex; align-items: center; gap: 12px; padding: 11px 4px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.thread-row:last-child { border-bottom: none; }
+.thread-avatar { width: 44px; height: 44px; border-radius: 12px; flex: none; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 16px; font-family: var(--font-display); }
+.thread-body { flex: 1; min-width: 0; }
+.thread-title { font-size: 13.5px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thread-sold { font-weight: 500; color: var(--faint); }
+.thread-preview { font-size: 12.5px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.thread-row.unread .thread-preview { color: var(--text); font-weight: 600; }
+.thread-meta { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.thread-unread-dot { position: static !important; }
+
+/* =====================================================================
+   Chat — mismo criterio boutique: sin la caja de aviso con fondo de
+   color, sin la pastilla verde en el precio, globos más sobrios.
+   ===================================================================== */
+.chat-item-strip { background: var(--card) !important; }
+.chat-item-thumb { border-radius: 12px !important; }
+.chat-item-strip-price { background: none !important; color: var(--text) !important; padding: 0 !important; font-weight: 700 !important; }
+
+.chat-safety-banner { background: none !important; border: none !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important; padding: 12px 4px 14px !important; color: var(--sub) !important; }
+.chat-safety-banner svg { color: var(--faint) !important; }
+
+.chat-bubble { border-radius: 16px !important; border-color: var(--border) !important; box-shadow: none !important; }
+.chat-bubble.seller { background: var(--surface) !important; }
+.chat-bubble.me { background: var(--text) !important; color: var(--bg) !important; font-weight: 500 !important; }
+.chat-bubble.offer-bubble { border-color: var(--amber) !important; }
+
+.chat-quick-reply-chip { background: none !important; border: 1px solid var(--input-border) !important; font-weight: 600 !important; }
+.chat-quick-reply-chip:hover { border-color: var(--text) !important; color: var(--text) !important; }
