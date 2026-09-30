@@ -4465,48 +4465,6 @@ export default function RopelinApp() {
               </details>
             )}
 
-            <div className="pv-sec">
-              <p className="pv-sec-label">Preguntas{itemQuestions.length > 0 ? ` (${itemQuestions.length})` : ""}</p>
-              {itemQuestions.length === 0 && <p className="qa-empty">Nadie ha preguntado nada todavía. Si tienes dudas del artículo, pregunta aquí — la respuesta la verá cualquiera que mire este artículo.</p>}
-              {itemQuestions.map((q) => (
-                <div key={q.id} className="qa-row">
-                  <div className="qa-q">
-                    <span className="qa-who">@{q.author}</span> {q.question}
-                    {(q.author === username || openItem.seller === username) && (
-                      <button className="qa-del" onClick={() => handleDeleteQuestion(q.id)} aria-label="Eliminar pregunta"><Trash2 size={12} /></button>
-                    )}
-                  </div>
-                  {q.answer ? (
-                    <div className="qa-a"><span className="qa-who">@{openItem.seller}</span> {q.answer}</div>
-                  ) : openItem.seller === username ? (
-                    <div className="qa-answer-form">
-                      <input
-                        placeholder="Escribe la respuesta..."
-                        value={answerDrafts[q.id] || ""}
-                        onChange={(e) => setAnswerDrafts((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleAnswerQuestion(q.id); }}
-                      />
-                      <button onClick={() => handleAnswerQuestion(q.id)}>Responder</button>
-                    </div>
-                  ) : (
-                    <p className="qa-pending">Todavía sin responder</p>
-                  )}
-                </div>
-              ))}
-              {loggedIn && openItem.seller !== username && (
-                <form className="qa-ask-form" onSubmit={handleAskQuestion}>
-                  <input
-                    placeholder="Pregunta algo sobre este artículo..."
-                    value={newQuestionText}
-                    onChange={(e) => setNewQuestionText(e.target.value)}
-                    maxLength={300}
-                  />
-                  <button type="submit" disabled={sendingQuestion || !newQuestionText.trim()}>{sendingQuestion ? "..." : "Enviar"}</button>
-                </form>
-              )}
-              {!loggedIn && <button className="about-block-link" onClick={() => setShowAuth(true)}>Inicia sesión para preguntar</button>}
-            </div>
-
             {openItem.seller === username && openItem.status !== "sold" && !stripeStatus?.onboarded && (
               <div className="email-unverified-banner" style={{ marginBottom: 14 }}>
                 <p><FileWarning size={14} /> Nadie puede comprarte este artículo por correo todavía</p>
@@ -4613,6 +4571,19 @@ export default function RopelinApp() {
             <div className="item-page-grid">
               <div className="item-page-gallery">
                 {galleryEl}
+                {openItem.images && openItem.images.length > 1 && (
+                  <div className="gallery-thumbs">
+                    {openItem.images.map((img, i) => (
+                      <button
+                        key={i}
+                        className={"gallery-thumb" + (i === galleryIndex ? " on" : "")}
+                        onClick={() => setGalleryIndex(i)}
+                        style={{ backgroundImage: `url(${img})` }}
+                        aria-label={`Ver foto ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="item-page-info">
                 {infoEl}
