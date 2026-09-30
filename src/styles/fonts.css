@@ -6,3 +6,8 @@
 @import "@fontsource/inter/latin-400.css";
 @import "@fontsource/inter/latin-500.css";
 @import "@fontsource/inter/latin-600.css";
+/* Fraunces: una serif con carácter, solo para el título y el precio de la ficha de artículo —
+   el mismo recurso tipográfico que usan de verdad las tiendas de reventa de lujo (Vestiaire,
+   The RealReal) para que un producto se sienta cuidado, no un simple listado de datos. */
+@import "@fontsource/fraunces/latin-500.css";
+@import "@fontsource/fraunces/latin-600.css";

@@ -237,3 +237,27 @@
 
 .chat-quick-reply-chip { background: none !important; border: 1px solid var(--input-border) !important; font-weight: 600 !important; }
 .chat-quick-reply-chip:hover { border-color: var(--text) !important; color: var(--text) !important; }
+
+/* =====================================================================
+   Ficha de artículo — vuelta "top": tipografía con más carácter en
+   título y precio, pastilla de estado legible sobre cualquier foto, y
+   la barra de Admin ya no desentona con el resto.
+   ===================================================================== */
+.detail-modal .detail-title { font-family: "Fraunces", var(--font-display), serif; font-weight: 600; font-size: 23px; letter-spacing: -0.01em; }
+.detail-modal .detail-price { font-family: "Fraunces", var(--font-display), serif; font-weight: 600; font-size: 32px; }
+@media (min-width: 900px) {
+  .item-page-info .detail-title { font-size: 25px; }
+  .item-page-info .detail-price { font-size: 30px; }
+}
+
+/* Pastilla de estado: fondo semitransparente con desenfoque, para leerse sobre cualquier foto
+   (antes era blanco sólido y se perdía sobre fotos claras, como un atardecer). */
+.pv-cond-chip { background: rgba(20,18,16,.55) !important; color: #fff !important; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.18); }
+.featured-ribbon-quiet { background: rgba(20,18,16,.72) !important; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+
+/* Barra de Admin: la misma línea fina y discreta que el resto de la ficha, no una caja aparte */
+.admin-toolbar { background: none !important; border: none !important; border-top: 1px solid var(--border) !important; border-radius: 0 !important; padding: 14px 2px !important; margin: 4px 0 0 !important; width: 100%; }
+.admin-toolbar-label { color: var(--faint) !important; }
+.admin-icon-action { background: var(--surface) !important; color: var(--sub) !important; }
+.admin-icon-action.danger { color: #B23A2E !important; }
+.admin-icon-action:hover { background: var(--border) !important; }
