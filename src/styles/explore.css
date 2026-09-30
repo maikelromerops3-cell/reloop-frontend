@@ -163,10 +163,13 @@
 
 /* Escritorio: columna de info más compacta — menos espacio vertical entre bloques */
 @media (min-width: 900px) {
-  .item-page-info .pv-card { padding-bottom: 4px; }
-  .item-page-info .pv-sec, .item-page-info .seller-card, .item-page-info .shipping-box { padding-top: 12px; padding-bottom: 12px; }
-  .item-page-info .detail-title { font-size: 22px; }
-  .item-page-info .detail-price { font-size: 28px; }
+  .item-page-info { padding: 22px 24px !important; }
+  .item-page-info .pv-card { padding-bottom: 2px; }
+  .item-page-info .pv-facts { padding: 10px 0; margin-top: 2px; }
+  .item-page-info .detail-meta-row { margin-top: 2px; }
+  .item-page-info .pv-sec, .item-page-info .seller-card, .item-page-info .shipping-box { padding-top: 10px; padding-bottom: 10px; }
+  .item-page-info .seller-card { margin: 10px 0 !important; }
+  .item-page-info .pv-sec-label { margin-bottom: 5px; }
 }
 
 /* =====================================================================

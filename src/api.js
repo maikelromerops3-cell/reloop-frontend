@@ -232,6 +232,16 @@ export async function updateNotifPreference(field, value) {
   return res.json();
 }
 
+export async function setVacationMode(vacationMode) {
+  const res = await fetch(`${API_URL}/users/me/vacation`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ vacationMode }),
+  });
+  if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudo guardar el modo vacaciones");
+  return res.json();
+}
+
 export async function exportMyData() {
   const res = await fetch(`${API_URL}/users/me/export`, { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error((await parseErrorMessage(res)) || "No se pudieron descargar tus datos");

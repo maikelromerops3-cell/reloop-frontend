@@ -27,7 +27,7 @@ import {
   fetchItemQuestions, askItemQuestion, answerItemQuestion, deleteItemQuestion, respondToOffer, markItemSold, notifySaleBuyer, fetchItemConversations,
   forgotPassword, resetPassword, verifyEmail,
   fetchChatMessages, sendChatMessage as sendChatMessage_,
-  fetchAllThreads, fetchNotifications, markAllNotificationsRead,
+  fetchAllThreads, fetchNotifications, markAllNotificationsRead, setVacationMode,
   disputeTransaction,
   fetchAdminUsers, fetchAdminStats, fetchAdminDisputes, refundTransaction, rejectDispute, respondToDispute, requestReturn, markReturned, confirmReturnReceived,
   submitIdentityVerification, fetchAdminVerifications, approveVerification, rejectVerification,
@@ -162,6 +162,7 @@ function normalizeItem(raw) {
     price: Number(raw.price),
     seller: raw.seller?.username || raw.seller || raw.sellerId,
     sellerStripeOnboarded: raw.seller?.stripeOnboarded ?? null,
+    sellerVacationMode: raw.seller?.vacationMode ?? false,
     photo: raw.images && raw.images.length ? raw.images[0] : `https://picsum.photos/seed/${raw.id}/500/500`,
     minutesAgo,
     city: raw.seller?.city || null,
@@ -341,6 +342,8 @@ export default function RopelinApp() {
   const [messageAlerts, setMessageAlerts] = useState(true);
   const [offerAlerts, setOfferAlerts] = useState(true);
   const [priceDropAlerts, setPriceDropAlerts] = useState(true);
+  const [vacationMode, setVacationModeState] = useState(false);
+  const [savingVacation, setSavingVacation] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
   const [showMaintenanceLogin, setShowMaintenanceLogin] = useState(false);
@@ -566,6 +569,7 @@ export default function RopelinApp() {
         setMessageAlerts(prefs.messageAlerts !== false);
         setOfferAlerts(prefs.offerAlerts !== false);
         setPriceDropAlerts(prefs.priceDropAlerts !== false);
+        setVacationModeState(!!prefs.vacationMode);
       }).catch(() => {});
     }
     if (showProfile) {
@@ -1352,7 +1356,10 @@ export default function RopelinApp() {
       const matchMax = !priceFilter.max || Number(it.price) <= Number(priceFilter.max);
       const matchSize = !sizeFilter || it.size === sizeFilter;
       const matchDistance = !distanceFilter || (it.distanceKm !== null && it.distanceKm <= Number(distanceFilter));
-      return matchQuery && matchCat && matchMin && matchMax && matchSize && matchDistance;
+      // Quien está en modo vacaciones no aparece en el feed ni en búsquedas de nadie más —
+      // pero si el que mira es él mismo (viendo su propio perfil, por ejemplo), sí se ve.
+      const notOnVacation = !it.sellerVacationMode || it.seller === username;
+      return matchQuery && matchCat && matchMin && matchMax && matchSize && matchDistance && notOnVacation;
     });
 
     if (sortBy === "price_asc") {
@@ -4458,6 +4465,8 @@ export default function RopelinApp() {
                 </>
               ) : openItem.status === "sold" ? (
                 <button className="buy-btn" disabled style={{ opacity: 0.6, flex: 1 }}><CheckCircle size={15} /> Este artículo ya se ha vendido</button>
+              ) : openItem.sellerVacationMode ? (
+                <button className="buy-btn" disabled title="Este vendedor está en modo vacaciones ahora mismo" style={{ opacity: 0.6, flex: 1 }}><Clock size={15} /> El vendedor está de vacaciones</button>
               ) : (
                 <>
                   <button className="chat-btn" onClick={() => openChat(openItem)}><MessageCircle size={15} /> Contactar</button>
@@ -5754,6 +5763,33 @@ export default function RopelinApp() {
                   } catch (err) {
                     setPriceDropAlerts(!value);
                     toast.error(err.message);
+                  }
+                }}
+              />
+            </p>
+
+            <label>Modo vacaciones</label>
+            <p className="settings-toggle-row">
+              <span>
+                Pausar mis artículos
+                <br /><small style={{ color: "var(--sub)", fontWeight: 400 }}>Nadie podrá comprarte nada mientras esté activo. Tus artículos siguen en tu perfil, solo desaparecen del resto de la web.</small>
+              </span>
+              <input
+                type="checkbox"
+                checked={vacationMode}
+                disabled={savingVacation}
+                onChange={async (e) => {
+                  const value = e.target.checked;
+                  setVacationModeState(value);
+                  setSavingVacation(true);
+                  try {
+                    await setVacationMode(value);
+                    toast.success(value ? "Modo vacaciones activado" : "Modo vacaciones desactivado");
+                  } catch (err) {
+                    setVacationModeState(!value);
+                    toast.error(err.message);
+                  } finally {
+                    setSavingVacation(false);
                   }
                 }}
               />
