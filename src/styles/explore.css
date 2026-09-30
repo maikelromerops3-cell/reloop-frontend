@@ -264,3 +264,41 @@
 .admin-icon-action { background: var(--surface) !important; color: var(--sub) !important; }
 .admin-icon-action.danger { color: #B23A2E !important; }
 .admin-icon-action:hover { background: var(--border) !important; }
+
+/* Modo vacaciones como fila del menú del perfil: interruptor pequeño en vez de flecha */
+.mini-switch { width: 38px; height: 22px; border-radius: 11px; background: var(--border); position: relative; flex: none; transition: background .15s ease; }
+.mini-switch i { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .15s ease; }
+.mini-switch.on { background: var(--accent); }
+.mini-switch.on i { transform: translateX(16px); }
+.vacation-on-tag { display: inline-block; margin-left: 8px; background: var(--accent-soft); color: var(--accent-hover); font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; vertical-align: middle; }
+
+/* La tarjeta de info se veía plana en modo oscuro (el borde estaba fijado a un gris que casi
+   no se distinguía del fondo). Ahora usa el color del tema de verdad, con sombra suave y un
+   detalle de color arriba para que no sea solo texto gris sobre gris. */
+.item-page-info { position: relative; overflow: hidden; }
+.item-page-info::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--amber, #D9A441));
+}
+.detail-modal .detail-price { text-shadow: 0 1px 0 rgba(0,0,0,.02); }
+[data-theme="dark"] .pv-fact span, [data-theme="dark"] .detail-title { color: var(--text); }
+[data-theme="dark"] .item-page-info { background: linear-gradient(165deg, var(--card-alt), var(--surface)); }
+
+/* =====================================================================
+   Preguntas públicas — la lógica ya existía en el backend, solo faltaba
+   la parte visual (se perdió sin querer durante el rediseño de la
+   ficha). Mismo estilo tranquilo: sin cajas de colores, líneas finas.
+   ===================================================================== */
+.qa-empty { font-size: 13px; color: var(--sub); line-height: 1.5; }
+.qa-row { padding: 10px 0; border-top: 1px solid var(--border); }
+.qa-row:first-of-type { border-top: none; }
+.qa-q { font-size: 13.5px; color: var(--text); line-height: 1.5; position: relative; padding-right: 20px; }
+.qa-who { font-weight: 700; }
+.qa-a { font-size: 13.5px; color: var(--body); line-height: 1.5; margin-top: 6px; padding-left: 14px; border-left: 2px solid var(--accent-soft); }
+.qa-pending { font-size: 12px; color: var(--faint); font-style: italic; margin-top: 4px; }
+.qa-del { position: absolute; right: 0; top: 0; background: none; border: none; color: var(--faint); cursor: pointer; padding: 2px; }
+.qa-del:hover { color: #B23A2E; }
+.qa-ask-form, .qa-answer-form { display: flex; gap: 8px; margin-top: 10px; }
+.qa-ask-form input, .qa-answer-form input { flex: 1; border: 1px solid var(--input-border); background: var(--card); border-radius: 10px; padding: 9px 12px; font-size: 13px; color: var(--text); font-family: inherit; }
+.qa-ask-form button, .qa-answer-form button { border: none; background: var(--text); color: var(--bg); border-radius: 10px; padding: 0 16px; font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; }
+.qa-ask-form button:disabled { opacity: 0.5; cursor: default; }

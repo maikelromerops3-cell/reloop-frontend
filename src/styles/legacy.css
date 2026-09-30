@@ -788,7 +788,7 @@ input, select { width: 100%; border: 1px solid var(--input-border); border-radiu
   .item-page-info { max-width: 560px; }
 }
 @media (min-width: 781px) {
-  .item-page-info { background: var(--card-alt); border: 1px solid #24242a; border-radius: 22px; padding: 26px 28px; }
+  .item-page-info { background: var(--card-alt); border: 1px solid var(--border); border-radius: 22px; padding: 26px 28px; box-shadow: 0 20px 48px -28px rgba(0,0,0,0.35); }
   .item-page-gallery .detail-media { box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6); }
   .chat-modal { max-width: 760px; width: 90vw; height: 640px; max-height: 86vh; flex-direction: row; }
   .chat-item-strip { flex-direction: column; align-items: flex-start; width: 240px; flex-shrink: 0; height: 100%; padding: 22px 20px; gap: 14px; border-bottom: none; border-right: 1px solid var(--border); overflow-y: auto; }
