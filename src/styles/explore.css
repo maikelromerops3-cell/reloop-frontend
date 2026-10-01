@@ -114,11 +114,7 @@
     position: sticky; bottom: 0; margin: 18px -20px -20px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
     background: var(--card); border-top: 1px solid var(--border); flex-wrap: nowrap; z-index: 3;
   }
-  .detail-modal .detail-actions .buy-btn { order: 3; flex: 1.3; }
-  .detail-modal .detail-actions .offer-btn { order: 2; flex: 1; }
-  .detail-modal .detail-actions .chat-btn:not(.mark-sold-btn) { order: 1; flex: none; width: 46px; padding: 0; justify-content: center; }
-  .detail-modal .detail-actions .chat-btn:not(.mark-sold-btn) span { display: none; }
-  .detail-modal .in-person-alt-btn { order: 4; flex-basis: 100%; }
+  .detail-modal .detail-actions:has(.buyer-actions) { padding-top: 10px; }
 }
 @media (min-width: 900px) {
   .item-page-info .detail-actions { position: sticky; bottom: 24px; background: var(--card); padding-top: 6px; }
@@ -310,4 +306,34 @@
 .gallery-thumb:hover { opacity: 1; }
 @media (min-width: 900px) {
   .item-page-gallery .gallery-arrow, .item-page-gallery .gallery-dots { display: none; }
+}
+
+/* ---------- Acciones del comprador en la ficha ----------
+   Fila 1: [chat] [Ofertar] [Comprar] — misma altura, Comprar es el más ancho.
+   Fila 2: enlace discreto para quedar en persona. */
+.buyer-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.buyer-actions-row { display: flex; gap: 8px; align-items: stretch; }
+.buyer-actions-row > button {
+  height: 50px; min-width: 0; margin: 0; padding: 0 14px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  font-size: 15px; white-space: nowrap; line-height: 1;
+}
+.buyer-actions-row .buyer-chat-btn { flex: 0 0 auto; width: auto; }
+.buyer-actions-row .offer-btn { flex: 1 1 0; }
+.buyer-actions-row .buy-btn { flex: 1.5 1 0; font-size: 16px; font-weight: 800 !important; }
+.buyer-actions-row .buy-btn:disabled { opacity: .55; cursor: not-allowed; }
+.buyer-actions .in-person-alt-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 4px 6px; font-size: 13px; line-height: 1.3; color: var(--sub);
+}
+.buyer-actions .in-person-alt-btn strong { color: var(--text); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.buyer-actions .in-person-alt-btn:hover strong { color: var(--accent); }
+@media (max-width: 780px) {
+  /* en móvil el chat es solo icono, cuadrado */
+  .buyer-actions-row .buyer-chat-btn { width: 50px; padding: 0; }
+  .buyer-actions-row .buyer-chat-btn span { display: none; }
+}
+@media (max-width: 360px) {
+  .buyer-actions-row > button { font-size: 14px; padding: 0 10px; }
+  .buyer-actions .in-person-alt-btn { font-size: 12px; }
 }

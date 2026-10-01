@@ -45,7 +45,6 @@ h2, h3 { font-weight: 800; }
 
 /* ---------- Logo: cuadrado de acento con la R en blanco ---------- */
 .brand-mark { background: var(--accent); border: none; border-radius: 10px; box-shadow: none; }
-.brand-mark svg rect { display: none; }
 .brand-mark svg text { fill: var(--on-accent); }
 .brand h1 { font-weight: 800; letter-spacing: -.03em; }
 

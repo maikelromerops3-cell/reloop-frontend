@@ -1,3 +1,4 @@
+import { cld, IMG } from "../img";
 import { Heart, BadgeCheck } from "lucide-react";
 
 // Tarjeta de artículo: foto en vertical, precio primero, y debajo quién lo vende (con su
@@ -13,7 +14,7 @@ export default function ItemCard({ item, onOpen, saved, toggleSave, ratio = "4 /
   return (
     <article className={"card" + (item.status === "sold" ? " card-sold" : "")} onClick={() => onOpen(item)}>
       <div className="card-media" style={{ aspectRatio: ratio }}>
-        <img src={item.photo} alt={item.title} loading="lazy" decoding="async" className="card-media-img" />
+        <img src={cld(item.photo, IMG.card)} alt={item.title} onError={(e) => { const el = e.currentTarget; if (el.dataset.fallback !== "1" && el.src !== item.photo) { el.dataset.fallback = "1"; el.src = item.photo; } else { el.style.visibility = "hidden"; } }} loading="lazy" decoding="async" className="card-media-img" />
         {item.featured
           ? <span className="chip-badge accent">Destacado</span>
           : isNew ? <span className="chip-badge ink">Nuevo</span> : null}

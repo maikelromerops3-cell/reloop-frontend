@@ -1,7 +1,7 @@
 // Service worker mínimo para que Ropelin sea instalable como PWA.
 // A propósito NO cachea nada de /api/ — los datos del marketplace (artículos, precios,
 // mensajes...) siempre deben venir frescos del servidor, nunca de una copia guardada.
-const CACHE_NAME = "ropelin-shell-v1";
+const CACHE_NAME = "ropelin-shell-v2";
 const APP_SHELL = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {

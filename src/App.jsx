@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import Cropper from "react-easy-crop";
+import { cld, IMG } from "./img";
+import RopelinMark from "./components/RopelinMark";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./styles/fonts.css";
@@ -74,7 +76,7 @@ const PALETTE = ["#B93E16", "#2F4A3D", "#3B3934", "#8A6F4E", "#4A6A85", "#7A4B3A
 function miniSwatchStyle(item, idx) {
   const photo = (item.images && item.images[0]) || item.photo;
   return photo
-    ? { backgroundImage: `url(${photo})`, backgroundSize: "cover", backgroundPosition: "center" }
+    ? { backgroundImage: `url(${cld(photo, IMG.avatar)})`, backgroundSize: "cover", backgroundPosition: "center" }
     : { background: PALETTE[idx % PALETTE.length] };
 }
 
@@ -123,24 +125,34 @@ function wait(ms = 400) {
 
 // Convierte un artículo tal como lo devuelve el backend al formato que usa la interfaz
 // A partir de una imagen y el área seleccionada en el recortador, genera el archivo final ya recortado
+// Recorta y además REDUCE la foto antes de subirla. Las fotos del iPhone (12–48 MP) recortadas a
+// tamaño completo pesaban más de 5 MB (el backend las rechazaba con un 500) y además superan el
+// límite de canvas de iOS Safari (~16,7 MP), que devuelve un blob vacío o congela la pestaña.
+// 1600 px en el lado largo es de sobra para la ficha y deja cada foto en ~200–500 KB.
+const MAX_PHOTO_SIDE = 1600;
 function getCroppedImageFile(imageSrc, croppedAreaPixels, fileName) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
+      const { x, y, width, height } = croppedAreaPixels;
+      const scale = Math.min(1, MAX_PHOTO_SIDE / Math.max(width, height));
+      const outW = Math.max(1, Math.round(width * scale));
+      const outH = Math.max(1, Math.round(height * scale));
       const canvas = document.createElement("canvas");
-      canvas.width = croppedAreaPixels.width;
-      canvas.height = croppedAreaPixels.height;
+      canvas.width = outW;
+      canvas.height = outH;
       const ctx = canvas.getContext("2d");
-      ctx.drawImage(
-        img,
-        croppedAreaPixels.x, croppedAreaPixels.y, croppedAreaPixels.width, croppedAreaPixels.height,
-        0, 0, croppedAreaPixels.width, croppedAreaPixels.height
-      );
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.fillStyle = "#fff"; // los PNG con transparencia no quedan negros al pasar a JPG
+      ctx.fillRect(0, 0, outW, outH);
+      ctx.drawImage(img, x, y, width, height, 0, 0, outW, outH);
       canvas.toBlob((blob) => {
+        canvas.width = 0; canvas.height = 0; // libera memoria del canvas enseguida (importante en iOS)
         if (!blob) return reject(new Error("No se pudo recortar la imagen"));
         resolve(new File([blob], fileName, { type: "image/jpeg" }));
-      }, "image/jpeg", 0.92);
+      }, "image/jpeg", 0.85);
     };
     img.onerror = () => reject(new Error("No se pudo cargar la imagen"));
     img.src = imageSrc;
@@ -362,6 +374,7 @@ export default function RopelinApp() {
   }
   const [newsletterError, setNewsletterError] = useState(null);
   const [cropperState, setCropperState] = useState(null); // { imageSrc, target, aspect, queue } | null
+  const [croppingBusy, setCroppingBusy] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
@@ -862,7 +875,7 @@ export default function RopelinApp() {
     return (
       <div key={tx.id} className="order-card">
         <div className="order-top">
-          <div className="order-thumb" style={{ backgroundImage: `url(${tx.item.images?.[0] || ""})` }} />
+          <div className="order-thumb" style={{ backgroundImage: `url(${cld(tx.item.images?.[0], IMG.thumb) || ""})` }} />
           <div className="order-top-info">
             <p className="order-title">{tx.item.title}</p>
             <p className="order-price">{(Number(tx.amount) + Number(tx.commission || 0) + Number(tx.shippingFee || 3.5)).toFixed(2)}€</p>
@@ -943,7 +956,7 @@ export default function RopelinApp() {
     return (
       <div key={tx.id} className="order-card">
         <div className="order-top">
-          <div className="order-thumb" style={{ backgroundImage: `url(${tx.item.images?.[0] || ""})` }} />
+          <div className="order-thumb" style={{ backgroundImage: `url(${cld(tx.item.images?.[0], IMG.thumb) || ""})` }} />
           <div className="order-top-info">
             <p className="order-title">{tx.item.title}</p>
             <p className="order-price">{(Number(tx.amount) + Number(tx.shippingFee || 3.5)).toFixed(2)}€</p>
@@ -1211,11 +1224,7 @@ export default function RopelinApp() {
       <div className="footer-top-row">
         <div className="footer-brand-group">
           <div className="footer-brand-mark">
-            <svg width="32" height="32" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
-              <rect width="140" height="140" rx="30" fill="var(--accent)" stroke="#1A1A1E" strokeWidth="2.5" />
-              <rect x="92" y="25" width="21" height="21" fill="var(--accent)" />
-              <text x="66" y="112" fontFamily="Manrope, Arial, sans-serif" fontSize="105" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
-            </svg>
+            <RopelinMark size={24} />
           </div>
           <p className="footer-brand-line">ROPELIN — COMPRA Y VENDE DE SEGUNDA MANO.</p>
         </div>
@@ -2122,31 +2131,46 @@ export default function RopelinApp() {
   }
 
   function cancelCropping() {
-    if (cropperState) URL.revokeObjectURL(cropperState.imageSrc);
-    setCropperState(null);
+    if (!cropperState) return;
+    const { imageSrc, queue, target } = cropperState;
+    URL.revokeObjectURL(imageSrc);
+    // con varias fotos seleccionadas, "Descartar" salta solo esta y sigue con la siguiente
+    if (queue.length > 0) { const [next, ...rest] = queue; startCropping(next, target, rest); }
+    else setCropperState(null);
   }
 
   async function confirmCrop() {
-    if (!cropperState || !croppedAreaPixels) return;
+    if (!cropperState || !croppedAreaPixels || croppingBusy) return;
     const { target, queue, imageSrc } = cropperState;
+    setCroppingBusy(true);
+    let croppedFile;
     try {
-      const croppedFile = await getCroppedImageFile(imageSrc, croppedAreaPixels, `recorte-${Date.now()}.jpg`);
-      URL.revokeObjectURL(imageSrc);
-
-      if (target === "avatar") await uploadAvatarPhoto(croppedFile);
-      else if (target === "cover") await uploadCoverPhoto(croppedFile);
-      else if (target === "item") await uploadItemPhoto(croppedFile);
-
-      if (queue.length > 0) {
-        const [next, ...rest] = queue;
-        startCropping(next, target, rest);
-      } else {
-        setCropperState(null);
-      }
+      croppedFile = await getCroppedImageFile(imageSrc, croppedAreaPixels, `recorte-${Date.now()}.jpg`);
     } catch (err) {
       toast.error(err.message || "No se pudo recortar la imagen");
+      URL.revokeObjectURL(imageSrc);
+      setCroppingBusy(false);
+      // si falla una, seguimos con las demás en vez de perder toda la selección
+      if (queue.length > 0) { const [next, ...rest] = queue; startCropping(next, target, rest); }
+      else setCropperState(null);
+      return;
+    }
+    URL.revokeObjectURL(imageSrc);
+
+    // Pasamos a la siguiente foto (o cerramos) YA, y la subida sigue en segundo plano con su
+    // miniatura girando en el formulario. Antes se esperaba a que terminara la subida con el
+    // recortador abierto, y por eso parecía que se quedaba congelado.
+    if (queue.length > 0) {
+      const [next, ...rest] = queue;
+      startCropping(next, target, rest);
+    } else {
       setCropperState(null);
     }
+    setCroppingBusy(false);
+
+    if (target === "avatar") uploadAvatarPhoto(croppedFile);
+    else if (target === "cover") uploadCoverPhoto(croppedFile);
+    else if (target === "item") uploadItemPhoto(croppedFile);
   }
 
   async function uploadAvatarPhoto(file) {
@@ -2465,7 +2489,10 @@ export default function RopelinApp() {
   }
 
   function handleImageSelect(e) {
-    const files = Array.from(e.target.files || []).slice(0, 6 - form.images.length);
+    const room = 6 - form.images.length - uploadingImages.length; // cuenta también las que se están subiendo
+    const all = Array.from(e.target.files || []);
+    const files = all.slice(0, Math.max(0, room));
+    if (all.length > files.length) toast.error("Máximo 6 fotos por artículo");
     e.target.value = ""; // permite volver a seleccionar el mismo archivo si se quita y se vuelve a añadir
     if (files.length === 0) return;
     const [first, ...rest] = files;
@@ -3381,7 +3408,7 @@ export default function RopelinApp() {
                   className="search-suggestion-row"
                   onMouseDown={() => { setQuery(it.title); setShowSuggestions(false); viewItem(normalizeItem(it)); }}
                 >
-                  <span className="search-suggestion-thumb" style={{ backgroundImage: `url(${(it.images && it.images[0]) || it.photo})` }} />
+                  <span className="search-suggestion-thumb" style={{ backgroundImage: `url(${cld((it.images && it.images[0]) || it.photo, IMG.thumb)})` }} />
                   <span className="search-suggestion-text">
                     <span className="search-suggestion-title">{it.title}</span>
                     <span className="search-suggestion-price">{it.price}€</span>
@@ -3457,10 +3484,7 @@ export default function RopelinApp() {
       <header className="top">
         <div className="brand" onClick={goHome} style={{ cursor: "pointer" }}>
           <div className="brand-mark">
-            <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <rect x="66" y="18" width="15" height="15" fill="var(--accent)" />
-              <text x="47" y="80" fontFamily="Manrope, Arial, sans-serif" fontSize="75" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
-            </svg>
+            <RopelinMark size={24} />
           </div>
           <h1>Ropelin</h1>
         </div>
@@ -3637,7 +3661,7 @@ export default function RopelinApp() {
                 className="profile-avatar-lg"
                 style={
                   isOwnProfile && myAvatarUrl
-                    ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover", backgroundPosition: "center", cursor: "pointer" }
+                    ? { backgroundImage: `url(${cld(myAvatarUrl, IMG.avatar)})`, backgroundSize: "cover", backgroundPosition: "center", cursor: "pointer" }
                     : { background: PALETTE[profileUsername.length % PALETTE.length], cursor: isOwnProfile ? "pointer" : "default" }
                 }
                 onClick={() => isOwnProfile && document.getElementById("avatar-upload-input").click()}
@@ -4035,7 +4059,7 @@ export default function RopelinApp() {
                     <div style={{ textAlign: "left", maxWidth: 480, margin: "0 auto" }}>
                       <div className="settings-avatar-row">
                         <input type="file" accept="image/*" id="avatar-upload-input-settings" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) startCropping(e.target.files[0], "avatar"); e.target.value = ""; }} />
-                        <div className="settings-avatar" style={myAvatarUrl ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover" } : { background: avatarColor }}>
+                        <div className="settings-avatar" style={myAvatarUrl ? { backgroundImage: `url(${cld(myAvatarUrl, IMG.avatar)})`, backgroundSize: "cover" } : { background: avatarColor }}>
                           {!myAvatarUrl && username[0]?.toUpperCase()}
                         </div>
                         <button className="btn ghost" onClick={() => document.getElementById("avatar-upload-input-settings").click()}>Editar foto de perfil</button>
@@ -4188,7 +4212,7 @@ export default function RopelinApp() {
                         <div className="stats-list">
                           {myStats.map((it) => (
                             <div className="stats-row" key={it.id}>
-                              <div className="stats-row-thumb" style={{ backgroundImage: it.image ? `url(${it.image})` : "none" }} />
+                              <div className="stats-row-thumb" style={{ backgroundImage: it.image ? `url(${cld(it.image, IMG.thumb)})` : "none" }} />
                               <div className="stats-row-info">
                                 <p className="stats-row-title">{it.title}</p>
                                 <p className="stats-row-meta">
@@ -4302,7 +4326,7 @@ export default function RopelinApp() {
         const galleryEl = (
           <div
             className="detail-media"
-            style={{ backgroundImage: `url(${(openItem.images && openItem.images[galleryIndex]) || openItem.photo})`, backgroundSize: "cover", backgroundPosition: "center" }}
+            style={{ backgroundImage: `url(${cld((openItem.images && openItem.images[galleryIndex]) || openItem.photo, IMG.full)})`, backgroundSize: "cover", backgroundPosition: "center" }}
           >
             <span className="pv-cond-chip">{openItem.condition}</span>
             {openItem.featured && <span className="featured-ribbon featured-ribbon-quiet">Destacado</span>}
@@ -4492,14 +4516,24 @@ export default function RopelinApp() {
               ) : openItem.sellerVacationMode ? (
                 <button className="buy-btn" disabled title="Este vendedor está en modo vacaciones ahora mismo" style={{ opacity: 0.6, flex: 1 }}><Clock size={15} /> El vendedor está de vacaciones</button>
               ) : (
-                <>
-                  <button className="chat-btn" onClick={() => openChat(openItem)}><MessageCircle size={15} /> Contactar</button>
-                  <button className="offer-btn" onClick={() => loggedIn ? setShowOffer(true) : setShowAuth(true)}><HandCoins size={15} /> Ofertar</button>
-                  {openItem.sellerStripeOnboarded === false ? (
-                    <button className="buy-btn" disabled title="Este vendedor todavía no puede recibir pagos por correo" style={{ opacity: 0.6 }}>No disponible por correo</button>
-                  ) : (
-                    <button className="buy-btn" onClick={() => { if (loggedIn) { setCheckoutPostalCode(""); setCheckoutCity(""); setCheckoutRates([]); setCheckoutSelectedRateId(null); setCheckoutServicePoint(null); setShowAllShippingRates(false); setShowCheckout(true); } else { setShowAuth(true); } }}>Comprar</button>
-                  )}
+                <div className="buyer-actions">
+                  <div className="buyer-actions-row">
+                    <button className="chat-btn buyer-chat-btn" aria-label="Abrir chat con el vendedor" onClick={() => openChat(openItem)}>
+                      <MessageCircle size={18} /><span>Chat</span>
+                    </button>
+                    <button className="offer-btn" onClick={() => loggedIn ? setShowOffer(true) : setShowAuth(true)}>
+                      <HandCoins size={17} /><span>Ofertar</span>
+                    </button>
+                    {openItem.sellerStripeOnboarded === false ? (
+                      <button className="buy-btn" disabled title="Este vendedor todavía no puede recibir pagos por correo">
+                        <span className="buy-btn-label">Sin envío</span>
+                      </button>
+                    ) : (
+                      <button className="buy-btn" onClick={() => { if (loggedIn) { setCheckoutPostalCode(""); setCheckoutCity(""); setCheckoutRates([]); setCheckoutSelectedRateId(null); setCheckoutServicePoint(null); setShowAllShippingRates(false); setShowCheckout(true); } else { setShowAuth(true); } }}>
+                        <span className="buy-btn-label">Comprar</span>
+                      </button>
+                    )}
+                  </div>
                   <button
                     className="in-person-alt-btn"
                     onClick={() => {
@@ -4508,9 +4542,10 @@ export default function RopelinApp() {
                       setChatInput(`Hola, ¿quedamos en persona para "${openItem.title}"? Así el pago (Bizum o efectivo) lo acordáis directamente entre vosotros, sin pasar por Ropelin.`);
                     }}
                   >
-                    <MapPin size={13} /> Prefiero quedar en persona (pago directo, sin comisión)
+                    <MapPin size={14} />
+                    <span>{openItem.sellerStripeOnboarded === false ? "Este vendedor solo vende en mano · " : "¿Mejor en mano? "}<strong>Quedar en persona</strong> · sin comisión</span>
                   </button>
-                </>
+                </div>
               )}
             </div>
 
@@ -4578,7 +4613,7 @@ export default function RopelinApp() {
                         key={i}
                         className={"gallery-thumb" + (i === galleryIndex ? " on" : "")}
                         onClick={() => setGalleryIndex(i)}
-                        style={{ backgroundImage: `url(${img})` }}
+                        style={{ backgroundImage: `url(${cld(img, IMG.thumb)})` }}
                         aria-label={`Ver foto ${i + 1}`}
                       />
                     ))}
@@ -5077,7 +5112,7 @@ export default function RopelinApp() {
                 <div className="image-preview-row">
                   {form.images.map((img, i) => (
                     <div key={i} className="image-preview">
-                      <img src={img} alt={`Foto ${i + 1}`} />
+                      <img src={cld(img, IMG.thumb)} alt={`Foto ${i + 1}`} />
                       <button type="button" onClick={() => removeImage(i)}><X size={12} /></button>
                     </div>
                   ))}
@@ -5091,7 +5126,7 @@ export default function RopelinApp() {
 
               <p className="post-section-label">Vista previa</p>
               <div className="post-preview-card">
-                <div className="post-preview-media" style={form.images[0] ? { backgroundImage: `url(${form.images[0]})` } : {}}>
+                <div className="post-preview-media" style={form.images[0] ? { backgroundImage: `url(${cld(form.images[0], IMG.card)})` } : {}}>
                   {!form.images[0] && <ImagePlus size={20} />}
                 </div>
                 <div className="post-preview-body">
@@ -5423,10 +5458,7 @@ export default function RopelinApp() {
 
             <div className="auth-brand">
               <div className="brand-mark auth-mark">
-                <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="66" y="18" width="15" height="15" fill="var(--accent)" />
-                  <text x="47" y="80" fontFamily="Manrope, Arial, sans-serif" fontSize="75" fontWeight="800" fill="#17171A" textAnchor="middle">R</text>
-                </svg>
+                <RopelinMark size={26} />
               </div>
               <p className="auth-title">{authMode === "login" ? "Bienvenido de vuelta" : "Únete a Ropelin"}</p>
               <p className="auth-subtitle">{authMode === "login" ? "Entra para seguir comprando y vendiendo" : "Crea tu cuenta en unos segundos"}</p>
@@ -5620,7 +5652,7 @@ export default function RopelinApp() {
                     className="fav-card"
                     onClick={() => { setShowFavorites(false); viewItem(item); }}
                   >
-                    <div className="fav-swatch" style={{ backgroundImage: `url(${item.photo})` }}>
+                    <div className="fav-swatch" style={{ backgroundImage: `url(${cld(item.photo, IMG.thumb)})` }}>
                       <button className="heart on" onClick={(e) => { e.stopPropagation(); toggleSave(item.id); }}>
                         <Heart size={14} fill="var(--accent)" color="var(--accent)" />
                       </button>
@@ -5708,7 +5740,7 @@ export default function RopelinApp() {
                   }
                 }}
               >
-                <div className="thread-avatar" style={t.itemImage ? { backgroundImage: `url(${t.itemImage})`, backgroundSize: "cover", backgroundPosition: "center" } : { background: PALETTE[t.itemTitle.length % PALETTE.length] }}>
+                <div className="thread-avatar" style={t.itemImage ? { backgroundImage: `url(${cld(t.itemImage, IMG.avatar)})`, backgroundSize: "cover", backgroundPosition: "center" } : { background: PALETTE[t.itemTitle.length % PALETTE.length] }}>
                   {!t.itemImage && t.itemTitle[0]?.toUpperCase()}
                 </div>
                 <div className="thread-body">
@@ -6287,8 +6319,12 @@ export default function RopelinApp() {
               className="cropper-zoom-slider"
             />
             <div className="cropper-actions">
-              <button className="btn ghost" onClick={cancelCropping}>Cancelar</button>
-              <button className="btn primary" onClick={confirmCrop}>Usar esta foto</button>
+              <button className="btn ghost" onClick={cancelCropping} disabled={croppingBusy}>
+                {cropperState.queue.length > 0 ? "Descartar" : "Cancelar"}
+              </button>
+              <button className="btn primary" onClick={confirmCrop} disabled={croppingBusy}>
+                {croppingBusy ? "Preparando..." : cropperState.queue.length > 0 ? `Usar y siguiente (${cropperState.queue.length})` : "Usar esta foto"}
+              </button>
             </div>
           </div>
         </div>
@@ -6305,7 +6341,7 @@ export default function RopelinApp() {
                 className="profile-avatar-lg"
                 style={
                   myAvatarUrl
-                    ? { backgroundImage: `url(${myAvatarUrl})`, backgroundSize: "cover", backgroundPosition: "center", margin: 0 }
+                    ? { backgroundImage: `url(${cld(myAvatarUrl, IMG.avatar)})`, backgroundSize: "cover", backgroundPosition: "center", margin: 0 }
                     : { background: PALETTE[username.length % PALETTE.length], margin: 0 }
                 }
               >
@@ -6432,7 +6468,7 @@ export default function RopelinApp() {
           <div className="modal chat-modal" onClick={(e) => e.stopPropagation()}>
 
             <div className="chat-item-strip" onClick={() => { setShowChat(false); viewItem(chatItem); }}>
-              <div className="chat-item-thumb" style={{ backgroundImage: `url(${(chatItem.images && chatItem.images[0]) || chatItem.photo})` }} />
+              <div className="chat-item-thumb" style={{ backgroundImage: `url(${cld((chatItem.images && chatItem.images[0]) || chatItem.photo, IMG.thumb)})` }} />
               <div className="chat-item-strip-info">
                 <p className="chat-item-strip-title">{chatItem.title}</p>
                 <p className="chat-item-strip-price">{chatItem.price}€</p>
@@ -6470,7 +6506,7 @@ export default function RopelinApp() {
                   <div key={m.id} className={"chat-msg-row " + (mine ? "me" : "seller") + (grouped ? " grouped" : "")}>
                     {m.imageUrl ? (
                       <a href={m.imageUrl} target="_blank" rel="noopener noreferrer" className="chat-photo-bubble">
-                        <img src={m.imageUrl} alt="Foto enviada en el chat" />
+                        <img src={cld(m.imageUrl, 480)} alt="Foto enviada en el chat" loading="lazy" decoding="async" />
                       </a>
                     ) : (
                       <div className={"chat-bubble " + (mine ? "me" : "seller") + (m.offerAmount ? " offer-bubble" : "")}>

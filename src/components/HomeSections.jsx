@@ -1,3 +1,4 @@
+import { cld, IMG } from "../img";
 import { useRef, useState } from "react";
 import { ArrowRight, ArrowUpRight, BadgeCheck, ChevronLeft, ChevronRight, HelpCircle, Heart, MapPin, Plus, ShieldCheck, Truck, Undo2 } from "lucide-react";
 import ItemCard from "./ItemCard";
@@ -15,7 +16,7 @@ const TRUST = [
 function FeatureCard({ item, onOpen, saved, toggleSave, className = "" }) {
   return (
     <article className={"feat-card " + className} onClick={() => onOpen(item)}>
-      <img src={item.photo} alt={item.title} loading="lazy" decoding="async" />
+      <img src={cld(item.photo, IMG.card)} alt={item.title} onError={(e) => { const el = e.currentTarget; if (el.dataset.fallback !== "1" && el.src !== item.photo) { el.dataset.fallback = "1"; el.src = item.photo; } else { el.style.visibility = "hidden"; } }} loading="lazy" decoding="async" />
       <div className="feat-top">
         {item.featured ? <span className="chip-badge accent static">Destacado</span> : <span />}
         <button className={"heart" + (saved ? " on" : "")} onClick={(e) => { e.stopPropagation(); toggleSave(item.id); }} aria-label={saved ? "Quitar de favoritos" : "Añadir a favoritos"}>
@@ -167,7 +168,7 @@ export default function HomeSections({ items, categories, isDesktop, hasLocation
           <div className={"hm-bento n-" + tiles.length}>
             {tiles.map((t, i) => (
               <button key={t.name} className="hm-cat-tile" onClick={() => onPickCategory(t.name)}>
-                {t.cover && <img src={t.cover} alt="" loading="lazy" decoding="async" />}
+                {t.cover && <img src={cld(t.cover, IMG.cover)} alt="" onError={(e) => { const el = e.currentTarget; if (el.dataset.fallback !== "1" && el.src !== t.cover) { el.dataset.fallback = "1"; el.src = t.cover; } else { el.style.visibility = "hidden"; } }} loading="lazy" decoding="async" />}
                 <span className="hm-cat-lab"><b>{t.name}</b><small>{t.count.toLocaleString("es-ES")} artículo{t.count === 1 ? "" : "s"}</small></span>
                 {i === 0 && <span className="hm-cat-go"><ArrowUpRight size={16} /></span>}
               </button>
